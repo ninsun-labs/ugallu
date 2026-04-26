@@ -77,15 +77,33 @@ tasks:
       - goimports -l -w .
 
   generate:
-    desc: Run code generation (controller-gen object + crd, protoc later)
+    desc: Run all code generation (proto, controller-gen object + crd, fmt)
+    deps: [generate:proto, generate:deepcopy, generate:crd]
     cmds:
-      - echo "==> controller-gen object (deepcopy)"
-      - cd sdk && controller-gen object paths=./pkg/api/v1alpha1/...
-      - echo "==> controller-gen crd"
-      - cd sdk && controller-gen crd paths=./pkg/api/v1alpha1/... output:crd:dir=../crds/bases
       - echo "==> gofumpt + goimports"
-      - gofumpt -l -w sdk/pkg/api/v1alpha1/
-      - goimports -l -w sdk/pkg/api/v1alpha1/
+      - gofumpt -l -w sdk/pkg/api/v1alpha1/ sdk/pkg/resolver/clientv1/
+      - goimports -l -w sdk/pkg/api/v1alpha1/ sdk/pkg/resolver/clientv1/
+
+  generate:proto:
+    desc: Generate Go gRPC stubs from .proto files
+    cmds:
+      - mkdir -p sdk/pkg/resolver/clientv1
+      - |
+        protoc \
+          --proto_path=sdk/proto \
+          --go_out=sdk --go_opt=module=github.com/ninsun-labs/ugallu/sdk \
+          --go-grpc_out=sdk --go-grpc_opt=module=github.com/ninsun-labs/ugallu/sdk \
+          sdk/proto/resolver/v1/resolver.proto
+
+  generate:deepcopy:
+    desc: Run controller-gen object (zz_generated.deepcopy.go)
+    cmds:
+      - cd sdk && controller-gen object paths=./pkg/api/v1alpha1/...
+
+  generate:crd:
+    desc: Run controller-gen crd (CRD YAML to crds/bases)
+    cmds:
+      - cd sdk && controller-gen crd paths=./pkg/api/v1alpha1/... output:crd:dir=../crds/bases
 
   e2e:
     desc: Run E2E tests on a kind cluster

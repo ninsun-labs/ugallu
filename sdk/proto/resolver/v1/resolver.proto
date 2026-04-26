@@ -1,0 +1,125 @@
+// Copyright 2026 The ninsun-labs Authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+// Package ugallu.resolver.v1 is the gRPC contract for ugallu-resolver
+// (design 03 R6). The service is exposed on a Unix socket (per-node, fast
+// path) and on a ClusterIP Service (cluster-wide). Clients are detection
+// sources, reasoners, and responders that need to map low-level identifiers
+// (cgroup ID, PID, IP, container ID, SA username) into a SubjectTier1
+// snapshot suitable for embedding in a SecurityEvent.
+package ugallu.resolver.v1;
+
+option go_package = "github.com/ninsun-labs/ugallu/sdk/pkg/resolver/clientv1;resolverv1";
+
+// Resolver is the subject lookup service exposed by ugallu-resolver.
+//
+// Endpoints (deployed by the umbrella chart):
+//   - Unix socket:    /var/run/ugallu/resolver.sock          (local-node)
+//   - ClusterIP svc:  ugallu-resolver.ugallu-system-privileged.svc:443 (cluster-wide)
+//
+// All RPCs are best-effort. On lookup failure the response is returned
+// with the appropriate failure marker (partial / tombstone / unresolved)
+// so callers can emit a degraded SecurityEvent rather than block.
+service Resolver {
+  // ResolveByCgroupID maps a kernel cgroup ID (typically from a Tetragon or
+  // own eBPF event) to a Subject.
+  rpc ResolveByCgroupID(CgroupIDRequest) returns (SubjectResponse);
+
+  // ResolveByPID maps a host PID to a Subject. Uses /proc + cgroup index.
+  rpc ResolveByPID(PIDRequest) returns (SubjectResponse);
+
+  // ResolveByPodIP maps a Pod IP (IPv4 or IPv6) to a Subject.
+  rpc ResolveByPodIP(PodIPRequest) returns (SubjectResponse);
+
+  // ResolveByPodUID maps a Pod UID (e.g. from an audit log entry) to a Subject.
+  rpc ResolveByPodUID(PodUIDRequest) returns (SubjectResponse);
+
+  // ResolveByContainerID maps a CRI container ID (e.g. "containerd://abc...")
+  // to a Subject.
+  rpc ResolveByContainerID(ContainerIDRequest) returns (SubjectResponse);
+
+  // ResolveBySAUsername maps a Kubernetes auth username
+  // (e.g. "system:serviceaccount:default:foo") to a Subject. Intelligent
+  // parsing: system:serviceaccount:<ns>:<name>, system:node:<hostname>,
+  // other system:* (returns SystemUser external), or non-system (ExternalUser).
+  rpc ResolveBySAUsername(SAUsernameRequest) returns (SubjectResponse);
+
+  // Watch streams SubjectChange events for the given filter. Server-streaming.
+  // Planned for v1beta1 (operator hot-reload + cache prefetch).
+  rpc Watch(WatchRequest) returns (stream SubjectChange);
+}
+
+message CgroupIDRequest {
+  uint64 cgroup_id = 1;
+}
+
+message PIDRequest {
+  int32 pid = 1;
+}
+
+message PodIPRequest {
+  // ip is the Pod IP, IPv4 ("10.244.3.5") or IPv6 ("2001:db8::1").
+  string ip = 1;
+}
+
+message PodUIDRequest {
+  string uid = 1;
+}
+
+message ContainerIDRequest {
+  // container_id is the CRI runtime ID, e.g. "containerd://abc123...".
+  string container_id = 1;
+}
+
+message SAUsernameRequest {
+  string username = 1;
+}
+
+message WatchRequest {
+  // kind filters by SubjectKind (empty for any).
+  string kind = 1;
+  // namespace filter (empty for any).
+  string namespace = 2;
+}
+
+message SubjectChange {
+  enum ChangeType {
+    UNKNOWN      = 0;
+    ADDED        = 1;
+    UPDATED      = 2;
+    DELETED      = 3;
+    TOMBSTONE_GC = 4;
+  }
+  ChangeType type = 1;
+  SubjectResponse subject = 2;
+}
+
+// SubjectResponse carries the resolver lookup result. The common identity
+// fields are always populated when the subject is known; the full
+// SubjectTier1 (including the per-kind discriminator) is encoded as
+// JSON in tier1_json so clients can deserialize via encoding/json into
+// the SDK Go type without mirroring the entire discriminator schema in
+// proto. A future v2 contract will replace tier1_json with strong-typed
+// oneof messages mirroring the discriminator.
+message SubjectResponse {
+  string kind             = 1;
+  string api_version      = 2;
+  string name             = 3;
+  string namespace        = 4;
+  string uid              = 5;
+  string resource_version = 6;
+  map<string, string> labels = 7;
+
+  // tier1_json is the JSON-encoded v1alpha1.SubjectTier1.
+  bytes tier1_json = 10;
+
+  // Failure markers (resolver fallback path, design 03).
+  bool partial    = 20;
+  bool tombstone  = 21;
+  bool unresolved = 22;
+
+  // diagnostic is free-form (not a contract; for human/log inspection).
+  string diagnostic = 30;
+}
