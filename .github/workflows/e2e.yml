@@ -1,0 +1,76 @@
+name: E2E (kind smoke)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KIND_NODE_IMAGE: kindest/node:v1.32.0
+  HELM_VERSION: v3.20.0
+
+jobs:
+  smoke:
+    name: kind smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Skip on PRs unless the e2e label is present (saves CI minutes).
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: ugallu-ci
+          node_image: ${{ env.KIND_NODE_IMAGE }}
+          wait: 90s
+
+      - name: Apply CRDs
+        run: kubectl apply --server-side -f crds/bases/
+
+      - name: Render and apply chart
+        run: |
+          set -euo pipefail
+          helm dependency update charts/ugallu
+          helm template ugallu charts/ugallu --namespace ugallu-system \
+            | kubectl apply --server-side -f -
+
+      - name: Wait for Wave 1 pods
+        run: |
+          set -e
+          # Resolver is a DaemonSet (1 pod on the single CI node).
+          kubectl rollout status -n ugallu-system-privileged daemonset/ugallu-resolver --timeout=120s
+          kubectl rollout status -n ugallu-system deployment/ugallu-attestor          --timeout=120s
+          kubectl rollout status -n ugallu-system deployment/ugallu-ttl               --timeout=120s
+
+      - name: Run smoke tests
+        run: bash hack/e2e-smoke.sh
+
+      - name: Diagnostic dump on failure
+        if: failure()
+        run: |
+          echo "=== events ==="
+          kubectl get events -A --sort-by=.lastTimestamp | tail -50 || true
+          echo "=== pods ==="
+          kubectl get pods -A -o wide || true
+          echo "=== admission policies ==="
+          kubectl get validatingadmissionpolicy,validatingadmissionpolicybinding -l app.kubernetes.io/part-of=ugallu || true
+          echo "=== logs (resolver) ==="
+          kubectl logs -n ugallu-system-privileged -l app.kubernetes.io/name=ugallu-resolver --tail=100 || true
+          echo "=== logs (attestor) ==="
+          kubectl logs -n ugallu-system          -l app.kubernetes.io/name=ugallu-attestor   --tail=100 || true
+          echo "=== logs (ttl) ==="
+          kubectl logs -n ugallu-system          -l app.kubernetes.io/name=ugallu-ttl        --tail=100 || true

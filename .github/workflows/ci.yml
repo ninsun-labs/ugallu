@@ -8,57 +8,187 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.26.2'
+  GOLANGCI_LINT_VERSION: v2.11.4
+  CONTROLLER_GEN_VERSION: v0.20.1
+  HELM_VERSION: v3.20.0
+
 jobs:
-  build:
+  modules:
+    name: Discover Go modules
     runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      list: ${{ steps.discover.outputs.list }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.2'
-          cache: true
-      - name: Build all modules
+      - uses: actions/checkout@v6
+      - id: discover
         run: |
-          set -e
-          for mod in $(find . -name go.mod -not -path "./.git/*" -not -path "./vendor/*" -exec dirname {} \;); do
-            echo "==> build $mod"
-            (cd "$mod" && go build ./...)
-          done
+          set -euo pipefail
+          mods=$(find . -name go.mod -not -path "./.git/*" -not -path "./vendor/*" -exec dirname {} \; | sed 's|^./||' | sort | jq -R -s -c 'split("\n")[:-1]')
+          echo "list=${mods}" >> "$GITHUB_OUTPUT"
+          echo "Discovered modules: ${mods}"
+
+  build:
+    name: Build (${{ matrix.module }})
+    needs: modules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.modules.outputs.list) }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+      - name: go build
+        working-directory: ${{ matrix.module }}
+        run: go build ./...
 
   test:
+    name: Test (${{ matrix.module }})
+    needs: modules
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.modules.outputs.list) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.2'
-          cache: true
-      - name: Test all modules
-        run: |
-          set -e
-          for mod in $(find . -name go.mod -not -path "./.git/*" -not -path "./vendor/*" -exec dirname {} \;); do
-            echo "==> test $mod"
-            (cd "$mod" && go test -race -timeout 120s ./...)
-          done
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+      - name: go test
+        working-directory: ${{ matrix.module }}
+        run: go test -race -timeout 120s ./...
 
   lint:
+    name: Lint (${{ matrix.module }})
+    needs: modules
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.modules.outputs.list) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.2'
-          cache: true
-      - name: Install golangci-lint v2
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-      - name: Run golangci-lint per module (skip empty modules)
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+      - name: Has Go files
+        id: hasgo
+        run: |
+          if find "${{ matrix.module }}" -maxdepth 5 -name "*.go" -not -path "*/vendor/*" | head -1 | grep -q .; then
+            echo "hasgo=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hasgo=false" >> "$GITHUB_OUTPUT"
+            echo "Module ${{ matrix.module }} has no .go files yet, skipping lint."
+          fi
+      - uses: golangci/golangci-lint-action@v9
+        if: steps.hasgo.outputs.hasgo == 'true'
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: ${{ matrix.module }}
+          args: --timeout=5m
+
+  helm:
+    name: Helm (lint + template)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+      - name: Helm dependency update
+        run: helm dependency update charts/ugallu
+      - name: Lint umbrella chart
+        run: helm lint charts/ugallu
+      - name: Lint each subchart standalone
         run: |
           set -e
-          for mod in $(find . -name go.mod -not -path "./.git/*" -not -path "./vendor/*" -exec dirname {} \;); do
-            if find "$mod" -maxdepth 5 -name "*.go" -not -path "*/vendor/*" | head -1 | grep -q .; then
-              echo "==> lint $mod"
-              (cd "$mod" && golangci-lint run --timeout=5m ./...)
-            else
-              echo "==  skip $mod (no .go files yet)"
+          for sub in charts/ugallu/charts/*/; do
+            if [ -f "${sub}Chart.yaml" ]; then
+              echo "==> lint ${sub}"
+              helm lint "${sub}"
             fi
           done
+      - name: Render umbrella to verify it produces valid YAML
+        run: |
+          mkdir -p /tmp/render
+          helm template ugallu charts/ugallu --namespace ugallu-system > /tmp/render/all.yaml
+          wc -l /tmp/render/all.yaml
+          # Quick sanity: every kind we expect must appear at least once.
+          for kind in Namespace ServiceAccount ClusterRole ClusterRoleBinding Role RoleBinding Service DaemonSet Deployment ValidatingAdmissionPolicy ValidatingAdmissionPolicyBinding; do
+            if ! grep -q "^kind: ${kind}\$" /tmp/render/all.yaml; then
+              echo "ERROR: rendered chart missing kind ${kind}"
+              exit 1
+            fi
+          done
+          echo "All expected Kinds present."
+
+  generate-drift:
+    name: Generate drift (controller-gen)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+      - name: Install controller-gen
+        run: go install sigs.k8s.io/controller-tools/cmd/controller-gen@${{ env.CONTROLLER_GEN_VERSION }}
+      - name: Regenerate deepcopy + CRDs
+        run: |
+          cd sdk
+          controller-gen object paths=./pkg/api/v1alpha1/...
+          controller-gen crd paths=./pkg/api/v1alpha1/... output:crd:dir=../crds/bases
+      - name: Verify no drift
+        run: |
+          if ! git diff --exit-code; then
+            echo
+            echo "ERROR: generated files differ from committed."
+            echo "Run 'task generate' locally and commit the changes."
+            exit 1
+          fi
+
+  type-catalog-parity:
+    name: Type catalog parity (SDK <-> admission policy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+      - name: Compare SDK type constants vs admission policy 5 list
+        run: |
+          set -euo pipefail
+          # Extract Type values from SDK constants
+          sdk_types=$(grep -E '^\s+Type[A-Za-z]+\s+=' sdk/pkg/api/v1alpha1/types.go \
+                     | sed -E 's/.*= "([^"]+)".*/\1/' | sort -u)
+          # Extract Type values from admission policy 5 inline list
+          policy_types=$(grep -oE "'[A-Z][A-Za-z]+'" \
+                          charts/ugallu/charts/admission-policies/templates/05-type-validation.yaml \
+                          | tr -d "'" | sort -u)
+          if [ "$sdk_types" != "$policy_types" ]; then
+            echo "ERROR: Type catalog drift between SDK constants and admission Policy 5."
+            echo
+            echo "Only in SDK constants:"
+            comm -23 <(echo "$sdk_types") <(echo "$policy_types") || true
+            echo
+            echo "Only in admission Policy 5:"
+            comm -13 <(echo "$sdk_types") <(echo "$policy_types") || true
+            exit 1
+          fi
+          echo "Type catalog parity OK ($(echo "$sdk_types" | wc -l) types)."
