@@ -1,0 +1,81 @@
+version: '3'
+
+vars:
+  GO_MODULES:
+    sh: find . -name "go.mod" -not -path "./.git/*" -not -path "./vendor/*" -exec dirname {} \;
+
+tasks:
+  default:
+    cmds:
+      - task --list-all
+
+  doctor:
+    desc: Preflight check of dev tooling
+    cmds:
+      - go version
+      - go env GOPATH
+      - command -v golangci-lint >/dev/null && golangci-lint version || echo "MISSING golangci-lint"
+      - command -v ko >/dev/null && ko version || echo "MISSING ko"
+      - command -v controller-gen >/dev/null && controller-gen --version || echo "MISSING controller-gen"
+      - command -v protoc >/dev/null && protoc --version || echo "MISSING protoc"
+      - command -v task >/dev/null && task --version || echo "MISSING task (you should not see this)"
+      - command -v cosign >/dev/null && cosign version --json | head -5 || echo "MISSING cosign"
+    silent: true
+
+  tidy:
+    desc: Run go mod tidy in every module
+    cmds:
+      - for: { var: GO_MODULES }
+        cmd: |
+          echo "==> tidy {{.ITEM}}"
+          (cd {{.ITEM}} && go mod tidy)
+
+  build:
+    desc: Build every Go module
+    cmds:
+      - for: { var: GO_MODULES }
+        cmd: |
+          echo "==> build {{.ITEM}}"
+          (cd {{.ITEM}} && go build ./...)
+
+  test:
+    desc: Run go test (-race) on every module
+    cmds:
+      - for: { var: GO_MODULES }
+        cmd: |
+          echo "==> test {{.ITEM}}"
+          (cd {{.ITEM}} && go test -race -timeout 120s ./...)
+
+  lint:
+    desc: Run golangci-lint across the workspace
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format Go code (gofumpt + goimports)
+    cmds:
+      - gofumpt -l -w .
+      - goimports -l -w .
+
+  generate:
+    desc: Run code generation (controller-gen, protoc, deepcopy)
+    cmds:
+      - echo "TODO controller-gen object + crd"
+      - echo "TODO protoc resolver/v1/resolver.proto"
+
+  e2e:
+    desc: Run E2E tests on a kind cluster
+    cmds:
+      - echo "TODO kind cluster bootstrap + ginkgo run"
+
+  release:
+    desc: Build images, sign, push (goreleaser + ko + cosign)
+    cmds:
+      - echo "TODO goreleaser release --clean"
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf bin/ dist/ out/
+      - find . -name '*.test' -delete
+      - find . -name '*.out' -delete

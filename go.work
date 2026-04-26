@@ -1,0 +1,11 @@
+go 1.26.2
+
+use (
+	./attestor
+	./cmd/ugallu
+	./operators/audit-detection
+	./operators/forensics
+	./resolver
+	./sdk
+	./ttl
+)

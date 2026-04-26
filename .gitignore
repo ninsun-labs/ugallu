@@ -1,0 +1,51 @@
+# Build artifacts
+bin/
+dist/
+out/
+*.exe
+*.test
+*.out
+*.prof
+*.cov
+
+# Generated (committed *.pb.go and zz_generated_*.go are intentional; ignore only backups)
+*.pb.go.bak
+zz_generated_*.bak
+
+# Go
+go.sum.bak
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.kubeconfig
+*.pem
+*.key
+*.crt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# eBPF build leftovers
+*.bpf.o.bak
+*.skel.h.bak
+
+# Vendor (we do not commit vendor/)
+vendor/
+
+# Coverage / test outputs
+coverage.txt
+coverage.html
+testdata/tmp/
+
+# Local task / tooling caches
+.task/
+.cache/
