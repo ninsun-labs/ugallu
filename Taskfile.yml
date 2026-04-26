@@ -77,10 +77,15 @@ tasks:
       - goimports -l -w .
 
   generate:
-    desc: Run code generation (controller-gen, protoc, deepcopy)
+    desc: Run code generation (controller-gen object + crd, protoc later)
     cmds:
-      - echo "TODO controller-gen object + crd"
-      - echo "TODO protoc resolver/v1/resolver.proto"
+      - echo "==> controller-gen object (deepcopy)"
+      - cd sdk && controller-gen object paths=./pkg/api/v1alpha1/...
+      - echo "==> controller-gen crd"
+      - cd sdk && controller-gen crd paths=./pkg/api/v1alpha1/... output:crd:dir=../crds/bases
+      - echo "==> gofumpt + goimports"
+      - gofumpt -l -w sdk/pkg/api/v1alpha1/
+      - goimports -l -w sdk/pkg/api/v1alpha1/
 
   e2e:
     desc: Run E2E tests on a kind cluster

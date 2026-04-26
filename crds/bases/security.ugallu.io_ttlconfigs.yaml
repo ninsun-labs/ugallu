@@ -1,0 +1,146 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: ttlconfigs.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: TTLConfig
+    listKind: TTLConfigList
+    plural: ttlconfigs
+    shortNames:
+    - ttlcfg
+    singular: ttlconfig
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.defaults.securityEvent.critical
+      name: Critical-TTL
+      type: string
+    - jsonPath: .spec.worker.poolSize
+      name: Pool
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: TTLConfig is the namespaced config CR for ugallu-ttl.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TTLConfigSpec is the runtime config for ugallu-ttl (design
+              09 T7).
+            properties:
+              archiveSnapshotEnabled:
+                default: true
+                type: boolean
+              defaults:
+                description: TTLDefaults holds per-CR TTL windows.
+                properties:
+                  attestationBundle:
+                    description: AttestationBundleTTLConfig controls AttestationBundle
+                      retention.
+                    properties:
+                      grace:
+                        default: 168h
+                        type: string
+                      strategy:
+                        default: parentPlusGrace
+                        enum:
+                        - parentPlusGrace
+                        type: string
+                    type: object
+                  eventResponse:
+                    description: EventResponseTTL controls EventResponse retention.
+                    properties:
+                      constant:
+                        description: Constant is used when strategy is "constant".
+                        type: string
+                      strategy:
+                        default: matchParent
+                        enum:
+                        - matchParent
+                        - constant
+                        type: string
+                    type: object
+                  securityEvent:
+                    description: SeverityTTL is per-severity TTL for SecurityEvent
+                      (design 09 T3 + review H4).
+                    properties:
+                      critical:
+                        default: 168h
+                        type: string
+                      high:
+                        default: 72h
+                        type: string
+                      info:
+                        default: 6h
+                        type: string
+                      low:
+                        default: 12h
+                        type: string
+                      medium:
+                        default: 24h
+                        type: string
+                    type: object
+                required:
+                - attestationBundle
+                - eventResponse
+                - securityEvent
+                type: object
+              postpone:
+                description: PostponeConfig tunes the postpone retry behaviour.
+                properties:
+                  initialDelay:
+                    default: 1h
+                    type: string
+                  maxAttempts:
+                    default: 7
+                    type: integer
+                  maxDelay:
+                    default: 24h
+                    type: string
+                type: object
+              worker:
+                description: WorkerConfig tunes the worker pool.
+                properties:
+                  poolSize:
+                    default: 10
+                    type: integer
+                  queueRateLimit:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: QueueRateLimit is the max events/sec processed (e.g.,
+                      "100").
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                type: object
+            required:
+            - defaults
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}

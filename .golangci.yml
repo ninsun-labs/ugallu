@@ -20,6 +20,10 @@ linters:
   settings:
     govet:
       enable-all: true
+      disable:
+        # struct field alignment is cosmetic memory packing; declarative CRD
+        # types are easier to read in domain order, not byte-packed order.
+        - fieldalignment
     gocritic:
       enabled-tags:
         - diagnostic

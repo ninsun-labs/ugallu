@@ -1,0 +1,218 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: gitopsresponderconfigs.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: GitOpsResponderConfig
+    listKind: GitOpsResponderConfigList
+    plural: gitopsresponderconfigs
+    shortNames:
+    - gitopscfg
+    singular: gitopsresponderconfig
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.defaultProvider
+      name: Default-Provider
+      type: string
+    - jsonPath: .spec.defaultRepo.repo
+      name: Default-Repo
+      type: string
+    - jsonPath: .spec.conflictBehavior
+      name: Conflict
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: GitOpsResponderConfig is the namespaced config CR for the GitOps
+          responder.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              GitOpsResponderConfigSpec is the runtime config for the GitOps responder
+              (design 08 G11).
+            properties:
+              bot:
+                description: BotIdentity describes the GitOps bot identity.
+                properties:
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  sshSigningKey:
+                    type: string
+                required:
+                - email
+                - name
+                type: object
+              branchStrategy:
+                description: BranchStrategy controls branch naming and lifecycle.
+                properties:
+                  deleteAfterMerge:
+                    type: boolean
+                  namingTemplate:
+                    type: string
+                type: object
+              changeDefaults:
+                description: ChangeDefaults tunes default PR/MR behaviour.
+                properties:
+                  draft:
+                    type: boolean
+                  labels:
+                    items:
+                      type: string
+                    type: array
+                  requireReviewers:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              conflictBehavior:
+                default: abort
+                description: ConflictBehavior is the GitOps responder conflict policy
+                  (design 08 G5).
+                enum:
+                - abort
+                - force
+                - merge
+                type: string
+              defaultProvider:
+                type: string
+              defaultRepo:
+                description: GitRepo points at a target repository on a provider.
+                properties:
+                  branch:
+                    type: string
+                  owner:
+                    type: string
+                  provider:
+                    type: string
+                  repo:
+                    type: string
+                required:
+                - owner
+                - provider
+                - repo
+                type: object
+              providers:
+                items:
+                  description: GitProvider describes a configured git host.
+                  properties:
+                    auth:
+                      description: GitAuthConfig is the credentials reference for
+                        a provider.
+                      properties:
+                        mode:
+                          description: GitAuthMode is the git host auth method.
+                          enum:
+                          - github-app
+                          - project-access-token
+                          - app-token
+                          - pat
+                          - ssh-deploy-key
+                          type: string
+                        secretRef:
+                          description: |-
+                            LocalObjectReference contains enough information to let you locate the
+                            referenced object inside the same namespace.
+                          properties:
+                            name:
+                              default: ""
+                              description: |-
+                                Name of the referent.
+                                This field is effectively required, but due to backwards compatibility is
+                                allowed to be empty. Instances of this type with an empty value here are
+                                almost certainly wrong.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              type: string
+                          type: object
+                          x-kubernetes-map-type: atomic
+                      required:
+                      - mode
+                      - secretRef
+                      type: object
+                    host:
+                      type: string
+                    name:
+                      type: string
+                    type:
+                      description: GitProviderType is the kind of git host (design
+                        08 G2).
+                      enum:
+                      - github
+                      - gitlab
+                      - forgejo
+                      type: string
+                  required:
+                  - auth
+                  - host
+                  - name
+                  - type
+                  type: object
+                type: array
+              routing:
+                items:
+                  description: RoutingRule selects a target repo based on labels or
+                    namespace pattern.
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    matchNamespacePattern:
+                      type: string
+                    repo:
+                      description: GitRepo points at a target repository on a provider.
+                      properties:
+                        branch:
+                          type: string
+                        owner:
+                          type: string
+                        provider:
+                          type: string
+                        repo:
+                          type: string
+                      required:
+                      - owner
+                      - provider
+                      - repo
+                      type: object
+                  required:
+                  - repo
+                  type: object
+                type: array
+            required:
+            - bot
+            - defaultProvider
+            - defaultRepo
+            - providers
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}

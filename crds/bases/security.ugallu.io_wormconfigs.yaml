@@ -1,0 +1,170 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: wormconfigs.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: WORMConfig
+    listKind: WORMConfigList
+    plural: wormconfigs
+    shortNames:
+    - wormcfg
+    singular: wormconfig
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.backend
+      name: Backend
+      type: string
+    - jsonPath: .spec.bucket
+      name: Bucket
+      type: string
+    - jsonPath: .spec.encryption.mode
+      name: Encryption
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: WORMConfig is the namespaced config CR for the WORM adapter.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: WORMConfigSpec is the runtime config for the WORM adapter
+              (design 07 W10).
+            properties:
+              backend:
+                default: seaweedfs
+                description: WORMBackend identifies the S3-compatible backend (design
+                  07 W1).
+                enum:
+                - seaweedfs
+                - aws-s3
+                - rustfs
+                type: string
+              bucket:
+                type: string
+              credentialsSecretRef:
+                description: |-
+                  LocalObjectReference contains enough information to let you locate the
+                  referenced object inside the same namespace.
+                properties:
+                  name:
+                    default: ""
+                    description: |-
+                      Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              encryption:
+                description: EncryptionConfig is the at-rest encryption mode.
+                properties:
+                  kmsKeyID:
+                    type: string
+                  mode:
+                    default: sse-kms
+                    description: EncryptionMode is the WORM at-rest encryption mode
+                      (design 07 W6).
+                    enum:
+                    - sse-kms
+                    - sse-s3
+                    - none
+                    type: string
+                type: object
+              endpoint:
+                type: string
+              multipart:
+                description: MultipartConfig tunes S3 multi-part upload behaviour.
+                properties:
+                  chunkSize:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  concurrency:
+                    type: integer
+                  threshold:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                type: object
+              quotas:
+                description: QuotaConfig sets a soft-quota threshold to emit anomalies.
+                properties:
+                  softQuotaPercent:
+                    default: 80
+                    type: integer
+                type: object
+              region:
+                type: string
+              retention:
+                description: RetentionConfig holds per-evidence retention defaults.
+                properties:
+                  appliedPolicy:
+                    description: AppliedPolicy retention for policy YAML records (default
+                      = parent).
+                    type: string
+                  auditCapture:
+                    description: AuditCapture retention for audit log chunks (default
+                      1y).
+                    type: string
+                  bundle:
+                    description: Bundle minimum retention (parent SecurityEvent/EventResponse
+                      TTL + 7d).
+                    type: string
+                  forensicsFs:
+                    description: ForensicsFs retention for filesystem snapshots (default
+                      1y).
+                    type: string
+                  forensicsMem:
+                    description: ForensicsMem retention for memory snapshots (default
+                      1y).
+                    type: string
+                  hardCapMax:
+                    description: HardCapMax safety bound on any retention (default
+                      7y).
+                    type: string
+                  subjectTier2:
+                    description: SubjectTier2 retention for full subject snapshots
+                      (default 90d).
+                    type: string
+                type: object
+            required:
+            - bucket
+            - encryption
+            - endpoint
+            - retention
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
