@@ -1,13 +1,14 @@
+version: "2"
+
 run:
   timeout: 5m
   tests: true
 
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
     - gocritic
-    - gofumpt
     - gosec
     - govet
     - ineffassign
@@ -16,55 +17,58 @@ linters:
     - staticcheck
     - unparam
     - unused
-
-linters-settings:
-  govet:
-    enable-all: true
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - performance
-      - style
-  revive:
+  settings:
+    govet:
+      enable-all: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+  exclusions:
+    paths:
+      - vendor
+      - hack
+      - tests/e2e/testdata
     rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: context-keys-type
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: if-return
-      - name: increment-decrement
-      - name: var-naming
-      - name: var-declaration
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: unexported-return
-      - name: indent-error-flow
-      - name: errorf
-      - name: empty-block
-      - name: superfluous-else
-      - name: unused-parameter
-      - name: unreachable-code
-      - name: redefines-builtin-id
+      - path: _test\.go
+        linters:
+          - gosec
+          - unparam
+      - path: zz_generated_.*\.go
+        linters:
+          - revive
+          - unused
+          - unparam
+          - gocritic
 
-issues:
-  exclude-dirs:
-    - vendor
-    - hack
-    - tests/e2e/testdata
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
-        - unparam
-    - path: zz_generated_.*\.go
-      linters:
-        - revive
-        - unused
-        - unparam
-        - gocritic
+formatters:
+  enable:
+    - gofumpt
+    - goimports

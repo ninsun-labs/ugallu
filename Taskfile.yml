@@ -59,9 +59,16 @@ tasks:
           (cd {{.ITEM}} && go test -race -timeout 120s ./...)
 
   lint:
-    desc: Run golangci-lint across the workspace
+    desc: Run golangci-lint per module (workspace-aware, skip empty modules)
     cmds:
-      - golangci-lint run ./...
+      - for: { var: GO_MODULES }
+        cmd: |
+          if find {{.ITEM}} -maxdepth 5 -name "*.go" -not -path "*/vendor/*" | head -1 | grep -q .; then
+            echo "==> lint {{.ITEM}}"
+            (cd {{.ITEM}} && golangci-lint run ./...)
+          else
+            echo "==  skip {{.ITEM}} (no .go files yet)"
+          fi
 
   fmt:
     desc: Format Go code (gofumpt + goimports)

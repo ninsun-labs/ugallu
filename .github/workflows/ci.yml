@@ -49,7 +49,16 @@ jobs:
         with:
           go-version: '1.26.2'
           cache: true
-      - uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
+      - name: Install golangci-lint v2
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+      - name: Run golangci-lint per module (skip empty modules)
+        run: |
+          set -e
+          for mod in $(find . -name go.mod -not -path "./.git/*" -not -path "./vendor/*" -exec dirname {} \;); do
+            if find "$mod" -maxdepth 5 -name "*.go" -not -path "*/vendor/*" | head -1 | grep -q .; then
+              echo "==> lint $mod"
+              (cd "$mod" && golangci-lint run --timeout=5m ./...)
+            else
+              echo "==  skip $mod (no .go files yet)"
+            fi
+          done
