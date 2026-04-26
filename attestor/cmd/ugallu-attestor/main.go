@@ -5,10 +5,11 @@
 // SecurityEvent and EventResponse facts as in-toto attestations and
 // stores them on Rekor + WORM.
 //
-// This is a pre-alpha skeleton: the controller-runtime manager bootstraps
-// with the v1alpha1 scheme and leader-election but no reconcilers are
-// wired yet. The signing pipeline (Sign -> Log -> Archive) and the
-// AttestorConfig watcher land in subsequent commits.
+// Pre-alpha: three reconcilers from sdk/pkg/evidence/attestor are wired
+// (SecurityEvent watcher, EventResponse watcher, AttestationBundle
+// pipeline). Signing/Rekor/WORM are still skeleton - the bundle is
+// promoted Pending -> Sealed with a digest derived from the parent CR
+// JSON. Real signing arrives in a follow-up commit.
 package main
 
 import (
@@ -24,6 +25,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/attestor"
 )
 
 const version = "v0.0.1-alpha.1"
@@ -69,6 +71,11 @@ func main() {
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		log.Error(err, "readyz check setup")
+		os.Exit(1)
+	}
+
+	if err := attestor.SetupReconcilers(mgr); err != nil {
+		log.Error(err, "attestor reconcilers setup failed")
 		os.Exit(1)
 	}
 
