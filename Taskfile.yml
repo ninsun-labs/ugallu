@@ -51,12 +51,27 @@ tasks:
       - go build -o bin/ugallu-forensics ./operators/forensics/cmd/ugallu-forensics
 
   test:
-    desc: Run go test (-race) on every module
+    desc: Run go test (-race) on every module (envtest assets auto-fetched)
+    deps: [envtest:install]
+    env:
+      KUBEBUILDER_ASSETS:
+        sh: setup-envtest use 1.32 -p path
     cmds:
       - for: { var: GO_MODULES }
         cmd: |
           echo "==> test {{.ITEM}}"
           (cd {{.ITEM}} && go test -race -timeout 120s ./...)
+
+  envtest:install:
+    desc: Install controller-runtime setup-envtest tool (no-op if present)
+    cmds:
+      - 'command -v setup-envtest >/dev/null || go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest'
+
+  envtest:assets:
+    desc: Fetch envtest kube-apiserver + etcd binaries for K8s 1.32
+    deps: [envtest:install]
+    cmds:
+      - setup-envtest use 1.32 -p path
 
   lint:
     desc: Run golangci-lint per module (workspace-aware, skip empty modules)

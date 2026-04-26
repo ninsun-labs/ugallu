@@ -68,6 +68,14 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: '**/go.sum'
+      - name: Install setup-envtest
+        run: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+      - name: Fetch envtest assets
+        id: envtest
+        run: |
+          path="$(setup-envtest use 1.32 -p path)"
+          echo "KUBEBUILDER_ASSETS=$path" >> "$GITHUB_ENV"
+          echo "envtest path: $path"
       - name: go test
         working-directory: ${{ matrix.module }}
         run: go test -race -timeout 120s ./...
