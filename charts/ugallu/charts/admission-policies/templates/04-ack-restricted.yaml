@@ -23,9 +23,12 @@ spec:
   matchConditions:
     - name: ack-becoming-true
       expression: |
+        has(object.status) &&
         has(object.status.acknowledged) &&
         object.status.acknowledged == true &&
-        (!has(oldObject.status.acknowledged) || oldObject.status.acknowledged == false)
+        (!has(oldObject.status) ||
+         !has(oldObject.status.acknowledged) ||
+         oldObject.status.acknowledged == false)
   validations:
     - expression: |
         request.userInfo.username in [

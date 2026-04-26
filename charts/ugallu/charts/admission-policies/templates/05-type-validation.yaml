@@ -44,7 +44,7 @@ spec:
           'ImageRevocation', 'AttestorRecovered'
         ] ||
         (has(object.metadata.labels) &&
-         has(object.metadata.labels['ugallu.io/type-experimental']) &&
+         'ugallu.io/type-experimental' in object.metadata.labels &&
          object.metadata.labels['ugallu.io/type-experimental'] == 'true')
       message: "SecurityEvent.Type is not in the curated catalog. Add ugallu.io/type-experimental=true label to opt out."
       reason: Invalid
