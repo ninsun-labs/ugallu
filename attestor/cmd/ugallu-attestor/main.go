@@ -91,7 +91,7 @@ func runMain() error {
 	}
 	log.Info("signer ready", "mode", signer.Mode(), "keyID", signer.KeyID())
 
-	if err = attestor.SetupReconcilers(mgr, attestor.Options{
+	if err = attestor.SetupReconcilers(mgr, &attestor.Options{
 		Signer: signer,
 		Attestor: sign.AttestorMeta{
 			Name:     "ugallu-attestor",

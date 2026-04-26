@@ -8,6 +8,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/logger"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
 )
 
@@ -19,6 +20,11 @@ type Options struct {
 	// a Fulcio or OpenBao-backed Signer.
 	Signer sign.Signer
 
+	// Logger publishes the signed envelope to a transparency log. If nil,
+	// an in-process StubLogger is used (dev/test). Production deployments
+	// should inject a real RekorLogger (next iteration).
+	Logger logger.Logger
+
 	// Attestor identifies the running attestor instance; recorded in the
 	// in-toto Statement predicate. If empty Name is set, defaults are used.
 	Attestor sign.AttestorMeta
@@ -29,13 +35,19 @@ type Options struct {
 // given controller-runtime manager.
 //
 // Call this from the attestor binary's main() before mgr.Start().
-func SetupReconcilers(mgr ctrl.Manager, opts Options) error {
+func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
+	if opts == nil {
+		opts = &Options{}
+	}
 	if opts.Signer == nil {
 		s, err := sign.NewEd25519Signer()
 		if err != nil {
 			return fmt.Errorf("default Ed25519 signer: %w", err)
 		}
 		opts.Signer = s
+	}
+	if opts.Logger == nil {
+		opts.Logger = logger.NewStubLogger()
 	}
 	if opts.Attestor.Name == "" {
 		opts.Attestor.Name = "ugallu-attestor"
@@ -60,6 +72,7 @@ func SetupReconcilers(mgr ctrl.Manager, opts Options) error {
 		Client:       mgr.GetClient(),
 		Scheme:       mgr.GetScheme(),
 		Signer:       opts.Signer,
+		Logger:       opts.Logger,
 		AttestorMeta: opts.Attestor,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("setup AttestationBundleReconciler: %w", err)

@@ -15,6 +15,7 @@ import (
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/attestor"
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/logger"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
 )
 
@@ -81,6 +82,7 @@ func TestAttestationBundleReconciler_PromotesPendingToSealed(t *testing.T) {
 		Client:       k8sClient,
 		Scheme:       scheme,
 		Signer:       signer,
+		Logger:       logger.NewStubLogger(),
 		AttestorMeta: sign.AttestorMeta{Name: "ugallu-attestor", Version: "test"},
 	}
 	if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: bundle.Name}}); err != nil {
@@ -108,6 +110,39 @@ func TestAttestationBundleReconciler_PromotesPendingToSealed(t *testing.T) {
 	}
 	if bundle.Status.Signature != nil && bundle.Status.Signature.KeyID != signer.KeyID() {
 		t.Errorf("Signature.KeyID = %q, want %q (signer's)", bundle.Status.Signature.KeyID, signer.KeyID())
+	}
+
+	// Transparency-log entry must be populated by the StubLogger.
+	if bundle.Status.RekorEntry == nil {
+		t.Fatal("RekorEntry is nil; logger pipeline did not run")
+	}
+	if bundle.Status.RekorEntry.UUID == "" {
+		t.Errorf("RekorEntry.UUID is empty")
+	}
+	if bundle.Status.RekorEntry.LogIndex < 1 {
+		t.Errorf("RekorEntry.LogIndex = %d, want >= 1", bundle.Status.RekorEntry.LogIndex)
+	}
+
+	// Conditions must reflect the partial state: Signed True, Logged True,
+	// WORMArchival False (NotImplemented).
+	cond := func(t string) *metav1.Condition {
+		for i := range bundle.Status.Conditions {
+			if bundle.Status.Conditions[i].Type == t {
+				return &bundle.Status.Conditions[i]
+			}
+		}
+		return nil
+	}
+	if c := cond("Signed"); c == nil || c.Status != metav1.ConditionTrue {
+		t.Errorf("Signed condition = %+v, want True", c)
+	}
+	if c := cond("Logged"); c == nil || c.Status != metav1.ConditionTrue {
+		t.Errorf("Logged condition = %+v, want True", c)
+	}
+	if c := cond("WORMArchival"); c == nil || c.Status != metav1.ConditionFalse {
+		t.Errorf("WORMArchival condition = %+v, want False", c)
+	} else if c.Reason != "NotImplemented" {
+		t.Errorf("WORMArchival.Reason = %q, want NotImplemented", c.Reason)
 	}
 
 	// Parent SE should be Attested with back-ref.
@@ -162,6 +197,7 @@ func TestAttestationBundleReconciler_NoOpOnSealed(t *testing.T) {
 		Client:       k8sClient,
 		Scheme:       scheme,
 		Signer:       newTestSigner(t),
+		Logger:       logger.NewStubLogger(),
 		AttestorMeta: sign.AttestorMeta{Name: "ugallu-attestor", Version: "test"},
 	}
 	if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: bundle.Name}}); err != nil {
