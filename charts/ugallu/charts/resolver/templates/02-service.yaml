@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ugallu-resolver
+  namespace: {{ include "resolver.namespace" . }}
+  labels:
+    {{- include "resolver.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "resolver.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: grpc
+      port: {{ .Values.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.metricsPort }}
+      targetPort: metrics
+      protocol: TCP

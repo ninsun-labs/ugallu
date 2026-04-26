@@ -1,0 +1,50 @@
+# resolver subchart defaults. Reads .Values.global.namespaces.privileged
+# from the umbrella for placement.
+global:
+  namespaces:
+    privileged: ugallu-system-privileged
+
+# PLACEHOLDER image for Wave 1 scaffolding. Replace with the real binary
+# (ghcr.io/ninsun-labs/ugallu/ugallu-resolver:<tag>) once the controller
+# is implemented.
+placeholder: true
+
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+# When placeholder=true, the pod sleeps forever with no probes. With the
+# real binary, set placeholder=false and the chart wires liveness +
+# readiness on /healthz.
+command: ["/bin/sleep", "infinity"]
+args: []
+
+resources:
+  requests:
+    cpu: "5m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+# gRPC port for cluster-wide ClusterIP service.
+grpcPort: 9000
+# Prometheus metrics port (when real binary lands).
+metricsPort: 9090
+
+# Hostpath mounts required by the eBPF cgroup tracker (real binary).
+# Already correct for the scaffold; no need to override unless the host
+# layout differs (RKE2 default is fine).
+hostPaths:
+  cgroup: /sys/fs/cgroup
+  proc: /proc
+  btf: /sys/kernel/btf
+  varRun: /var/run/ugallu
+
+nodeSelector: {}
+tolerations:
+  # Run on every node, including control-plane.
+  - operator: Exists
+    effect: NoSchedule
+affinity: {}

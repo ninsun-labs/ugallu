@@ -46,23 +46,28 @@ spec:
             path: charts/ugallu/charts/admission-policies
             component: admission-policies
 
+          # === Wave 1: SDK runtime singletons ===
+          # Subcharts ship with PLACEHOLDER busybox images for deploy-contract
+          # validation. Replace image.repository/tag once binaries are
+          # implemented and published to ghcr.io/ninsun-labs/ugallu/*.
+          - name: ugallu-resolver
+            wave: "1"
+            path: charts/ugallu/charts/resolver
+            component: resolver
+          - name: ugallu-attestor
+            wave: "1"
+            path: charts/ugallu/charts/attestor
+            component: attestor
+          - name: ugallu-ttl
+            wave: "1"
+            path: charts/ugallu/charts/ttl
+            component: ttl
+
           # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs
           #   wave: "0"
           #   path: charts/ugallu/charts/seaweedfs
           #   component: seaweedfs
-          # - name: ugallu-resolver
-          #   wave: "1"
-          #   path: charts/ugallu/charts/resolver
-          #   component: resolver
-          # - name: ugallu-attestor
-          #   wave: "1"
-          #   path: charts/ugallu/charts/attestor
-          #   component: attestor
-          # - name: ugallu-ttl
-          #   wave: "1"
-          #   path: charts/ugallu/charts/ttl
-          #   component: ttl
           # - name: ugallu-audit-detection
           #   wave: "2"
           #   path: charts/ugallu/charts/audit-detection

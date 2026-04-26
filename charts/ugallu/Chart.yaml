@@ -34,3 +34,15 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/admission-policies
     condition: admission-policies.enabled
+  - name: resolver
+    version: 0.0.1-alpha.1
+    repository: file://charts/resolver
+    condition: resolver.enabled
+  - name: attestor
+    version: 0.0.1-alpha.1
+    repository: file://charts/attestor
+    condition: attestor.enabled
+  - name: ttl
+    version: 0.0.1-alpha.1
+    repository: file://charts/ttl
+    condition: ttl.enabled

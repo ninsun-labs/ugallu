@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ugallu-resolver
+  namespace: {{ include "resolver.namespace" . }}
+  labels:
+    {{- include "resolver.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "resolver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "resolver.labels" . | nindent 8 }}
+      annotations:
+        # When real binary lands, switch to a structured /healthz probe.
+        ugallu.io/scaffold: {{ .Values.placeholder | quote }}
+    spec:
+      serviceAccountName: ugallu-resolver
+      hostPID: true
+      hostNetwork: false
+      priorityClassName: system-node-critical
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: resolver
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ toJson .Values.command }}
+          args: {{ toJson .Values.args }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.grpcPort }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.metricsPort }}
+              protocol: TCP
+          securityContext:
+            # Privileged ns; explicit cap drop + only the required adds.
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: true
+            runAsNonRoot: false
+            runAsUser: 0
+            capabilities:
+              drop: ["ALL"]
+              add: ["BPF", "PERFMON", "SYS_ADMIN"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: cgroup
+              mountPath: /sys/fs/cgroup
+              readOnly: true
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: btf
+              mountPath: /sys/kernel/btf
+              readOnly: true
+            - name: var-run
+              mountPath: /var/run/ugallu
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: cgroup
+          hostPath:
+            path: {{ .Values.hostPaths.cgroup }}
+            type: Directory
+        - name: proc
+          hostPath:
+            path: {{ .Values.hostPaths.proc }}
+            type: Directory
+        - name: btf
+          hostPath:
+            path: {{ .Values.hostPaths.btf }}
+            type: DirectoryOrCreate
+        - name: var-run
+          hostPath:
+            path: {{ .Values.hostPaths.varRun }}
+            type: DirectoryOrCreate
+        - name: tmp
+          emptyDir: {}

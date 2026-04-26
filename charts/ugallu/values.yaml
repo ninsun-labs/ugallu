@@ -44,3 +44,12 @@ admission-policies:
   # annotation-only patch privilege.
   ttlControllerNamespace: ugallu-system
   ttlControllerSAName: ugallu-ttl
+
+# Wave 1 SDK runtime singletons. Subcharts ship with PLACEHOLDER images
+# (busybox sleep infinity) until the real binaries are implemented.
+resolver:
+  enabled: true
+attestor:
+  enabled: true
+ttl:
+  enabled: true

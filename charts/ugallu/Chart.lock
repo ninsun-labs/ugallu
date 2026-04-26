@@ -8,5 +8,14 @@ dependencies:
 - name: admission-policies
   repository: file://charts/admission-policies
   version: 0.0.1-alpha.1
-digest: sha256:b04f84bacb35334ca02b32e9195962b00866aab86dfbc506faac1618197c60bc
-generated: "2026-04-26T17:01:21.704716821+02:00"
+- name: resolver
+  repository: file://charts/resolver
+  version: 0.0.1-alpha.1
+- name: attestor
+  repository: file://charts/attestor
+  version: 0.0.1-alpha.1
+- name: ttl
+  repository: file://charts/ttl
+  version: 0.0.1-alpha.1
+digest: sha256:3744bd37790fb77dabeb342f5e5e25e8c083a7beeda8ed90871ebf811aefb411
+generated: "2026-04-26T17:41:27.368053215+02:00"

@@ -1,0 +1,30 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+placeholder: true
+
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+command: ["/bin/sleep", "infinity"]
+args: []
+
+# Singleton: leader-elect ensures only one is active.
+replicas: 1
+
+resources:
+  requests:
+    cpu: "5m"
+    memory: "32Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+metricsPort: 9090
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
