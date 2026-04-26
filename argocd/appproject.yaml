@@ -1,0 +1,37 @@
+# Copyright 2026 The ninsun-labs Authors.
+# SPDX-License-Identifier: Apache-2.0
+#
+# AppProject scopes what the ugallu ApplicationSet may deploy. Permissive
+# whitelists during pre-alpha; tighten in v0.1+ once the resource set is
+# stable (no new Kind landings expected post-1.0).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ugallu
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ugallu
+spec:
+  description: ugallu - Kubernetes security platform
+
+  sourceRepos:
+    - https://github.com/ninsun-labs/ugallu
+    # Future external charts deployed alongside ugallu can be added here:
+    #   - https://seaweedfs.github.io/seaweedfs/helm
+    #   - https://chart.openbao.org
+    #   - https://spiffe.github.io/helm-charts-hardened/
+
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: '*'   # cross-namespace (PSA labels, ClusterRole/Binding)
+
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  orphanedResources:
+    warn: true

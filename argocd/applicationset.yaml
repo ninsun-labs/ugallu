@@ -1,0 +1,110 @@
+# Copyright 2026 The ninsun-labs Authors.
+# SPDX-License-Identifier: Apache-2.0
+#
+# ApplicationSet that generates one Application per ugallu component, with
+# argocd.argoproj.io/sync-wave annotations for install ordering (design 17).
+#
+# Wave plan:
+#   -2  namespaces, rbac          (cluster prerequisites)
+#   -1  crds, admission-policies  (API spine + invariant enforcement)
+#    0  external deps             (SeaweedFS / OpenBao / SPIRE / sigstore-policy-controller)
+#    1  ugallu-resolver / attestor / ttl
+#    2  audit-detection / forensics
+#    3+ Wave 2-4 operators
+#
+# Source-type detection: ArgoCD inspects the path. Chart.yaml -> Helm,
+# kustomization.yaml -> Kustomize, neither -> directory recurse. Each of
+# the listed paths below resolves correctly under that heuristic.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: ugallu
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ugallu
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+
+  generators:
+    - list:
+        elements:
+          - name: ugallu-namespaces
+            wave: "-2"
+            path: charts/ugallu/charts/namespaces
+            component: namespaces
+          - name: ugallu-rbac
+            wave: "-2"
+            path: charts/ugallu/charts/rbac
+            component: rbac
+          - name: ugallu-crds
+            wave: "-1"
+            path: crds
+            component: crds
+          - name: ugallu-admission-policies
+            wave: "-1"
+            path: charts/ugallu/charts/admission-policies
+            component: admission-policies
+
+          # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
+          # - name: ugallu-seaweedfs
+          #   wave: "0"
+          #   path: charts/ugallu/charts/seaweedfs
+          #   component: seaweedfs
+          # - name: ugallu-resolver
+          #   wave: "1"
+          #   path: charts/ugallu/charts/resolver
+          #   component: resolver
+          # - name: ugallu-attestor
+          #   wave: "1"
+          #   path: charts/ugallu/charts/attestor
+          #   component: attestor
+          # - name: ugallu-ttl
+          #   wave: "1"
+          #   path: charts/ugallu/charts/ttl
+          #   component: ttl
+          # - name: ugallu-audit-detection
+          #   wave: "2"
+          #   path: charts/ugallu/charts/audit-detection
+          #   component: audit-detection
+          # - name: ugallu-forensics
+          #   wave: "2"
+          #   path: charts/ugallu/charts/forensics
+          #   component: forensics
+
+  template:
+    metadata:
+      name: '{{ .name }}'
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{ .wave }}'
+      labels:
+        app.kubernetes.io/part-of: ugallu
+        app.kubernetes.io/component: '{{ .component }}'
+    spec:
+      project: ugallu
+      source:
+        repoURL: https://github.com/ninsun-labs/ugallu
+        path: '{{ .path }}'
+        targetRevision: main
+      destination:
+        server: https://kubernetes.default.svc
+        # Most resources in ugallu Wave 1 are cluster-scoped (CRD, VAP,
+        # ClusterRole, ClusterRoleBinding, Namespace) or carry an explicit
+        # namespace in their manifest. The destination.namespace below is
+        # only the fallback for namespaced resources without an explicit
+        # namespace; nothing in the bundle falls into that category.
+        namespace: default
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false  # namespaces handled by ugallu-namespaces (wave -2)
+          - PruneLast=true
+          - ServerSideApply=true   # required for large CRDs (SecurityEvent ~470KB)
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 5m
