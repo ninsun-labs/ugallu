@@ -17,6 +17,7 @@ import (
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/attestor"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/logger"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/worm"
 )
 
 // newTestSigner returns an Ed25519 in-process signer for use in
@@ -78,11 +79,16 @@ func TestAttestationBundleReconciler_PromotesPendingToSealed(t *testing.T) {
 	t.Cleanup(func() { _ = k8sClient.Delete(ctx, bundle) })
 
 	signer := newTestSigner(t)
+	stubWorm, err := worm.NewStubUploader(t.TempDir())
+	if err != nil {
+		t.Fatalf("NewStubUploader: %v", err)
+	}
 	r := &attestor.AttestationBundleReconciler{
 		Client:       k8sClient,
 		Scheme:       scheme,
 		Signer:       signer,
 		Logger:       logger.NewStubLogger(),
+		WormUploader: stubWorm,
 		AttestorMeta: sign.AttestorMeta{Name: "ugallu-attestor", Version: "test"},
 	}
 	if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: bundle.Name}}); err != nil {
@@ -124,7 +130,7 @@ func TestAttestationBundleReconciler_PromotesPendingToSealed(t *testing.T) {
 	}
 
 	// Conditions must reflect the partial state: Signed True, Logged True,
-	// WORMArchival False (NotImplemented).
+	// Conditions: Signed=True, Logged=True, Archived=True (WORMUploaded).
 	cond := func(t string) *metav1.Condition {
 		for i := range bundle.Status.Conditions {
 			if bundle.Status.Conditions[i].Type == t {
@@ -139,10 +145,24 @@ func TestAttestationBundleReconciler_PromotesPendingToSealed(t *testing.T) {
 	if c := cond("Logged"); c == nil || c.Status != metav1.ConditionTrue {
 		t.Errorf("Logged condition = %+v, want True", c)
 	}
-	if c := cond("WORMArchival"); c == nil || c.Status != metav1.ConditionFalse {
-		t.Errorf("WORMArchival condition = %+v, want False", c)
-	} else if c.Reason != "NotImplemented" {
-		t.Errorf("WORMArchival.Reason = %q, want NotImplemented", c.Reason)
+	if c := cond("Archived"); c == nil || c.Status != metav1.ConditionTrue {
+		t.Errorf("Archived condition = %+v, want True", c)
+	} else if c.Reason != "WORMUploaded" {
+		t.Errorf("Archived.Reason = %q, want WORMUploaded", c.Reason)
+	}
+
+	// WormRef must reference the file written by the StubUploader.
+	if bundle.Status.WormRef == nil {
+		t.Fatal("WormRef is nil; WORM uploader did not run")
+	}
+	if !strings.HasPrefix(bundle.Status.WormRef.URL, "file://") {
+		t.Errorf("WormRef.URL = %q, want file:// prefix", bundle.Status.WormRef.URL)
+	}
+	if !strings.HasPrefix(bundle.Status.WormRef.SHA256, "sha256:") {
+		t.Errorf("WormRef.SHA256 = %q, want sha256: prefix", bundle.Status.WormRef.SHA256)
+	}
+	if bundle.Status.WormRef.Size <= 0 {
+		t.Errorf("WormRef.Size = %d, want > 0", bundle.Status.WormRef.Size)
 	}
 
 	// Parent SE should be Attested with back-ref.
@@ -193,11 +213,16 @@ func TestAttestationBundleReconciler_NoOpOnSealed(t *testing.T) {
 		t.Fatalf("status patch: %v", err)
 	}
 
+	stubWorm2, err := worm.NewStubUploader(t.TempDir())
+	if err != nil {
+		t.Fatalf("NewStubUploader: %v", err)
+	}
 	r := &attestor.AttestationBundleReconciler{
 		Client:       k8sClient,
 		Scheme:       scheme,
 		Signer:       newTestSigner(t),
 		Logger:       logger.NewStubLogger(),
+		WormUploader: stubWorm2,
 		AttestorMeta: sign.AttestorMeta{Name: "ugallu-attestor", Version: "test"},
 	}
 	if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: bundle.Name}}); err != nil {

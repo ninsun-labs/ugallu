@@ -10,6 +10,7 @@ import (
 
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/logger"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/worm"
 )
 
 // Options configures the attestor reconcilers.
@@ -24,6 +25,16 @@ type Options struct {
 	// an in-process StubLogger is used (dev/test). Production deployments
 	// should inject a real RekorLogger (next iteration).
 	Logger logger.Logger
+
+	// WormUploader persists the signed envelope to immutable storage. If
+	// nil, a filesystem-backed StubUploader rooted at /tmp/ugallu-worm is
+	// used (dev/test). Production deployments should inject a real
+	// S3-backed uploader (next iteration).
+	WormUploader worm.Uploader
+
+	// WormStubDir overrides the StubUploader base directory when
+	// WormUploader is nil. Empty falls back to /tmp/ugallu-worm.
+	WormStubDir string
 
 	// Attestor identifies the running attestor instance; recorded in the
 	// in-toto Statement predicate. If empty Name is set, defaults are used.
@@ -49,6 +60,17 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 	if opts.Logger == nil {
 		opts.Logger = logger.NewStubLogger()
 	}
+	if opts.WormUploader == nil {
+		dir := opts.WormStubDir
+		if dir == "" {
+			dir = "/tmp/ugallu-worm"
+		}
+		u, err := worm.NewStubUploader(dir)
+		if err != nil {
+			return fmt.Errorf("default WORM stub uploader: %w", err)
+		}
+		opts.WormUploader = u
+	}
 	if opts.Attestor.Name == "" {
 		opts.Attestor.Name = "ugallu-attestor"
 	}
@@ -73,6 +95,7 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 		Scheme:       mgr.GetScheme(),
 		Signer:       opts.Signer,
 		Logger:       opts.Logger,
+		WormUploader: opts.WormUploader,
 		AttestorMeta: opts.Attestor,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("setup AttestationBundleReconciler: %w", err)

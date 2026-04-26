@@ -4,7 +4,9 @@
 package attestor
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -19,29 +21,51 @@ import (
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/logger"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/worm"
 )
+
+// wormKeyFor returns the WORM object key used for the DSSE envelope of
+// the given bundle. Layout per design 07 W3:
+//
+//	attestations/<clusterID>/<YYYY>/<MM>/<bundleUID>.intoto.jsonl
+//
+// clusterID may be empty in test contexts; the layout still validates.
+func wormKeyFor(bundle *securityv1alpha1.AttestationBundle, when metav1.Time) string {
+	cluster := "unknown"
+	if bundle != nil && bundle.Spec.AttestedFor.Namespace != "" {
+		cluster = bundle.Spec.AttestedFor.Namespace
+	}
+	uid := "no-uid"
+	if bundle != nil && bundle.UID != "" {
+		uid = string(bundle.UID)
+	}
+	return fmt.Sprintf("attestations/%s/%04d/%02d/%s.intoto.jsonl",
+		cluster,
+		when.Year(), int(when.Month()),
+		uid,
+	)
+}
 
 // AttestationBundleReconciler drives the Pending -> Sealed lifecycle.
 //
-// Iteration 3 (this commit): pipeline now passes through the full
-// transparency-log step. The flow is:
+// Iteration 4 (this commit): pipeline telescopes the three real stages
+// of design 05 in a single Reconcile, all with stub backends:
 //
-//	Pending  -- Signer.Sign ------> envelope (Conditions: Signed=True)
-//	         -- Logger.Log -------> log entry (Conditions: Logged=True)
-//	         -- WORM archival ----> (skipped in this iter; WORMArchival=False
-//	                                 Reason=NotImplemented Condition)
+//	Pending  -- Signer.Sign ------> envelope        (Conditions: Signed=True)
+//	         -- Logger.Log -------> log entry       (Conditions: Logged=True)
+//	         -- Uploader.Put -----> WORM ObjectRef  (Conditions: Archived=True)
 //	         -- mark parent Att'd
 //	Sealed
 //
-// Phase ends as Sealed because all signed-and-logged information is in
-// the bundle Status; the WORM upload of the DSSE envelope arrives in a
-// follow-up commit. Verifiers should consult the WORMArchival Condition
-// to know whether the persistence side is complete.
+// Real Fulcio / OpenBao Signers, Rekor HTTP client, and S3-backed WORM
+// uploader replace the in-process / filesystem stubs in follow-up
+// iterations. The wire-format and Status schema are stable.
 type AttestationBundleReconciler struct {
 	client.Client
 	Scheme       *runtime.Scheme
 	Signer       sign.Signer
 	Logger       logger.Logger
+	WormUploader worm.Uploader
 	AttestorMeta sign.AttestorMeta
 }
 
@@ -54,6 +78,9 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	if r.Logger == nil {
 		return ctrl.Result{}, errors.New("AttestationBundleReconciler.Logger is nil; call SetupReconcilers")
+	}
+	if r.WormUploader == nil {
+		return ctrl.Result{}, errors.New("AttestationBundleReconciler.WormUploader is nil; call SetupReconcilers")
 	}
 
 	bundle := &securityv1alpha1.AttestationBundle{}
@@ -99,6 +126,26 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, errors.New("logger returned nil entry")
 	}
 
+	// Archive the DSSE envelope to WORM. Key partitions by clusterID +
+	// year/month for downstream auditor queries.
+	envelopeJSON, err := json.Marshal(envelope)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("marshal envelope: %w", err)
+	}
+	wormKey := wormKeyFor(bundle, now)
+	wormRef, err := r.WormUploader.Put(ctx, wormKey, bytes.NewReader(envelopeJSON), worm.PutOpts{
+		MediaType: "application/vnd.dev.sigstore.bundle+dsse",
+		Metadata: map[string]string{
+			"bundleUID":       string(bundle.UID),
+			"statementDigest": digest,
+			"signerKeyID":     r.Signer.KeyID(),
+			"logIndex":        fmt.Sprintf("%d", logEntry.LogIndex),
+		},
+	})
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("WORM upload: %w", err)
+	}
+
 	// Update bundle Status.
 	patch := client.MergeFrom(bundle.DeepCopy())
 	bundle.Status.Phase = securityv1alpha1.AttestationBundlePhaseSealed
@@ -123,6 +170,12 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			Hashes:   logEntry.InclusionProof.Hashes,
 		}
 	}
+	bundle.Status.WormRef = &securityv1alpha1.EvidenceRef{
+		MediaType: wormRef.MediaType,
+		URL:       wormRef.URL,
+		SHA256:    wormRef.SHA256,
+		Size:      wormRef.Size,
+	}
 	bundle.Status.Conditions = mergeConditions(bundle.Status.Conditions,
 		metav1.Condition{
 			Type:               "Signed",
@@ -139,10 +192,10 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			LastTransitionTime: now,
 		},
 		metav1.Condition{
-			Type:               "WORMArchival",
-			Status:             metav1.ConditionFalse,
-			Reason:             "NotImplemented",
-			Message:            "WORM uploader pending; envelope not yet persisted off-cluster",
+			Type:               "Archived",
+			Status:             metav1.ConditionTrue,
+			Reason:             "WORMUploaded",
+			Message:            fmt.Sprintf("envelope at %s (%s, %d bytes)", wormRef.URL, wormRef.SHA256, wormRef.Size),
 			LastTransitionTime: now,
 		},
 	)
@@ -157,6 +210,8 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		"logEndpoint", r.Logger.Endpoint(),
 		"logIndex", logEntry.LogIndex,
 		"logUUID", logEntry.UUID,
+		"wormURL", wormRef.URL,
+		"wormDigest", wormRef.SHA256,
 	)
 
 	if err := r.markParentAttested(ctx, bundle); err != nil {
