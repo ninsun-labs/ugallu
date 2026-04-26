@@ -1,0 +1,76 @@
+{{- if .Values.resolver.enabled }}
+{{- /*
+ugallu-resolver: DaemonSet on every node. Read-only watch on the K8s API
+to maintain the informer cache; eBPF cgroup tracker provides the
+authoritative subject mapping. No write access to user resources.
+*/ -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ugallu-resolver
+  namespace: {{ include "rbac.ns.privileged" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-resolver
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "namespaces", "serviceaccounts", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-resolver
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-resolver
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-resolver
+    namespace: {{ include "rbac.ns.privileged" . }}
+---
+# Lease for leader election (DaemonSet coordination).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-resolver-leader
+  namespace: {{ include "rbac.ns.privileged" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["ugallu-resolver-leader"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-resolver-leader
+  namespace: {{ include "rbac.ns.privileged" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-resolver-leader
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-resolver
+    namespace: {{ include "rbac.ns.privileged" . }}
+{{- end }}

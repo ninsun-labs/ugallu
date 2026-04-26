@@ -1,0 +1,99 @@
+{{- if .Values.attestor.enabled }}
+{{- /*
+ugallu-attestor: Deployment singleton. Watches SE/ER, creates and updates
+AttestationBundle, updates SE/ER /status (only its own fields). Cannot
+modify Spec on SE/ER (admission policy 1 enforces).
+*/ -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ugallu-attestor
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-attestor
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  # Watch SE/ER to detect transitions and decide what to attest.
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["securityevents", "eventresponses"]
+    verbs: ["get", "list", "watch"]
+
+  # Full CRUD on AttestationBundle (own CRD).
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["attestationbundles"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["attestationbundles/status"]
+    verbs: ["update", "patch"]
+
+  # Only /status subresource on SE/ER (write attestation digest, archive ts).
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["securityevents/status", "eventresponses/status"]
+    verbs: ["update", "patch"]
+
+  # Read own config.
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["attestorconfigs"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-attestor
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-attestor
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-attestor
+    namespace: {{ include "rbac.ns.system" . }}
+---
+# Namespaced privileges:
+#   - leader-election Lease
+#   - TokenRequest for OIDC (Fulcio keyless): the SA may request a token
+#     bound to its own identity, validated by Fulcio via the cluster issuer.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-attestor-namespaced
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["ugallu-attestor-leader"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    resourceNames: ["ugallu-attestor"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-attestor-namespaced
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-attestor-namespaced
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-attestor
+    namespace: {{ include "rbac.ns.system" . }}
+{{- end }}

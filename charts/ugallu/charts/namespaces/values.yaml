@@ -1,0 +1,10 @@
+# namespaces subchart defaults. Reads .Values.global.namespaces.* from the
+# umbrella chart, with these as fallback defaults if the umbrella has no
+# globals configured.
+global:
+  namespaces:
+    system: ugallu-system
+    privileged: ugallu-system-privileged
+
+# psaVersion pins the PSA enforce-version label.
+psaVersion: latest

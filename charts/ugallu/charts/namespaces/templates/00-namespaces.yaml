@@ -1,0 +1,41 @@
+{{- /*
+Two ugallu namespaces with PSA labels (design 18 M2):
+  - ugallu-system            : restricted (default for non-privileged operators)
+  - ugallu-system-privileged : privileged (resolver eBPF, forensics, dns-detect)
+
+The privileged namespace runs PSA `audit: baseline` + `warn: baseline` to
+detect any pod that goes BEYOND baseline (we expect privileged but want
+to be told if it goes further).
+*/ -}}
+{{- $sys := .Values.global.namespaces.system | default "ugallu-system" -}}
+{{- $priv := .Values.global.namespaces.privileged | default "ugallu-system-privileged" -}}
+{{- $ver := .Values.psaVersion | default "latest" -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $sys }}
+  labels:
+    app.kubernetes.io/part-of: ugallu
+    app.kubernetes.io/component: system-namespace
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: {{ $ver | quote }}
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: {{ $ver | quote }}
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: {{ $ver | quote }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $priv }}
+  labels:
+    app.kubernetes.io/part-of: ugallu
+    app.kubernetes.io/component: privileged-namespace
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: {{ $ver | quote }}
+    # audit/warn at baseline so anything that escalates beyond baseline
+    # generates an audit/warn signal even though enforce is privileged.
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/audit-version: {{ $ver | quote }}
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/warn-version: {{ $ver | quote }}

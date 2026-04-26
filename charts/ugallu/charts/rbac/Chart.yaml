@@ -1,0 +1,16 @@
+apiVersion: v2
+name: rbac
+description: ServiceAccounts, ClusterRoles, and Bindings for the 5 Wave 1 ugallu binaries (least privilege)
+type: application
+version: 0.0.1-alpha.1
+appVersion: "0.0.1-alpha.1"
+kubeVersion: ">=1.30.0-0"
+
+home: https://ninsun.io/ugallu
+sources:
+  - https://github.com/ninsun-labs/ugallu
+
+keywords:
+  - kubernetes
+  - rbac
+  - security

@@ -10,11 +10,27 @@
 hardening:
   strict: false
 
-namespaces:
-  system: ugallu-system
-  privileged: ugallu-system-privileged
+# Globals propagated to all subcharts that need them.
+global:
+  namespaces:
+    system: ugallu-system
+    privileged: ugallu-system-privileged
 
-# admission-policies subchart values are namespaced under the chart name.
+# namespaces subchart (Wave -2): provisions ugallu-system + ugallu-system-privileged.
+namespaces:
+  enabled: true
+
+# rbac subchart (Wave -2): ServiceAccounts + ClusterRole/Role bindings (design 13).
+rbac:
+  enabled: true
+  resolver: { enabled: true }
+  attestor: { enabled: true }
+  ttl: { enabled: true }
+  auditDetection: { enabled: true }
+  forensics: { enabled: true }
+  ciliumNetworkPolicies: true
+
+# admission-policies subchart (Wave -1): CEL ValidatingAdmissionPolicy (design 15).
 admission-policies:
   enabled: true
 

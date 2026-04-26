@@ -22,6 +22,14 @@ keywords:
   - forensics
 
 dependencies:
+  - name: namespaces
+    version: 0.0.1-alpha.1
+    repository: file://charts/namespaces
+    condition: namespaces.enabled
+  - name: rbac
+    version: 0.0.1-alpha.1
+    repository: file://charts/rbac
+    condition: rbac.enabled
   - name: admission-policies
     version: 0.0.1-alpha.1
     repository: file://charts/admission-policies
