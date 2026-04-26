@@ -1,0 +1,66 @@
+{{- /*
+Policy 5 - SecurityEvent.Type validation against the curated catalog.
+Mirrors sdk/pkg/api/v1alpha1/types.go. When that file is updated, this
+inline list MUST be updated too. The override label
+"ugallu.io/type-experimental=true" allows uncatalogued types for
+experimentation without a CRD bump.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.type-validation
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE"]
+        resources:   ["securityevents"]
+  validations:
+    - expression: |
+        object.spec.type in [
+          'KubernetesAPICall', 'WatchSubscription', 'ProxyAccess',
+          'WildcardRBACBinding', 'ClusterAdminGranted', 'PrivilegedPodChange',
+          'HostPathMount', 'HostNetworkPod', 'HostPIDPod', 'HostIPCPod',
+          'CapAddDangerous', 'RunAsRootContainer',
+          'ServiceAccountTokenAutomount', 'SecretMountedAsEnv',
+          'ImagePullPolicyAlways', 'LatestImageTag', 'UnsignedImage',
+          'ExecIntoPod', 'PortForwardOpened', 'ServiceAccountTokenRequest',
+          'AnonymousAccess', 'ImpersonationUsed', 'PrivilegeEscalationAttempt',
+          'WebhookSideEffectsUnknown', 'FailOpenWebhook', 'CRDOverwrite',
+          'APIServiceInsecure', 'LongLivedSecretToken', 'NamespacePSAWeakened',
+          'IncidentCaptureStarted', 'IncidentCaptureCompleted',
+          'IncidentCaptureFailed', 'EvidencePreserved',
+          'PodFrozen', 'PodUnfrozen',
+          'LateralMovementSuspected', 'RBACEscalationChain', 'IncidentBurst',
+          'BehaviorBaselineDeviation', 'WORMQuotaExceeded',
+          'WORMIntegrityViolation', 'TTLConfigMissing', 'GitOpsConflict',
+          'SourceRateLimited', 'AttestorUnavailable', 'EtcdBackpressureHigh',
+          'ClockSkewDetected', 'AuditLogStreamSilent',
+          'TetragonDataInconsistent', 'KeyRotationEmergency',
+          'ImageRevocation', 'AttestorRecovered'
+        ] ||
+        (has(object.metadata.labels) &&
+         has(object.metadata.labels['ugallu.io/type-experimental']) &&
+         object.metadata.labels['ugallu.io/type-experimental'] == 'true')
+      message: "SecurityEvent.Type is not in the curated catalog. Add ugallu.io/type-experimental=true label to opt out."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.type-validation
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.type-validation
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE"]
+        resources:   ["securityevents"]

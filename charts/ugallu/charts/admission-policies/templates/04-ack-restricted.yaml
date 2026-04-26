@@ -1,0 +1,53 @@
+{{- /*
+Policy 4 - Status.Acknowledged=true requires an authorized ServiceAccount.
+By default ackAuthorizedSAs is empty: no one can ack until an admin adds
+an SA explicitly. Closes the privilege-escalation vector identified in
+design 14 S10 (an operator with /status patch RBAC could otherwise mass-ack
+and silence detection).
+*/ -}}
+{{- $authorized := .Values.ackAuthorizedSAs | default list -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.ack-restricted
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents/status", "eventresponses/status"]
+  matchConditions:
+    - name: ack-becoming-true
+      expression: |
+        has(object.status.acknowledged) &&
+        object.status.acknowledged == true &&
+        (!has(oldObject.status.acknowledged) || oldObject.status.acknowledged == false)
+  validations:
+    - expression: |
+        request.userInfo.username in [
+        {{- range $i, $sa := $authorized }}{{ if $i }},{{ end }}
+          '{{ $sa }}'
+        {{- end }}
+        ]
+      message: "Setting Status.Acknowledged=true requires an authorized ServiceAccount (admission-policies.ackAuthorizedSAs)."
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.ack-restricted
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.ack-restricted
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents/status", "eventresponses/status"]

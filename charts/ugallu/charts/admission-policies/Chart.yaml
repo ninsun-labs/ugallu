@@ -1,0 +1,16 @@
+apiVersion: v2
+name: admission-policies
+description: ValidatingAdmissionPolicy CEL rules enforcing ugallu CRD invariants
+type: application
+version: 0.0.1-alpha.1
+appVersion: "0.0.1-alpha.1"
+kubeVersion: ">=1.30.0-0"
+
+home: https://ninsun.io/ugallu
+sources:
+  - https://github.com/ninsun-labs/ugallu
+
+keywords:
+  - security
+  - admission
+  - cel

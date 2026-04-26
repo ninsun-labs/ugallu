@@ -1,0 +1,10 @@
+# admission-policies subchart defaults. Override via the umbrella values
+# (key `admission-policies` at the umbrella level).
+enabled: true
+
+# SAs allowed to set Status.Acknowledged=true on SE/ER (Policy 4).
+ackAuthorizedSAs: []
+
+# Where ugallu-ttl runs (Policy 3 scope).
+ttlControllerNamespace: ugallu-system
+ttlControllerSAName: ugallu-ttl

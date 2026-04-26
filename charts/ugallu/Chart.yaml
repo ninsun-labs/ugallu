@@ -1,0 +1,28 @@
+apiVersion: v2
+name: ugallu
+description: Kubernetes security platform - apotropaic guardian for cluster ingress and runtime
+type: application
+version: 0.0.1-alpha.1
+appVersion: "0.0.1-alpha.1"
+kubeVersion: ">=1.30.0-0"
+
+home: https://ninsun.io/ugallu
+sources:
+  - https://github.com/ninsun-labs/ugallu
+
+maintainers:
+  - name: ninsun-labs
+    email: opensource@vargroup.com
+
+keywords:
+  - security
+  - kubernetes
+  - detection
+  - attestation
+  - forensics
+
+dependencies:
+  - name: admission-policies
+    version: 0.0.1-alpha.1
+    repository: file://charts/admission-policies
+    condition: admission-policies.enabled

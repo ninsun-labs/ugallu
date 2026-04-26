@@ -1,0 +1,64 @@
+{{- /*
+Policy 2 - SubjectTier1 discriminator consistency.
+Enforces that Subject.Kind matches exactly one populated discriminator
+field. Allows unresolved=true as a degraded-mode escape hatch when the
+resolver fallback path is taken.
+Cluster-scoped resource (SecurityEvent) only - EventResponse and
+AttestationBundle do not carry a Subject.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.subject-discriminator
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE"]
+        resources:   ["securityevents"]
+  validations:
+    - expression: |
+        (object.spec.subject.kind == 'Pod'                            && has(object.spec.subject.pod))            ||
+        (object.spec.subject.kind == 'Container'                      && has(object.spec.subject.container))      ||
+        (object.spec.subject.kind == 'Node'                           && has(object.spec.subject.node))           ||
+        (object.spec.subject.kind == 'ServiceAccount'                 && has(object.spec.subject.serviceAccount)) ||
+        (object.spec.subject.kind == 'Secret'                         && has(object.spec.subject.secret))         ||
+        (object.spec.subject.kind == 'ConfigMap'                      && has(object.spec.subject.configMap))      ||
+        (object.spec.subject.kind == 'Namespace'                      && has(object.spec.subject.namespaceData))  ||
+        (object.spec.subject.kind == 'Service'                        && has(object.spec.subject.service))        ||
+        (object.spec.subject.kind == 'EndpointSlice'                  && has(object.spec.subject.endpointSlice))  ||
+        (object.spec.subject.kind in ['Deployment','StatefulSet','DaemonSet'] && has(object.spec.subject.workload))     ||
+        (object.spec.subject.kind in ['Job','CronJob']                && has(object.spec.subject.job))            ||
+        (object.spec.subject.kind in ['Role','ClusterRole']           && has(object.spec.subject.role))           ||
+        (object.spec.subject.kind in ['RoleBinding','ClusterRoleBinding'] && has(object.spec.subject.roleBinding))    ||
+        (object.spec.subject.kind in ['NetworkPolicy','CiliumNetworkPolicy'] && has(object.spec.subject.networkPolicy)) ||
+        (object.spec.subject.kind in ['Ingress','Gateway']            && has(object.spec.subject.ingress))        ||
+        (object.spec.subject.kind in ['MutatingWebhookConfiguration','ValidatingWebhookConfiguration'] && has(object.spec.subject.webhookConfig)) ||
+        (object.spec.subject.kind == 'CustomResourceDefinition'       && has(object.spec.subject.crd))            ||
+        (object.spec.subject.kind == 'APIService'                     && has(object.spec.subject.apiService))     ||
+        (object.spec.subject.kind == 'CertificateSigningRequest'      && has(object.spec.subject.csr))            ||
+        (object.spec.subject.kind == 'Cluster'                        && has(object.spec.subject.cluster))        ||
+        (object.spec.subject.kind == 'External'                       && has(object.spec.subject.external))       ||
+        (has(object.spec.subject.unresolved) && object.spec.subject.unresolved == true)
+      message: "Subject.Kind must match a populated discriminator field, or have unresolved=true."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.subject-discriminator
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.subject-discriminator
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE"]
+        resources:   ["securityevents"]

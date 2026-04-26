@@ -1,0 +1,40 @@
+{{- /*
+Policy 1 - Spec immutability.
+Closes review H1: enforce that SecurityEvent / EventResponse /
+AttestationBundle Spec cannot be modified post-creation. Status updates
+flow through the /status subresource and are not affected by this policy.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.spec-immutable
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents", "eventresponses", "attestationbundles"]
+  validations:
+    - expression: "oldObject.spec == object.spec"
+      message: "Spec is immutable post-creation; only Status updates are permitted."
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.spec-immutable
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.spec-immutable
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents", "eventresponses", "attestationbundles"]

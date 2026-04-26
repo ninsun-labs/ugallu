@@ -1,0 +1,50 @@
+{{- /*
+Policy 3 - ugallu-ttl is restricted to metadata.annotations patches.
+The TTL controller has UPDATE RBAC on SE/ER/AB to write postpone/freeze
+annotations (design 09 T8). This policy prevents that RBAC from being
+abused to alter Spec, Status, labels, or ownerReferences.
+*/ -}}
+{{- $ttlNs := .Values.ttlControllerNamespace | default "ugallu-system" -}}
+{{- $ttlSA := .Values.ttlControllerSAName | default "ugallu-ttl" -}}
+{{- $ttlUser := printf "system:serviceaccount:%s:%s" $ttlNs $ttlSA -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.ttl-annotation-only
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents", "eventresponses", "attestationbundles"]
+  matchConditions:
+    - name: only-ttl-controller
+      expression: "request.userInfo.username == '{{ $ttlUser }}'"
+  validations:
+    - expression: |
+        oldObject.spec == object.spec &&
+        oldObject.status == object.status &&
+        oldObject.metadata.labels == object.metadata.labels &&
+        oldObject.metadata.ownerReferences == object.metadata.ownerReferences
+      message: "ugallu-ttl may only modify metadata.annotations on these CRs."
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.ttl-annotation-only
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.ttl-annotation-only
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents", "eventresponses", "attestationbundles"]

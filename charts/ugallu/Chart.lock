@@ -1,0 +1,6 @@
+dependencies:
+- name: admission-policies
+  repository: file://charts/admission-policies
+  version: 0.0.1-alpha.1
+digest: sha256:d911b7ae4762ee8cfe5d73f34d8a8da3cd7cc944a00883a664fc0fe365776aa5
+generated: "2026-04-26T16:57:27.203271852+02:00"

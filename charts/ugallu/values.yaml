@@ -1,0 +1,30 @@
+# Umbrella chart values for ugallu. See subcharts for component-specific values.
+#
+# Two namespaces are provisioned (designs 14 and 18):
+#   - ugallu-system               (PSA restricted)
+#   - ugallu-system-privileged    (PSA privileged: resolver, forensics, etc.)
+#
+# Hardening flag (design 14): when strict, install fails preflight unless all
+# hardening prerequisites are met (NetworkPolicy, sigstore-policy-controller,
+# SPIRE, NTP).
+hardening:
+  strict: false
+
+namespaces:
+  system: ugallu-system
+  privileged: ugallu-system-privileged
+
+# admission-policies subchart values are namespaced under the chart name.
+admission-policies:
+  enabled: true
+
+  # Service Accounts allowed to set Status.Acknowledged=true on SE/ER
+  # (admission Policy 4). Empty by default: no one can ack until an admin
+  # adds an authorized SA explicitly. Format: full SA username,
+  # e.g. "system:serviceaccount:ugallu-system:my-ack-bot".
+  ackAuthorizedSAs: []
+
+  # Namespace where ugallu-ttl runs. Used by admission Policy 3 to scope the
+  # annotation-only patch privilege.
+  ttlControllerNamespace: ugallu-system
+  ttlControllerSAName: ugallu-ttl
