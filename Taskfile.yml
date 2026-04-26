@@ -31,12 +31,24 @@ tasks:
           (cd {{.ITEM}} && go mod tidy)
 
   build:
-    desc: Build every Go module
+    desc: Build every Go module (output to bin/, not module roots)
     cmds:
+      - mkdir -p bin
       - for: { var: GO_MODULES }
         cmd: |
           echo "==> build {{.ITEM}}"
-          (cd {{.ITEM}} && go build ./...)
+          (cd {{.ITEM}} && go build -o /dev/null ./...)
+
+  build:bin:
+    desc: Build binaries into bin/
+    cmds:
+      - mkdir -p bin
+      - go build -o bin/ugallu-resolver ./resolver/cmd/ugallu-resolver
+      - go build -o bin/ugallu-attestor ./attestor/cmd/ugallu-attestor
+      - go build -o bin/ugallu-ttl ./ttl/cmd/ugallu-ttl
+      - go build -o bin/ugallu ./cmd/ugallu
+      - go build -o bin/ugallu-audit-detection ./operators/audit-detection/cmd/ugallu-audit-detection
+      - go build -o bin/ugallu-forensics ./operators/forensics/cmd/ugallu-forensics
 
   test:
     desc: Run go test (-race) on every module

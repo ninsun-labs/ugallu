@@ -8,6 +8,13 @@ out/
 *.prof
 *.cov
 
+# Compiled binaries dropped at module root by `go build ./...`
+/attestor/ugallu-attestor
+/resolver/ugallu-resolver
+/ttl/ugallu-ttl
+/cmd/ugallu/ugallu
+/operators/*/ugallu-*
+
 # Generated (committed *.pb.go and zz_generated_*.go are intentional; ignore only backups)
 *.pb.go.bak
 zz_generated_*.bak
