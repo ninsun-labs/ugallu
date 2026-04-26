@@ -5,9 +5,7 @@ package attestor
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -19,42 +17,70 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
 )
 
 // AttestationBundleReconciler drives the Pending -> Sealed lifecycle.
 //
-// SKELETON: this iteration skips the real Sign -> Log -> Archive pipeline
-// and promotes Pending bundles directly to Sealed with a digest derived
-// from the parent CR. Once the Signer interface (design 06) and the
-// Rekor/WORM clients land, the reconciler will instead drive the bundle
-// through Pending -> Signed -> Logged -> Sealed.
+// Iteration 2 (this commit): builds an in-toto Statement for the parent
+// CR, signs it via the injected Signer (default: in-process Ed25519),
+// stores StatementDigest + Signature metadata in the bundle Status, and
+// patches the parent SecurityEvent to Phase=Attested.
+//
+// Pipeline today: Pending -> Sealed (Signed/Logged are collapsed into
+// Sealed because Rekor logging and WORM archival are not yet wired).
+// Iteration 3 will introduce real Phase=Signed -> Logged -> Sealed
+// transitions backed by Rekor + WORM clients.
 type AttestationBundleReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme       *runtime.Scheme
+	Signer       sign.Signer
+	AttestorMeta sign.AttestorMeta
 }
 
 // Reconcile drives the pipeline for one AttestationBundle.
 func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithValues("bundle", req.Name)
 
+	if r.Signer == nil {
+		return ctrl.Result{}, errors.New("AttestationBundleReconciler.Signer is nil; call SetupReconcilers")
+	}
+
 	bundle := &securityv1alpha1.AttestationBundle{}
 	if err := r.Get(ctx, req.NamespacedName, bundle); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Already done.
+	// Already Sealed: idempotent no-op.
 	if bundle.Status.Phase == securityv1alpha1.AttestationBundlePhaseSealed {
 		return ctrl.Result{}, nil
 	}
 
-	// Compute placeholder digest from parent CR JSON.
-	digest, err := r.parentDigest(ctx, &bundle.Spec.AttestedFor)
+	now := metav1.Now()
+
+	// Build the in-toto Statement for the parent CR.
+	stmt, statementBytes, err := r.buildStatement(ctx, &bundle.Spec.AttestedFor, now)
 	if err != nil {
-		logger.Error(err, "compute parent digest failed")
+		logger.Error(err, "build statement failed")
 		return ctrl.Result{}, err
 	}
 
-	now := metav1.Now()
+	// Compute Statement digest.
+	digest, err := stmt.SHA256()
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("compute statement digest: %w", err)
+	}
+
+	// Sign the canonical Statement bytes via DSSE.
+	envelope, err := r.Signer.Sign(ctx, statementBytes, sign.StatementMediaType)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("sign statement: %w", err)
+	}
+	if envelope == nil || len(envelope.Signatures) == 0 {
+		return ctrl.Result{}, errors.New("signer returned empty envelope")
+	}
+
+	// Update bundle Status.
 	patch := client.MergeFrom(bundle.DeepCopy())
 	bundle.Status.Phase = securityv1alpha1.AttestationBundlePhaseSealed
 	bundle.Status.StatementDigest = digest
@@ -63,48 +89,57 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	bundle.Status.SealedAt = &now
 	bundle.Status.Signature = &securityv1alpha1.SignatureInfo{
-		Mode:  securityv1alpha1.SigningModeFulcioKeyless,
-		KeyID: "skeleton-not-real",
+		Mode:  r.Signer.Mode(),
+		KeyID: r.Signer.KeyID(),
 	}
 
 	if err := r.Status().Patch(ctx, bundle, patch); err != nil {
 		return ctrl.Result{}, fmt.Errorf("patch bundle status: %w", err)
 	}
-	logger.Info("AttestationBundle Sealed (skeleton)", "digest", digest)
+	logger.Info("AttestationBundle Sealed", "digest", digest, "keyID", r.Signer.KeyID(), "mode", r.Signer.Mode())
 
 	if err := r.markParentAttested(ctx, bundle); err != nil {
-		// Non-fatal: bundle is already Sealed; the parent can be patched on the
-		// next reconcile of the bundle.
+		// Non-fatal: bundle is already Sealed; the parent can be patched
+		// on the next reconcile of the bundle.
 		logger.Error(err, "mark parent Attested failed (will retry)")
 	}
 	return ctrl.Result{}, nil
 }
 
-// parentDigest produces a stable sha256 over the parent CR's canonical
-// JSON marshaling. For SecurityEvent and EventResponse this is the Spec
-// only; for any other Kind the whole object is hashed.
-func (r *AttestationBundleReconciler) parentDigest(ctx context.Context, ref *corev1.ObjectReference) (string, error) {
+// buildStatement fetches the parent CR and produces an in-toto Statement
+// plus its canonical JSON bytes.
+func (r *AttestationBundleReconciler) buildStatement(ctx context.Context, ref *corev1.ObjectReference, signedAt metav1.Time) (sign.Statement, []byte, error) {
 	switch ref.Kind {
 	case "SecurityEvent":
 		se := &securityv1alpha1.SecurityEvent{}
 		if err := r.Get(ctx, client.ObjectKey{Name: ref.Name}, se); err != nil {
 			if apierrors.IsNotFound(err) {
-				return "sha256:parent-not-found", nil
+				return sign.Statement{}, nil, fmt.Errorf("parent SecurityEvent %q not found", ref.Name)
 			}
-			return "", err
+			return sign.Statement{}, nil, err
 		}
-		return canonicalDigest(se.Spec)
+		stmt, err := sign.BuildSecurityEventStatement(se, r.AttestorMeta, signedAt)
+		if err != nil {
+			return sign.Statement{}, nil, err
+		}
+		b, err := stmt.MarshalCanonical()
+		return stmt, b, err
 	case "EventResponse":
 		er := &securityv1alpha1.EventResponse{}
 		if err := r.Get(ctx, client.ObjectKey{Name: ref.Name}, er); err != nil {
 			if apierrors.IsNotFound(err) {
-				return "sha256:parent-not-found", nil
+				return sign.Statement{}, nil, fmt.Errorf("parent EventResponse %q not found", ref.Name)
 			}
-			return "", err
+			return sign.Statement{}, nil, err
 		}
-		return canonicalDigest(er.Spec)
+		stmt, err := sign.BuildEventResponseStatement(er, r.AttestorMeta, signedAt)
+		if err != nil {
+			return sign.Statement{}, nil, err
+		}
+		b, err := stmt.MarshalCanonical()
+		return stmt, b, err
 	default:
-		return "sha256:unsupported-kind-" + ref.Kind, nil
+		return sign.Statement{}, nil, fmt.Errorf("unsupported AttestedFor.Kind %q", ref.Kind)
 	}
 }
 
@@ -131,12 +166,9 @@ func (r *AttestationBundleReconciler) markParentAttested(ctx context.Context, bu
 		}
 		return r.Status().Patch(ctx, se, patch)
 	case "EventResponse":
-		er := &securityv1alpha1.EventResponse{}
-		if err := r.Get(ctx, client.ObjectKey{Name: bundle.Spec.AttestedFor.Name}, er); err != nil {
-			return client.IgnoreNotFound(err)
-		}
-		// EventResponse has no phase=Attested; we record the digest
-		// in Conditions on a future iteration.
+		// EventResponse has no Phase=Attested; the bundle's existence and
+		// its label ugallu.io/event-response-uid is the back-link. A future
+		// iteration will record the digest in Conditions.
 		return nil
 	}
 	return nil
@@ -148,16 +180,4 @@ func (r *AttestationBundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Named("attestationbundle").
 		For(&securityv1alpha1.AttestationBundle{}).
 		Complete(r)
-}
-
-func canonicalDigest(v any) (string, error) {
-	// json.Marshal is stable per Go runtime version for the types we use
-	// (no random-iteration maps in Spec). It is sufficient for the
-	// skeleton; the real implementation will use a JSON canonicalizer.
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "", fmt.Errorf("marshal: %w", err)
-	}
-	h := sha256.Sum256(b)
-	return "sha256:" + hex.EncodeToString(h[:]), nil
 }

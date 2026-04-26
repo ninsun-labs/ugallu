@@ -125,7 +125,9 @@ const (
 )
 
 // SigningMode is the cryptographic mode used by the attestor (design 06).
-// +kubebuilder:validation:Enum=fulcio-keyless;openbao-transit;dual
+// ed25519-dev is an in-process keypair for dev / test only; production
+// deployments must use fulcio-keyless or openbao-transit.
+// +kubebuilder:validation:Enum=fulcio-keyless;openbao-transit;dual;ed25519-dev
 type SigningMode string
 
 // SigningMode constants.
@@ -133,6 +135,7 @@ const (
 	SigningModeFulcioKeyless  SigningMode = "fulcio-keyless"
 	SigningModeOpenBaoTransit SigningMode = "openbao-transit"
 	SigningModeDual           SigningMode = "dual"
+	SigningModeEd25519Dev     SigningMode = "ed25519-dev"
 )
 
 // EncryptionMode is the WORM at-rest encryption mode (design 07 W6).

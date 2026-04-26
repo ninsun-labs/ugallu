@@ -107,6 +107,7 @@ spec:
                 - fulcio-keyless
                 - openbao-transit
                 - dual
+                - ed25519-dev
                 type: string
             required:
             - rekor

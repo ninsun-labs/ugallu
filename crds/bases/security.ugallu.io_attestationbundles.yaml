@@ -291,12 +291,15 @@ spec:
                   keyID:
                     type: string
                   mode:
-                    description: SigningMode is the cryptographic mode used by the
-                      attestor (design 06).
+                    description: |-
+                      SigningMode is the cryptographic mode used by the attestor (design 06).
+                      ed25519-dev is an in-process keypair for dev / test only; production
+                      deployments must use fulcio-keyless or openbao-transit.
                     enum:
                     - fulcio-keyless
                     - openbao-transit
                     - dual
+                    - ed25519-dev
                     type: string
                 required:
                 - mode

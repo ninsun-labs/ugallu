@@ -15,7 +15,19 @@ import (
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/attestor"
+	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
 )
+
+// newTestSigner returns an Ed25519 in-process signer for use in
+// AttestationBundleReconciler tests.
+func newTestSigner(t *testing.T) sign.Signer {
+	t.Helper()
+	s, err := sign.NewEd25519Signer()
+	if err != nil {
+		t.Fatalf("NewEd25519Signer: %v", err)
+	}
+	return s
+}
 
 // TestAttestationBundleReconciler_PromotesPendingToSealed asserts that
 // the skeleton pipeline transitions a Pending bundle to Sealed and that
@@ -64,7 +76,13 @@ func TestAttestationBundleReconciler_PromotesPendingToSealed(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = k8sClient.Delete(ctx, bundle) })
 
-	r := &attestor.AttestationBundleReconciler{Client: k8sClient, Scheme: scheme}
+	signer := newTestSigner(t)
+	r := &attestor.AttestationBundleReconciler{
+		Client:       k8sClient,
+		Scheme:       scheme,
+		Signer:       signer,
+		AttestorMeta: sign.AttestorMeta{Name: "ugallu-attestor", Version: "test"},
+	}
 	if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: bundle.Name}}); err != nil {
 		t.Fatalf("Reconcile: %v", err)
 	}
@@ -82,8 +100,14 @@ func TestAttestationBundleReconciler_PromotesPendingToSealed(t *testing.T) {
 	if bundle.Status.SealedAt == nil {
 		t.Error("SealedAt is nil")
 	}
-	if bundle.Status.Signature == nil || bundle.Status.Signature.Mode != securityv1alpha1.SigningModeFulcioKeyless {
-		t.Errorf("Signature = %+v, want Mode=fulcio-keyless", bundle.Status.Signature)
+	if bundle.Status.Signature == nil || bundle.Status.Signature.Mode != securityv1alpha1.SigningModeEd25519Dev {
+		t.Errorf("Signature = %+v, want Mode=ed25519-dev", bundle.Status.Signature)
+	}
+	if bundle.Status.Signature != nil && !strings.HasPrefix(bundle.Status.Signature.KeyID, "ed25519:") {
+		t.Errorf("Signature.KeyID = %q, want ed25519: prefix", bundle.Status.Signature.KeyID)
+	}
+	if bundle.Status.Signature != nil && bundle.Status.Signature.KeyID != signer.KeyID() {
+		t.Errorf("Signature.KeyID = %q, want %q (signer's)", bundle.Status.Signature.KeyID, signer.KeyID())
 	}
 
 	// Parent SE should be Attested with back-ref.
@@ -134,7 +158,12 @@ func TestAttestationBundleReconciler_NoOpOnSealed(t *testing.T) {
 		t.Fatalf("status patch: %v", err)
 	}
 
-	r := &attestor.AttestationBundleReconciler{Client: k8sClient, Scheme: scheme}
+	r := &attestor.AttestationBundleReconciler{
+		Client:       k8sClient,
+		Scheme:       scheme,
+		Signer:       newTestSigner(t),
+		AttestorMeta: sign.AttestorMeta{Name: "ugallu-attestor", Version: "test"},
+	}
 	if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: bundle.Name}}); err != nil {
 		t.Fatalf("Reconcile: %v", err)
 	}
