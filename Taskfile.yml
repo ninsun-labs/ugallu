@@ -73,6 +73,11 @@ tasks:
     cmds:
       - setup-envtest use 1.32 -p path
 
+  ci-local:
+    desc: Run the full CI pipeline locally (build + lint + test + helm + drift + parity)
+    cmds:
+      - bash hack/ci-local.sh
+
   lint:
     desc: Run golangci-lint per module (workspace-aware, skip empty modules)
     cmds:
