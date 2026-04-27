@@ -51,6 +51,15 @@ type Options struct {
 	// SkipCgroupWalk disables the cold-walk + rescan entirely (used
 	// in unit tests where /sys/fs/cgroup isn't a kubepods hierarchy).
 	SkipCgroupWalk bool
+
+	// EnableEBPFTracker opts in to the live eBPF cgroup tracker
+	// (Phase 3). When true, Bootstrap attempts to load the BPF
+	// program and attach the cgroup_mkdir + cgroup_rmdir raw
+	// tracepoints; failure (missing CAP_BPF, kernel < 5.5 without
+	// BTF, etc.) is logged and the resolver gracefully falls back to
+	// the cold-walk + rescan path. Default false; the Helm chart
+	// flips it to true on the privileged DaemonSet.
+	EnableEBPFTracker bool
 }
 
 // Bootstrap builds the Cache, attaches informer event handlers, waits
@@ -99,6 +108,23 @@ func Bootstrap(ctx context.Context, opts *Options) (*Server, error) {
 			updateCgroupIndexSize(cache)
 		}
 		go RunCgroupRescan(ctx, cache, opts.SysFsCgroupRoot, opts.CgroupRescanInterval, log)
+	}
+
+	if opts.EnableEBPFTracker {
+		if err := IsBPFSupported(); err != nil {
+			log.Warn("eBPF tracker requested but not supported by this kernel; falling back to rescan", "err", err.Error())
+		} else {
+			tracker, err := LoadCgroupTracker(cache, log)
+			if err != nil {
+				log.Warn("eBPF tracker load failed; falling back to rescan", "err", err.Error())
+			} else {
+				log.Info("eBPF cgroup tracker attached")
+				go func() {
+					tracker.Run(ctx)
+					_ = tracker.Close()
+				}()
+			}
+		}
 	}
 
 	srv := NewServer(cache, log)

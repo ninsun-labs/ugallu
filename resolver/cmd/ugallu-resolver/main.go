@@ -55,6 +55,7 @@ func runMain() error {
 		sysFsCgroupRoot      string
 		procRoot             string
 		cgroupRescanInterval time.Duration
+		enableEBPFTracker    bool
 	)
 	flag.StringVar(&grpcAddr, "grpc-addr", ":9000", "TCP address for cross-node gRPC server")
 	flag.StringVar(&unixSocket, "unix-socket", "/var/run/ugallu/resolver.sock", "Unix socket path for local-node gRPC")
@@ -65,7 +66,8 @@ func runMain() error {
 	flag.DurationVar(&tombstoneInterval, "tombstone-interval", 30*time.Second, "Tombstone GC scan period")
 	flag.StringVar(&sysFsCgroupRoot, "sysfs-cgroup-root", serverv1.DefaultSysFsCgroup, "cgroup v2 mountpoint (host path or container bind-mount)")
 	flag.StringVar(&procRoot, "proc-root", serverv1.DefaultProcRoot, "/proc root (mount the host /proc at /host/proc inside the DaemonSet)")
-	flag.DurationVar(&cgroupRescanInterval, "cgroup-rescan-interval", serverv1.DefaultCgroupRescanInterval, "Cgroup index rescan period (0 disables; Phase 3 eBPF will obsolete this)")
+	flag.DurationVar(&cgroupRescanInterval, "cgroup-rescan-interval", serverv1.DefaultCgroupRescanInterval, "Cgroup index rescan period (0 disables; eBPF tracker preferred when available)")
+	flag.BoolVar(&enableEBPFTracker, "enable-ebpf-tracker", false, "Opt-in to the live eBPF cgroup_mkdir/cgroup_rmdir tracker (Phase 3). Requires CAP_BPF + kernel BTF; falls back to rescan on failure.")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil)).With(
@@ -95,6 +97,7 @@ func runMain() error {
 		SysFsCgroupRoot:      sysFsCgroupRoot,
 		ProcRoot:             procRoot,
 		CgroupRescanInterval: cgroupRescanInterval,
+		EnableEBPFTracker:    enableEBPFTracker,
 	})
 	if err != nil {
 		return fmt.Errorf("resolver bootstrap: %w", err)

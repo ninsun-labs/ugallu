@@ -1,0 +1,6 @@
+# vmlinux.h is generated from /sys/kernel/btf/vmlinux at build time
+# (~3.5 MB; ties the snapshot to a specific kernel version). Use
+# `make -C sdk/pkg/resolver/serverv1/bpf vmlinux.h` to regenerate.
+# Committing the bpf2go output (cgrouptracker_*_bpfel.{go,o}) is what
+# makes downstream builds reproducible without bpftool.
+vmlinux.h

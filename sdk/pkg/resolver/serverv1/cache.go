@@ -170,6 +170,23 @@ func (c *Cache) CgroupSizes() int {
 	return len(c.podByCgroupID)
 }
 
+// EvictCgroupID removes a single cgroup_id from the index. Called by
+// the eBPF cgroup_rmdir handler so live cgroup teardown is reflected
+// without waiting for the rescan loop.
+func (c *Cache) EvictCgroupID(cgroupID uint64) {
+	if cgroupID == 0 {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	uid, ok := c.podByCgroupID[cgroupID]
+	if !ok {
+		return
+	}
+	delete(c.podByCgroupID, cgroupID)
+	c.dropCgroupReverseLocked(uid, cgroupID)
+}
+
 // dropCgroupReverseLocked removes cgroupID from the reverse mapping
 // for podUID. Caller holds the write lock.
 func (c *Cache) dropCgroupReverseLocked(podUID types.UID, cgroupID uint64) {

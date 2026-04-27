@@ -61,6 +61,22 @@ var (
 			Help: "Number of tombstoned Pod entries purged after grace.",
 		},
 	)
+
+	metricEbpfEvents = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "ugallu_resolver_ebpf_events_total",
+			Help: "Number of cgroup tracepoint events seen by the eBPF tracker.",
+		},
+		[]string{"op", "outcome"},
+	)
+
+	metricEbpfDrops = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "ugallu_resolver_ebpf_drops_total",
+			Help: "Number of eBPF events dropped before reaching the cache (decode/short-record/etc.).",
+		},
+		[]string{"reason"},
+	)
 )
 
 // Registerer is the Prometheus registerer the resolver writes to.
@@ -78,6 +94,8 @@ func MustRegisterMetrics() {
 		metricResolveDuration,
 		metricIndexSize,
 		metricTombstonePurged,
+		metricEbpfEvents,
+		metricEbpfDrops,
 	} {
 		if err := Registerer.Register(c); err != nil {
 			if _, dup := err.(prometheus.AlreadyRegisteredError); !dup {
