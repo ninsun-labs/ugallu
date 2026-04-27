@@ -46,3 +46,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/ttl
     condition: ttl.enabled
+  - name: gitops-responder
+    version: 0.0.1-alpha.1
+    repository: file://charts/gitops-responder
+    condition: gitops-responder.enabled

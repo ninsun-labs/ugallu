@@ -5,6 +5,7 @@ use (
 	./cmd/ugallu
 	./operators/audit-detection
 	./operators/forensics
+	./operators/gitops-responder
 	./resolver
 	./sdk
 	./ttl

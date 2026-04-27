@@ -62,6 +62,10 @@ spec:
             wave: "1"
             path: charts/ugallu/charts/ttl
             component: ttl
+          - name: ugallu-gitops-responder
+            wave: "1"
+            path: charts/ugallu/charts/gitops-responder
+            component: gitops-responder
 
           # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs

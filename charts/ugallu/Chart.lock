@@ -17,5 +17,8 @@ dependencies:
 - name: ttl
   repository: file://charts/ttl
   version: 0.0.1-alpha.1
-digest: sha256:3744bd37790fb77dabeb342f5e5e25e8c083a7beeda8ed90871ebf811aefb411
-generated: "2026-04-26T17:41:27.368053215+02:00"
+- name: gitops-responder
+  repository: file://charts/gitops-responder
+  version: 0.0.1-alpha.1
+digest: sha256:21984cab66e05ec6b857c952af6e32f0331437d51eb99570be53dcb6a84ffbb9
+generated: "2026-04-27T18:36:40.552988693+02:00"

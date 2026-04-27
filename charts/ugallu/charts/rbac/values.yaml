@@ -17,6 +17,8 @@ auditDetection:
   enabled: true
 forensics:
   enabled: true
+gitopsResponder:
+  enabled: true
 
 # Cluster-flavor toggles. ciliumNetworkPolicies grants forensics CAP to
 # create/delete CiliumNetworkPolicy resources for PodFreeze. Disable if
