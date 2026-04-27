@@ -28,9 +28,9 @@ type DualSigner struct {
 // NewDualSigner returns a DualSigner that delegates to primary and
 // secondary in that order. The primary signer's KeyID prefix wins for
 // the composite KeyID() to keep dashboards stable, and its public key
-// is what PublicKeyPEM exposes for Rekor (Rekor accepts one verifier
-// key per entry; the secondary key surfaces via its own KeyID in the
-// envelope so verifiers can fetch it out-of-band).
+// is the one PublicKeyPEM exposes for Rekor (Rekor accepts one
+// verifier key per entry; the secondary key surfaces via its own
+// KeyID in the envelope so verifiers can fetch it out-of-band).
 func NewDualSigner(primary, secondary Signer) *DualSigner {
 	return &DualSigner{primary: primary, secondary: secondary}
 }
@@ -78,9 +78,9 @@ func (d *DualSigner) Mode() securityv1alpha1.SigningMode {
 }
 
 // PublicKeyPEM forwards to the primary leg when it implements the
-// exporter — Rekor entries carry a single verifier key so we only
-// expose the leg most likely to drive transparency-log verification
-// (Fulcio in the typical design 06 deployment).
+// exporter — Rekor entries carry a single verifier key, so only the
+// leg most likely to drive transparency-log verification is exposed
+// here (Fulcio in the typical design 06 deployment).
 func (d *DualSigner) PublicKeyPEM() ([]byte, error) {
 	exp, ok := d.primary.(PublicKeyExporter)
 	if !ok {

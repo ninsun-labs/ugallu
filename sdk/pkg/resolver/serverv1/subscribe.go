@@ -8,9 +8,8 @@ import (
 	"sync/atomic"
 )
 
-// ChangeType mirrors resolverv1.SubjectChange_ChangeType. We expose a
-// package-local enum so the cache doesn't have to import the proto
-// types.
+// ChangeType mirrors resolverv1.SubjectChange_ChangeType. A
+// package-local enum keeps the cache free of any proto type imports.
 type ChangeType int
 
 // Change values match the proto-side ordering one-to-one.

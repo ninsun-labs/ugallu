@@ -6,7 +6,7 @@ package serverv1
 import "strings"
 
 // CRI runtime prefixes that may decorate the container .scope segment
-// of a cgroup path. Order doesn't matter; we strip the first match.
+// of a cgroup path. Order doesn't matter; the first match is stripped.
 var criScopePrefixes = []string{
 	"cri-containerd-",
 	"crio-",
@@ -14,7 +14,7 @@ var criScopePrefixes = []string{
 	"containerd-",
 }
 
-// CgroupPathInfo carries everything we extract from a cgroup directory
+// CgroupPathInfo carries everything extracted from a cgroup directory
 // path with no further filesystem access.
 type CgroupPathInfo struct {
 	// PodUID is the K8s Pod UID with hyphens (cgroup paths use

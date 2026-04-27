@@ -5105,8 +5105,9 @@ spec:
                         type: string
                       rules:
                         items:
-                          description: PolicyRule is a slim PolicyRule (sub-set of
-                            rbacv1.PolicyRule we serialize).
+                          description: |-
+                            PolicyRule is a slim PolicyRule (the serialized sub-set of
+                            rbacv1.PolicyRule).
                           properties:
                             apiGroups:
                               items:

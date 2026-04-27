@@ -21,7 +21,7 @@ import (
 )
 
 // fakeGitHub is a minimal REST mock that exercises the same endpoints
-// our provider hits in order. It records every call so tests can
+// the provider hits in order. It records every call so tests can
 // assert wire-level behaviour.
 type fakeGitHub struct {
 	srv *httptest.Server

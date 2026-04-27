@@ -276,7 +276,7 @@ func TestFulcioSigner_CertCachedAcrossSigns(t *testing.T) {
 }
 
 // TestFulcioSigner_RefreshesNearExpiry verifies the cert is re-issued
-// once we cross the refresh-before threshold.
+// once the refresh-before threshold is crossed.
 func TestFulcioSigner_RefreshesNearExpiry(t *testing.T) {
 	f := newFakeFulcio(t)
 	f.notAfter = time.Now().Add(100 * time.Millisecond) // tiny TTL

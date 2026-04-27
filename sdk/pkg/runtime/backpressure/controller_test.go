@@ -132,8 +132,8 @@ func TestController_GreenToYellowToRed(t *testing.T) {
 }
 
 // TestController_RecoverAppliesHysteresis confirms a sample at 60% (in
-// the [recoverAt, yellowAt] band) does NOT drop us back to Green —
-// only sub-recoverAt readings demote.
+// the [recoverAt, yellowAt] band) does NOT drop the controller back
+// to Green — only sub-recoverAt readings demote.
 func TestController_RecoverAppliesHysteresis(t *testing.T) {
 	c := newK8sClient()
 	capBytes := uint64(1000)

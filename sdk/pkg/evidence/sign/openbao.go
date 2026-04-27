@@ -39,8 +39,8 @@ const DefaultOpenBaoAuthMount = "auth/kubernetes"
 // secrets engine.
 const DefaultOpenBaoTransitMount = "transit"
 
-// openBaoMaxBodyBytes caps response bodies we'll fully read — guards
-// against runaway upstream errors / hostile servers.
+// openBaoMaxBodyBytes caps the response body that gets fully read —
+// guards against runaway upstream errors / hostile servers.
 const openBaoMaxBodyBytes = 64 * 1024
 
 // OpenBaoSignerOptions configures an OpenBaoSigner.
@@ -234,11 +234,11 @@ func (s *OpenBaoSigner) signPAE(ctx context.Context, pae []byte) ([]byte, error)
 }
 
 // fetchPublicKey reads the transit key metadata and returns the PEM
-// for the latest version. No auth token required: read on the
-// transit/keys path is gated by policy associated with the role login
-// token, but the metadata endpoint is also exposed unauthenticated for
-// some configurations. We try authenticated first, fall back to
-// anonymous if the server config permits.
+// for the latest version. The transit/keys path is gated by policy
+// associated with the role login token, but the metadata endpoint is
+// also exposed unauthenticated for some configurations. The signer
+// tries authenticated first and falls back to anonymous when the
+// server config permits.
 func (s *OpenBaoSigner) fetchPublicKey(ctx context.Context) ([]byte, error) {
 	if err := s.ensureToken(ctx); err != nil {
 		return nil, fmt.Errorf("auth: %w", err)
@@ -271,10 +271,10 @@ func (s *OpenBaoSigner) fetchPublicKey(ctx context.Context) ([]byte, error) {
 	//   - ed25519: raw 32-byte key as base64 ("J3D8aPbo…=") — no PEM
 	//   - rsa-*  : PEM block "PUBLIC KEY" already PKIX-encoded
 	//   - ecdsa-*: PEM block "PUBLIC KEY" already PKIX-encoded
-	// Downstream consumers (Rekor) need a PEM PUBLIC KEY block, so we
-	// canonicalise: if the response already starts with -----BEGIN we
-	// pass it through, otherwise we treat it as raw ed25519 bytes and
-	// wrap it in PKIX.
+	// Downstream consumers (Rekor) need a PEM PUBLIC KEY block, so the
+	// response is canonicalised here: pass-through when it already
+	// starts with -----BEGIN, otherwise treat it as raw ed25519 bytes
+	// and wrap it in PKIX.
 	raw := strings.TrimSpace(v.PublicKey)
 	if strings.HasPrefix(raw, "-----BEGIN") {
 		return []byte(v.PublicKey), nil

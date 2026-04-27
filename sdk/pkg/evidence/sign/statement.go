@@ -50,7 +50,7 @@ type AttestorMeta struct {
 
 // MarshalCanonical serializes the Statement as JSON. It is not a full
 // RFC 8785 canonicalizer; it relies on encoding/json's deterministic
-// output for the Go types we use (no random-iteration maps in subject
+// output for the Go types in use (no random-iteration maps in subject
 // and predicate body apart from the Predicate map itself, which is
 // sorted by encoding/json since Go 1.12).
 func (s Statement) MarshalCanonical() ([]byte, error) {

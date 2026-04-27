@@ -136,8 +136,8 @@ func (r *AttestorWatchdogReconciler) handleStale(ctx context.Context, renew time
 	return ctrl.Result{RequeueAfter: r.probeInterval()}, nil
 }
 
-// handleFresh notes recovery and, if we were previously down, emits an
-// AttestorRecovered SE.
+// handleFresh notes recovery and, when the watchdog was previously
+// down, emits an AttestorRecovered SE.
 func (r *AttestorWatchdogReconciler) handleFresh(ctx context.Context, renew time.Time) (ctrl.Result, error) {
 	r.mu.Lock()
 	wasDown := r.state.down

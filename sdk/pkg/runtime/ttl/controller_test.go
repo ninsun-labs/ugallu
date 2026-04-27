@@ -94,8 +94,8 @@ func TestSecurityEventTTL_ArchivesAfterTTL(t *testing.T) {
 	t.Cleanup(func() { _ = k8sClient.Delete(ctx, se) })
 
 	// Backdate the creationTimestamp by re-patching (envtest doesn't
-	// allow setting creation, so we override the SE's TTL via annotation
-	// to be much shorter than its actual age).
+	// allow setting creation, so the SE's TTL is overridden via
+	// annotation to be much shorter than its actual age).
 	patchAnno(t, se, map[string]string{ttlrt.AnnotationTTL: "1ns"})
 
 	bundle := newSealedBundle(t, "att-se-"+se.Name, se.Name, se.UID)

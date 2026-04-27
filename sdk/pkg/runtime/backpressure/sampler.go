@@ -72,10 +72,10 @@ type PrometheusSampler struct {
 	HTTPClient *http.Client
 }
 
-// metricCandidates is the ordered list of metric names we'll accept.
-// First match wins. apiserver_storage_size_bytes is the modern surface;
-// etcd_db_total_size_in_bytes is the historical name still present on
-// older clusters.
+// metricCandidates is the ordered list of metric names the sampler
+// accepts. First match wins. apiserver_storage_size_bytes is the
+// modern surface; etcd_db_total_size_in_bytes is the historical name
+// still present on older clusters.
 var metricCandidates = []string{
 	"apiserver_storage_size_bytes",
 	"etcd_db_total_size_in_bytes",

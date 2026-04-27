@@ -105,10 +105,11 @@ func TestGitHubProvider_AppAuthFlow(t *testing.T) {
 	key, pemBytes := genTestKey(t)
 	appAPI := newFakeAppAPI(t, &key.PublicKey, "12345", "67890", "ghs_test_install_token", time.Hour)
 
-	// We also need the data-plane fake REST endpoints. Tie both into
-	// the same httptest server by routing on path: app-token endpoints
-	// stay on appAPI.srv, the data-plane endpoints use a sibling
-	// fakeGitHub-like minimal handler so we can complete an Apply.
+	// The data-plane fake REST endpoints are needed too. Both are
+	// tied into the same httptest server by routing on path:
+	// app-token endpoints stay on appAPI.srv, the data-plane
+	// endpoints use a sibling fakeGitHub-like minimal handler so an
+	// Apply can complete end to end.
 	dataAPI := newDataPlaneFake(t, "ghs_test_install_token")
 
 	// Compose: appAPI on /app/...; dataAPI on /repos/...

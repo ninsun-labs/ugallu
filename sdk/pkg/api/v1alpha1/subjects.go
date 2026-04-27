@@ -415,7 +415,8 @@ type RoleSubject struct {
 	AggregationLabel *metav1.LabelSelector `json:"aggregationLabel,omitempty"`
 }
 
-// PolicyRule is a slim PolicyRule (sub-set of rbacv1.PolicyRule we serialize).
+// PolicyRule is a slim PolicyRule (the serialized sub-set of
+// rbacv1.PolicyRule).
 type PolicyRule struct {
 	Verbs           []string `json:"verbs"`
 	APIGroups       []string `json:"apiGroups,omitempty"`

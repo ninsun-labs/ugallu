@@ -20,7 +20,8 @@ import (
 )
 
 // fakeWatchStream implements resolverv1.Resolver_WatchServer in-memory
-// so we can drive Server.Watch without spinning up a gRPC transport.
+// so tests can drive Server.Watch without spinning up a gRPC
+// transport.
 type fakeWatchStream struct {
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -48,7 +49,8 @@ func (s *fakeWatchStream) snapshot() []*resolverv1.SubjectChange {
 	return out
 }
 
-// gRPC ServerStream methods we don't exercise — return zero values.
+// gRPC ServerStream methods that this fake does not exercise — they
+// return zero values.
 func (s *fakeWatchStream) SetHeader(metadata.MD) error  { return nil }
 func (s *fakeWatchStream) SendHeader(metadata.MD) error { return nil }
 func (s *fakeWatchStream) SetTrailer(metadata.MD)       {}
@@ -165,9 +167,9 @@ func TestCacheSubscribe_OverflowClosesChannel(t *testing.T) {
 }
 
 // TestServerWatch_ForwardsCacheChanges is the gRPC-layer
-// integration: a subscription is established BEFORE we mutate the
-// cache (we wait for the goroutine to call Subscribe), then we drive
-// an UPSERT and assert the stream observes a SubjectChange.
+// integration: a subscription is established BEFORE the cache is
+// mutated (the test waits for the goroutine to call Subscribe), then
+// drives an UPSERT and asserts the stream observes a SubjectChange.
 func TestServerWatch_ForwardsCacheChanges(t *testing.T) {
 	srv := bootstrap(t)
 	stream := newFakeWatchStream(context.Background())

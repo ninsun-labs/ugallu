@@ -23,7 +23,7 @@ import (
 // DefaultRekorURL is the public Sigstore Rekor instance.
 const DefaultRekorURL = "https://rekor.sigstore.dev"
 
-// rekorMaxErrorBody caps the response body size we read on non-2xx
+// rekorMaxErrorBody caps the response body size read on non-2xx
 // responses. Protects against runaway upstream errors filling the log.
 const rekorMaxErrorBody = 4 * 1024
 
@@ -167,8 +167,9 @@ func (r *RekorLogger) buildProposedEntry(env *sign.SignedEnvelope) (*rekorPropos
 	// DSSE verifier (which treats the post-decode bytes as a
 	// base64-encoded string per dsse.Envelope semantics). The
 	// `publicKey` field is decoded only once because the PEM bytes
-	// are passed directly to the x509 parser. Matching this requires
-	// us to *double*-encode payload and sig and single-encode pubkey.
+	// are passed directly to the x509 parser. Matching this on the
+	// wire requires *double*-encoding payload and sig and
+	// single-encoding pubkey.
 	stdEnc := base64.StdEncoding
 	pubKeyB64 := stdEnc.EncodeToString(r.PublicKeyPEM)
 	payloadB64 := stdEnc.EncodeToString([]byte(stdEnc.EncodeToString(env.Payload)))
@@ -234,7 +235,7 @@ type rekorHashRef struct {
 	Value     string `json:"value"`
 }
 
-// rekorLogEntryAnon mirrors the swagger LogEntryAnon definition we need.
+// rekorLogEntryAnon mirrors the swagger LogEntryAnon definition.
 type rekorLogEntryAnon struct {
 	LogIndex       int64              `json:"logIndex"`
 	LogID          string             `json:"logID"`

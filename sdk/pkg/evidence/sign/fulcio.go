@@ -33,13 +33,13 @@ import (
 // etc.) override this via FulcioConfig.oidcTokenPath.
 const DefaultFulcioOIDCTokenPath = "/var/run/secrets/ugallu/fulcio/token" //nolint:gosec // mount path, not a credential
 
-// DefaultFulcioCertTTL is the upper bound on how long we'll reuse a
-// Fulcio-issued certificate before re-requesting one. Public Sigstore
-// issues 10-minute certs; we refresh well below that to leave headroom
-// for clock skew and request latency.
+// DefaultFulcioCertTTL is the upper bound on how long the signer will
+// reuse a Fulcio-issued certificate before re-requesting one. Public
+// Sigstore issues 10-minute certs; the default sits well below that
+// to leave headroom for clock skew and request latency.
 const DefaultFulcioCertTTL = 5 * time.Minute
 
-// fulcioMaxBodyBytes caps response bodies we'll fully read.
+// fulcioMaxBodyBytes caps the response body that gets fully read.
 const fulcioMaxBodyBytes = 256 * 1024
 
 // FulcioSignerOptions configures a FulcioSigner.
@@ -63,7 +63,7 @@ type FulcioSignerOptions struct {
 	InsecureSkipVerify bool
 
 	// CertRefreshBefore is the lead time before cert NotAfter at which
-	// we proactively refresh. Defaults to 60s.
+	// the signer proactively refreshes. Defaults to 60s.
 	CertRefreshBefore time.Duration
 
 	// MaxCertReuse caps how long a cert is reused regardless of its
@@ -267,7 +267,7 @@ type fulcioCertRequest struct {
 }
 
 // fulcioCertResponse covers both response shapes the v2 API may use
-// (with or without a detached SCT). We only consume the cert chain.
+// (with or without a detached SCT). Only the cert chain is consumed.
 type fulcioCertResponse struct {
 	SignedCertificateEmbeddedSct *struct {
 		Chain struct {
@@ -357,8 +357,8 @@ func pickChain(r *fulcioCertResponse) []string {
 
 // extractJWTSubject decodes a JWT payload (header.payload.signature)
 // and returns the canonical signer identity. Fulcio binds whichever of
-// `email` / `sub` the OIDC issuer treats as authoritative; we prefer
-// email when present and fall back to sub.
+// `email` / `sub` the OIDC issuer treats as authoritative; email is
+// preferred when present and falls back to sub.
 func extractJWTSubject(jwt string) (string, error) {
 	parts := strings.Split(jwt, ".")
 	if len(parts) < 2 {

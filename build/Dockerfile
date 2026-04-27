@@ -1,4 +1,4 @@
-# Multi-binary runtime image used by the rke2-lab e2e flow. Build
+# Multi-binary runtime image consumed by the helm subcharts. Build
 # context expects pre-built static binaries adjacent to this file:
 #
 #   attestor-bin

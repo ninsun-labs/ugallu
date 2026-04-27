@@ -47,7 +47,7 @@ func TestWalkCgroupFS_IndexesPodAndContainer(t *testing.T) {
 		t.Fatalf("WalkCgroupFS: %v", err)
 	}
 	// Both the pod-level slice and the container scope are valid
-	// kubepods cgroup directories; we index both because Tetragon
+	// kubepods cgroup directories; both are indexed because Tetragon
 	// can emit either cgroup_id depending on where it attached.
 	if indexed != 2 {
 		t.Errorf("indexed = %d, want 2 (pod slice + container scope)", indexed)
@@ -87,7 +87,8 @@ func TestWalkCgroupFS_SkipsNonKubepods(t *testing.T) {
 		t.Fatalf("WalkCgroupFS: %v", err)
 	}
 	// 2 = pod-level slice + container scope under kubepods.slice.
-	// system.slice MUST NOT contribute (we prune top-level non-kubepods).
+	// system.slice MUST NOT contribute (top-level non-kubepods slices
+	// are pruned).
 	if indexed != 2 {
 		t.Errorf("indexed = %d, want 2 (system.slice should be pruned)", indexed)
 	}

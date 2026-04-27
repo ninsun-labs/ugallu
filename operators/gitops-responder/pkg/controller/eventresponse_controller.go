@@ -148,10 +148,10 @@ func (r *EventResponseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // --- helpers -----------------------------------------------------------------
 
-// shouldClaim filters the ER to GitOpsChange actions claimed by us.
-// We're tolerant to both an explicit responder.name match and the
-// missing-responder case: when responder.name is empty, action.type
-// alone gates the claim.
+// shouldClaim filters the ER to GitOpsChange actions claimed by this
+// reconciler. The check is tolerant to both an explicit
+// responder.name match and the missing-responder case: when
+// responder.name is empty, action.type alone gates the claim.
 func shouldClaim(er *securityv1alpha1.EventResponse) bool {
 	if er.Spec.Action.Type != securityv1alpha1.ActionGitOpsChange {
 		return false

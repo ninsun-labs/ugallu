@@ -2,7 +2,7 @@
 # Copyright 2026 The ninsun-labs Authors.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Run the full CI pipeline locally so we can push only when green.
+# Run the full CI pipeline locally; push only when green.
 # Mirrors .github/workflows/ci.yml: build / test / lint per module,
 # helm lint+template, generate-drift, type-catalog parity.
 #
@@ -98,6 +98,28 @@ if [[ "$sdk_types" != "$policy_types" ]]; then
   exit 1
 fi
 green "parity OK ($(echo "$sdk_types" | wc -l) types)"
+
+section "godoc imperative-style (no first-person comments)"
+# Match \b(I|we|we're|we've|we'll|we'd|our|us|let's)\b inside line
+# comments only. Skips: //go:generate directives, AWS region tokens
+# ("us-east-1" / "us-west-2"), include flags ("-I path"), and
+# zz_generated / pb.go files. Hard-fail in CI; the editor receives a
+# clean tree.
+declare -a GODOC_PATHS=(
+  $(find . \( -name '*.go' -o -name 'Dockerfile' -o -name '*.tpl' \) \
+       -not -path './vendor/*' -not -path './.git/*' \
+       -not -name '*zz_generated*' -not -name '*.pb.go')
+)
+godoc_hits=$(grep -nE "^[[:space:]]*(//|#)" "${GODOC_PATHS[@]}" 2>/dev/null \
+  | grep -vE 'go:generate|us-(east|west|central|north|south)-[0-9]| -I [A-Za-z/]' \
+  | grep -E '\b(I|we|we'\''re|we'\''ve|we'\''ll|we'\''d|our|us|let'\''s)\b' \
+  || true)
+if [[ -n "$godoc_hits" ]]; then
+  red "ERROR: first-person comments detected (use imperative form)"
+  echo "$godoc_hits" | head -20
+  exit 1
+fi
+green "godoc style clean"
 
 echo
 green "=== CI-LOCAL: ALL GREEN ==="

@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 	var err error
 	cfg, err = testEnv.Start()
 	if err != nil {
-		// In CI we require envtest to be set up: a silent skip would hide
+		// In CI envtest must be set up: a silent skip would hide
 		// reconciler regressions. GitHub Actions sets CI=true automatically.
 		// In local dev without `task envtest:assets`, degrade gracefully.
 		if os.Getenv("CI") == "" && os.Getenv("KUBEBUILDER_ASSETS") == "" {

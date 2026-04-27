@@ -130,9 +130,9 @@ func (p *GitHubProvider) Apply(ctx context.Context, req *ChangeRequest) (*PullRe
 		return nil, fmt.Errorf("create branch %q: %w", req.BranchName, cErr)
 	}
 
-	// Step 3 — apply each file via the contents API. We fetch the
-	// existing SHA so updates round-trip correctly; missing means a
-	// fresh create.
+	// Step 3 — apply each file via the contents API. The existing
+	// SHA is fetched first so updates round-trip correctly; missing
+	// means a fresh create.
 	var lastCommitSHA string
 	for i := range req.Files {
 		f := req.Files[i]

@@ -36,8 +36,9 @@ const ebpfPathMax = 256
 
 // cgroupEvent is the wire-compatible Go layout of `struct event` from
 // cgroup_tracker.bpf.c. binary.LittleEndian decodes it directly into
-// this struct (the kernel emits in host byte order; we restrict the
-// generated objects to little-endian targets via -target amd64,arm64).
+// this struct (the kernel emits in host byte order; the generated
+// objects are restricted to little-endian targets via
+// -target amd64,arm64).
 type cgroupEvent struct {
 	CgroupID uint64
 	Op       uint32
@@ -72,10 +73,10 @@ func LoadCgroupTracker(c *Cache, log *slog.Logger) (*CgroupTracker, error) {
 
 	// On kernels ≥ 5.11, BPF allocations are tracked via memcg and
 	// RLIMIT_MEMLOCK is no longer consulted; the call here is a
-	// no-op precaution for older kernels. We log + ignore failures
-	// rather than aborting because the typical cause is "container
-	// has CAP_BPF but not CAP_SYS_RESOURCE" — a configuration that
-	// works fine on every kernel we target.
+	// no-op precaution for older kernels. Failures are logged and
+	// ignored rather than treated as fatal because the typical cause
+	// is "container has CAP_BPF but not CAP_SYS_RESOURCE" — a
+	// configuration that works fine on every supported kernel.
 	if err := rlimit.RemoveMemlock(); err != nil {
 		log.Debug("rlimit RLIMIT_MEMLOCK adjust failed (kernel ≥ 5.11 doesn't need it)", "err", err.Error())
 	}

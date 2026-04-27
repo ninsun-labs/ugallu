@@ -73,8 +73,8 @@ type Options struct {
 type Controller struct {
 	opts Options
 
-	// lastLevel survives across polls so we can apply hysteresis on
-	// the recover-down transition.
+	// lastLevel survives across polls so hysteresis on the
+	// recover-down transition can be applied.
 	lastLevel atomic.Value // Level
 }
 
@@ -178,7 +178,8 @@ func (c *Controller) tick(ctx context.Context, logger interface {
 // decideLevel applies the spec's hysteresis: up-escalation is direct
 // (Green→Yellow at yellowAt, →Red at redAt); de-escalation steps down
 // one tier at a time (Red→Yellow when ratio < redAt; Yellow→Green
-// only when ratio < recoverAt) so we don't flap around the band edges.
+// only when ratio < recoverAt) to avoid flapping around the band
+// edges.
 func decideLevel(prev Level, ratio, yellowAt, redAt, recoverAt float64) Level {
 	if ratio >= redAt {
 		return LevelRed

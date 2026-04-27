@@ -44,11 +44,11 @@ func AttachInformers(c *Cache, factory informers.SharedInformerFactory) error {
 		return fmt.Errorf("pod informer event handler: %w", err)
 	}
 
-	// SA + Node currently have no secondary index; we only need their
-	// listers. The handler registrations above are sufficient because
-	// AddEventHandler triggers a full LIST on Run() which seeds the
-	// lister cache. The empty handler is just a no-op so the
-	// registration takes effect.
+	// SA + Node currently have no secondary index; only the listers
+	// are needed. The handler registrations above are sufficient
+	// because AddEventHandler triggers a full LIST on Run() which
+	// seeds the lister cache. The empty handler is just a no-op so
+	// the registration takes effect.
 	if _, err := saInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{}); err != nil {
 		return fmt.Errorf("sa informer event handler: %w", err)
 	}

@@ -20,7 +20,7 @@ import (
 // to the last-known subject (design 03).
 const DefaultTombstoneGrace = 60 * time.Second
 
-// PodSnapshot carries everything we keep about a Pod for resolver
+// PodSnapshot carries everything the resolver keeps about a Pod for
 // lookups: the raw corev1.Pod (read-only) plus tombstone metadata.
 //
 // Pod is a pointer to the object stored in the informer cache. It
@@ -54,8 +54,8 @@ type Cache struct {
 
 	// SaLister and NodeLister are populated by the informer factory.
 	// They are exported so the gRPC server can do direct ns/name
-	// lookups against the standard client-go listers without us
-	// duplicating their indices.
+	// lookups against the standard client-go listers without
+	// duplicating their indices here.
 	SaLister   corev1listers.ServiceAccountLister
 	NodeLister corev1listers.NodeLister
 

@@ -165,7 +165,7 @@ func (s *Server) ResolveByPID(_ context.Context, req *resolverv1.PIDRequest) (*r
 //
 // Filter is best-effort — empty Kind / Namespace match anything;
 // non-empty values are checked at the cache fan-out before the event
-// reaches us.
+// reaches the stream.
 func (s *Server) Watch(req *resolverv1.WatchRequest, stream resolverv1.Resolver_WatchServer) error {
 	filter := Filter{Kind: req.GetKind(), Namespace: req.GetNamespace()}
 	sub := s.Cache.Subscribe(filter, DefaultSubscriberBuffer)
@@ -294,5 +294,5 @@ type discardWriter struct{}
 
 func (discardWriter) Write(p []byte) (int, error) { return len(p), nil }
 
-// Compile-time assertion that we satisfy the gRPC interface.
+// Compile-time assertion that Server satisfies the gRPC interface.
 var _ resolverv1.ResolverServer = (*Server)(nil)

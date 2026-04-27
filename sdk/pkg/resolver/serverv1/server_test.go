@@ -334,8 +334,8 @@ func TestResolveByCgroupID_MissAndHit(t *testing.T) {
 	}
 }
 
-// TestResolveByCgroupID_RejectsZero ensures we don't silently treat 0
-// as a valid cgroup id.
+// TestResolveByCgroupID_RejectsZero ensures cgroup id 0 is not
+// silently treated as a valid lookup.
 func TestResolveByCgroupID_RejectsZero(t *testing.T) {
 	srv := bootstrap(t)
 	resp, _ := srv.ResolveByCgroupID(context.Background(), &resolverv1.CgroupIDRequest{CgroupId: 0})
@@ -351,7 +351,7 @@ func TestResolveByPID_MissOnUnknownPID(t *testing.T) {
 	resp, _ := srv.ResolveByPID(context.Background(), &resolverv1.PIDRequest{Pid: 1})
 	// On non-Linux this returns the unsupported diag; on Linux a
 	// pid=1 read may succeed but won't match a kubepods cgroup. In
-	// either case we expect Unresolved=true.
+	// either case Unresolved=true is the expected outcome.
 	if !resp.Unresolved {
 		t.Errorf("expected Unresolved, got %+v", resp)
 	}

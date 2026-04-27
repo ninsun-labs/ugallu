@@ -277,6 +277,6 @@ func makePartialNodeSubject(name string) *securityv1alpha1.SubjectTier1 {
 
 // --- helpers --------------------------------------------------------
 
-// metav1OwnerCopy aliases metav1.OwnerReference to keep our import
+// metav1OwnerCopy aliases metav1.OwnerReference to keep the import
 // surface small (subjects.go already pulls in apimachinery/v1).
 type metav1OwnerCopy = metav1OwnerReference

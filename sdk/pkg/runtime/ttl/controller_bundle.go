@@ -55,7 +55,7 @@ func (r *AttestationBundleTTLReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, nil
 	}
 
-	// Bundle must be Sealed before we'll delete it: WORM archive of the
+	// Bundle must be Sealed before deletion: the WORM archive of the
 	// DSSE envelope must already exist.
 	if bundle.Status.Phase != securityv1alpha1.AttestationBundlePhaseSealed {
 		recordPostpone(kindAB, postponeReasonNotExpired)

@@ -153,9 +153,10 @@ func (u *S3Uploader) Put(ctx context.Context, key string, content io.Reader, opt
 		cleanKey = u.keyPrefix + "/" + cleanKey
 	}
 
-	// Read into memory so we can both compute a sha256 and hand a fresh
-	// reader to the SDK without losing seekability. Evidence blobs are
-	// small (sub-MB); the simplification is worth it.
+	// Read into memory so the uploader can both compute a sha256 and
+	// hand a fresh reader to the SDK without losing seekability.
+	// Evidence blobs are small (sub-MB); the simplification is worth
+	// it.
 	raw, err := io.ReadAll(content)
 	if err != nil {
 		return nil, fmt.Errorf("read content: %w", err)

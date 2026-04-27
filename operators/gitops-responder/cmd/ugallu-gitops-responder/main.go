@@ -87,7 +87,7 @@ func runMain() error {
 
 	// Boot-time GitOpsResponderConfig load. A future iteration will
 	// add a Watch reconciler so config edits propagate without a
-	// restart; for now we read once at startup.
+	// restart; for now the config is read once at startup.
 	bootClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: scheme})
 	if err != nil {
 		return fmt.Errorf("bootstrap client: %w", err)
@@ -127,7 +127,7 @@ func runMain() error {
 			// Resolve credentials: Secret may carry either a static
 			// PAT (key=token) or GitHub App credentials (app-id +
 			// installation-id + private-key.pem). App-mode wins when
-			// both are present.
+			// both shapes are present.
 			creds, terr := loadGitHubCredentials(context.Background(), bootClient, configNamespace, gp.Auth.SecretRef.Name)
 			if terr != nil {
 				log.Info("github provider: credentials load failed; provider not registered", "name", gp.Name, "error", terr.Error())
@@ -198,7 +198,7 @@ func loadGitHubCredentials(ctx context.Context, c client.Client, namespace, secr
 		return out, fmt.Errorf("get secret %s/%s: %w", namespace, secretName, err)
 	}
 	// GitHub App shape — both AppID/ClientID + InstallationID + PEM
-	// must be present; otherwise we fall through to PAT.
+	// must be present; otherwise the loader falls through to PAT.
 	appID := strings.TrimSpace(string(sec.Data["app-id"]))
 	if appID == "" {
 		appID = strings.TrimSpace(string(sec.Data["client-id"]))

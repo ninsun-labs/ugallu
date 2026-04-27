@@ -49,8 +49,8 @@ func WalkCgroupFS(sysfsRoot string, c *Cache) (int, error) {
 	walkErr := filepath.WalkDir(sysfsRoot, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			if errors.Is(walkErr, fs.ErrPermission) {
-				// Skip subtrees we can't read (cgroup namespaces or
-				// MAC isolation). Returning nil keeps the walk going.
+				// Skip unreadable subtrees (cgroup namespaces or MAC
+				// isolation). Returning nil keeps the walk going.
 				return nil
 			}
 			return walkErr
