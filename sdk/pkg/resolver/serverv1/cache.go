@@ -60,6 +60,10 @@ type Cache struct {
 	NodeLister corev1listers.NodeLister
 
 	tombstoneGrace time.Duration
+
+	// subscribers tracks live Watch streams. Populated by Subscribe
+	// and notified by upsertPod / MarkTombstone / PurgeExpired.
+	subscribers subscriberRegistry
 }
 
 // NewCache returns an empty Cache. Indices are populated by the
@@ -219,15 +223,25 @@ func (c *Cache) upsertPod(p *corev1.Pod) {
 		return
 	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if old, ok := c.podByUID[p.UID]; ok && old.Pod != nil {
-		c.removeIPLocked(old.Pod, p.UID)
-		c.removeContainerLocked(old.Pod, p.UID)
+	_, existed := c.podByUID[p.UID]
+	if existed {
+		old := c.podByUID[p.UID]
+		if old.Pod != nil {
+			c.removeIPLocked(old.Pod, p.UID)
+			c.removeContainerLocked(old.Pod, p.UID)
+		}
 	}
-	c.podByUID[p.UID] = &PodSnapshot{Pod: p}
+	snap := &PodSnapshot{Pod: p}
+	c.podByUID[p.UID] = snap
 	c.indexIPLocked(p)
 	c.indexContainerLocked(p)
+	c.mu.Unlock()
+
+	changeType := ChangeAdded
+	if existed {
+		changeType = ChangeUpdated
+	}
+	c.publish(Change{Type: changeType, Snapshot: snap})
 }
 
 // markTombstoneLocked transitions an entry to the tombstoned state.
@@ -243,16 +257,20 @@ func (c *Cache) markTombstoneLocked(uid types.UID, now time.Time) {
 // handler.
 func (c *Cache) MarkTombstone(uid types.UID, now time.Time) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	c.markTombstoneLocked(uid, now)
+	snap := c.podByUID[uid]
+	c.mu.Unlock()
+	if snap != nil {
+		c.publish(Change{Type: ChangeDeleted, Snapshot: snap})
+	}
 }
 
 // PurgeExpired removes tombstoned entries whose grace window has
 // elapsed. Returns the number purged for metrics.
 func (c *Cache) PurgeExpired(now time.Time) int {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	purged := 0
+	gcd := []*PodSnapshot{}
 	for uid, snap := range c.podByUID {
 		if !snap.Tombstone {
 			continue
@@ -264,7 +282,12 @@ func (c *Cache) PurgeExpired(now time.Time) int {
 		c.removeContainerLocked(snap.Pod, uid)
 		c.removeCgroupsLocked(uid)
 		delete(c.podByUID, uid)
+		gcd = append(gcd, snap)
 		purged++
+	}
+	c.mu.Unlock()
+	for _, snap := range gcd {
+		c.publish(Change{Type: ChangeTombstoneGC, Snapshot: snap})
 	}
 	return purged
 }

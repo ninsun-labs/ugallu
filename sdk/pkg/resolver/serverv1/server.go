@@ -158,12 +158,78 @@ func (s *Server) ResolveByPID(_ context.Context, req *resolverv1.PIDRequest) (*r
 	return unresolved("ResolveByPID: pod uid " + info.PodUID + " not in cache"), nil
 }
 
-// Watch is a Phase 4 placeholder: streaming SubjectChange events
-// lands once consumers need it.
-func (s *Server) Watch(_ *resolverv1.WatchRequest, _ resolverv1.Resolver_WatchServer) error {
-	// Streaming Watch is Phase 4. Closing immediately tells callers
-	// to fall back to periodic re-resolves.
-	return nil
+// Watch streams SubjectChange events to the caller. The cache
+// publishes ADDED/UPDATED/DELETED/TOMBSTONE_GC events as Pod
+// snapshots mutate; the server forwards them through the gRPC
+// stream until the client cancels or the subscription overflows.
+//
+// Filter is best-effort — empty Kind / Namespace match anything;
+// non-empty values are checked at the cache fan-out before the event
+// reaches us.
+func (s *Server) Watch(req *resolverv1.WatchRequest, stream resolverv1.Resolver_WatchServer) error {
+	filter := Filter{Kind: req.GetKind(), Namespace: req.GetNamespace()}
+	sub := s.Cache.Subscribe(filter, DefaultSubscriberBuffer)
+	defer sub.Close()
+
+	ctx := stream.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch, ok := <-sub.Events():
+			if !ok {
+				if sub.Overflowed() {
+					return fmt.Errorf("watch buffer overflow (consumer too slow)")
+				}
+				return nil
+			}
+			msg, err := s.changeToProto(ch)
+			if err != nil {
+				s.Log.Warn("watch: encode change failed", "err", err)
+				continue
+			}
+			if err := stream.Send(msg); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+// changeToProto translates a cache Change into a wire SubjectChange.
+// Snapshots are encoded through the same Tier-1 marshaller used by
+// the unary Resolve* RPCs so consumers get a uniform payload shape.
+func (s *Server) changeToProto(ch Change) (*resolverv1.SubjectChange, error) {
+	if ch.Snapshot == nil || ch.Snapshot.Pod == nil {
+		return &resolverv1.SubjectChange{Type: changeTypeToProto(ch.Type)}, nil
+	}
+	subj := BuildPodSubject(ch.Snapshot.Pod)
+	if ch.Snapshot.Tombstone || ch.Type == ChangeDeleted || ch.Type == ChangeTombstoneGC {
+		subj.Tombstone = true
+	}
+	resp, err := responseFromSubject(subj)
+	if err != nil {
+		return nil, err
+	}
+	return &resolverv1.SubjectChange{
+		Type:    changeTypeToProto(ch.Type),
+		Subject: resp,
+	}, nil
+}
+
+// changeTypeToProto maps the local enum onto the proto's enum.
+func changeTypeToProto(t ChangeType) resolverv1.SubjectChange_ChangeType {
+	switch t {
+	case ChangeAdded:
+		return resolverv1.SubjectChange_ADDED
+	case ChangeUpdated:
+		return resolverv1.SubjectChange_UPDATED
+	case ChangeDeleted:
+		return resolverv1.SubjectChange_DELETED
+	case ChangeTombstoneGC:
+		return resolverv1.SubjectChange_TOMBSTONE_GC
+	default:
+		return resolverv1.SubjectChange_UNKNOWN
+	}
 }
 
 // --- helpers --------------------------------------------------------
