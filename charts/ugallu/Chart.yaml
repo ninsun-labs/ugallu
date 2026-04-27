@@ -50,3 +50,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/gitops-responder
     condition: gitops-responder.enabled
+  - name: backpressure
+    version: 0.0.1-alpha.1
+    repository: file://charts/backpressure
+    condition: backpressure.enabled

@@ -20,5 +20,8 @@ dependencies:
 - name: gitops-responder
   repository: file://charts/gitops-responder
   version: 0.0.1-alpha.1
-digest: sha256:21984cab66e05ec6b857c952af6e32f0331437d51eb99570be53dcb6a84ffbb9
-generated: "2026-04-27T18:36:40.552988693+02:00"
+- name: backpressure
+  repository: file://charts/backpressure
+  version: 0.0.1-alpha.1
+digest: sha256:9d996e39fb5b5b75a8b9415b83bb681b140714d601635d371033ecb4b07c53d4
+generated: "2026-04-27T18:40:07.99180776+02:00"

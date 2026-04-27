@@ -1,0 +1,108 @@
+{{- if .Values.backpressure.enabled }}
+{{- /*
+ugallu-backpressure: leader-elected workload that scrapes
+kube-apiserver storage metrics and writes the ugallu-backpressure
+ConfigMap consumed by every SDK emitter (design 16 §Layer 4).
+*/ -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ugallu-backpressure
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-backpressure
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  # Scrape the kube-apiserver /metrics endpoint over the in-cluster
+  # service. The "metrics" non-resource URL grants read access without
+  # naming individual gauges.
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+
+  # Leader election emits Events on the lease object.
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-backpressure
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-backpressure
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-backpressure
+    namespace: {{ include "rbac.ns.system" . }}
+---
+# Namespaced perms: write the output ConfigMap + manage the leader Lease.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-backpressure
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-backpressure
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-backpressure
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-backpressure
+    namespace: {{ include "rbac.ns.system" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-backpressure-leader
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["ugallu-backpressure-leader"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-backpressure-leader
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-backpressure-leader
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-backpressure
+    namespace: {{ include "rbac.ns.system" . }}
+{{- end }}

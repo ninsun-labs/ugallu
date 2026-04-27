@@ -29,6 +29,7 @@ rbac:
   auditDetection: { enabled: true }
   forensics: { enabled: true }
   gitopsResponder: { enabled: true }
+  backpressure: { enabled: true }
   ciliumNetworkPolicies: true
 
 # admission-policies subchart (Wave -1): CEL ValidatingAdmissionPolicy (design 15).
@@ -55,4 +56,6 @@ attestor:
 ttl:
   enabled: true
 gitops-responder:
+  enabled: true
+backpressure:
   enabled: true

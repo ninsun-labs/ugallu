@@ -1,0 +1,17 @@
+apiVersion: v2
+name: backpressure
+description: ugallu-backpressure controller (etcd-pressure ConfigMap reconciler, design 16)
+type: application
+version: 0.0.1-alpha.1
+appVersion: "0.0.1-alpha.1"
+kubeVersion: ">=1.30.0-0"
+
+home: https://ninsun.io/ugallu
+sources:
+  - https://github.com/ninsun-labs/ugallu
+
+keywords:
+  - kubernetes
+  - backpressure
+  - etcd
+  - rate-limiting
