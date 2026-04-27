@@ -40,3 +40,11 @@ type Signer interface {
 	KeyID() string
 	Mode() securityv1alpha1.SigningMode
 }
+
+// PublicKeyExporter is implemented by Signers that can export the
+// PEM-encoded public key matching their signing key. Logger backends
+// such as RekorLogger require this to embed the verifier key in the
+// proposed transparency-log entry.
+type PublicKeyExporter interface {
+	PublicKeyPEM() ([]byte, error)
+}

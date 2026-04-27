@@ -8,8 +8,11 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/hex"
+	"encoding/pem"
 	"errors"
+	"fmt"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 )
@@ -71,6 +74,20 @@ func (s *Ed25519Signer) Mode() securityv1alpha1.SigningMode {
 
 // PublicKey returns the Ed25519 public key (for verifying tests).
 func (s *Ed25519Signer) PublicKey() ed25519.PublicKey { return s.pub }
+
+// PublicKeyPEM returns the public key as a PKIX SubjectPublicKeyInfo
+// PEM block. RekorLogger embeds this in each signature when proposing
+// an intoto/v0.0.2 entry.
+func (s *Ed25519Signer) PublicKeyPEM() ([]byte, error) {
+	der, err := x509.MarshalPKIXPublicKey(s.pub)
+	if err != nil {
+		return nil, fmt.Errorf("marshal PKIX SubjectPublicKeyInfo: %w", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: der,
+	}), nil
+}
 
 // VerifyDSSE verifies a DSSE envelope was signed by the given Ed25519
 // public key. Test helper.

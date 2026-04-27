@@ -6,7 +6,8 @@
 //
 // Current implementations:
 //   - StubLogger     in-memory; returns synthetic log entries (dev/test).
-//   - RekorLogger    (next iteration) HTTP client to Rekor v1 API.
+//   - RekorLogger    HTTP client to a Rekor v1 transparency log
+//     (rekor.sigstore.dev or self-hosted).
 //
 // The Logger is invoked by AttestationBundleReconciler after signing,
 // to publish the DSSE envelope to a transparency log. The result
