@@ -124,7 +124,8 @@ func runMain() error {
 	// flags consult the AttestorConfig CR; absent CR falls back to
 	// baked-in defaults (ed25519-dev, no Rekor).
 	effSigningMode, effRekorURL := signingMode, rekorURL
-	if effSigningMode == "" || effRekorURL == "" {
+	var attestorCfg *securityv1alpha1.AttestorConfigSpec
+	{
 		bootClient, bcErr := client.New(mgr.GetConfig(), client.Options{Scheme: scheme})
 		if bcErr != nil {
 			return fmt.Errorf("bootstrap client: %w", bcErr)
@@ -133,6 +134,7 @@ func runMain() error {
 		if lcErr != nil {
 			log.Info("AttestorConfig load failed; falling back to defaults", "error", lcErr.Error())
 		} else if spec != nil {
+			attestorCfg = spec
 			if effSigningMode == "" && spec.SigningMode != "" {
 				effSigningMode = string(spec.SigningMode)
 			}
@@ -145,7 +147,11 @@ func runMain() error {
 		effSigningMode = string(securityv1alpha1.SigningModeEd25519Dev)
 	}
 
-	signer, err := sign.NewSigner(securityv1alpha1.SigningMode(effSigningMode))
+	factoryOpts, err := buildFactoryOptions(securityv1alpha1.SigningMode(effSigningMode), attestorCfg)
+	if err != nil {
+		return fmt.Errorf("build signer options (mode=%s): %w", effSigningMode, err)
+	}
+	signer, err := sign.NewSigner(context.Background(), securityv1alpha1.SigningMode(effSigningMode), factoryOpts)
 	if err != nil {
 		return fmt.Errorf("signer setup (mode=%s): %w", effSigningMode, err)
 	}
@@ -197,6 +203,33 @@ func runMain() error {
 		return fmt.Errorf("manager exited: %w", err)
 	}
 	return nil
+}
+
+// buildFactoryOptions translates AttestorConfig.* into the
+// mode-specific options consumed by sign.NewSigner. Returns nil for
+// modes that don't require options (ed25519-dev, fulcio-keyless stub).
+func buildFactoryOptions(mode securityv1alpha1.SigningMode, cfg *securityv1alpha1.AttestorConfigSpec) (*sign.FactoryOptions, error) {
+	if mode != securityv1alpha1.SigningModeOpenBaoTransit && mode != securityv1alpha1.SigningModeDual {
+		return nil, nil
+	}
+	if cfg == nil || cfg.OpenBao == nil {
+		return nil, fmt.Errorf("AttestorConfig.spec.openbao is required for mode=%s", mode)
+	}
+	ob := cfg.OpenBao
+	if ob.Address == "" || ob.KeyName == "" || ob.AuthRole == "" {
+		return nil, fmt.Errorf("openbao config requires address + keyName + authRole")
+	}
+	return &sign.FactoryOptions{
+		OpenBao: &sign.OpenBaoSignerOptions{
+			Address:            ob.Address,
+			TransitMount:       ob.TransitMount,
+			KeyName:            ob.KeyName,
+			KeyType:            ob.KeyType,
+			AuthMount:          ob.AuthMount,
+			AuthRole:           ob.AuthRole,
+			InsecureSkipVerify: ob.InsecureSkipVerify,
+		},
+	}, nil
 }
 
 // buildWormUploader returns the configured WORM uploader, or nil to

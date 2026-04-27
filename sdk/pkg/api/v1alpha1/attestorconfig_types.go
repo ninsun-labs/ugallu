@@ -34,9 +34,52 @@ type FulcioConfig struct {
 
 // OpenBaoConfig describes the OpenBao transit endpoint and key.
 type OpenBaoConfig struct {
-	Address      string `json:"address"`
-	TransitMount string `json:"transitMount"`
-	KeyName      string `json:"keyName"`
+	// Address is the OpenBao base URL, e.g.
+	// "https://openbao.openbao.svc.cluster.local:8200".
+	Address string `json:"address"`
+
+	// TransitMount is the path of the transit secrets engine,
+	// e.g. "transit".
+	// +kubebuilder:default=transit
+	TransitMount string `json:"transitMount,omitempty"`
+
+	// KeyName is the transit key used to sign the in-toto Statement
+	// PAE. The key MUST be of type ed25519 for ed25519 attestations
+	// (the default), or rsa-pss-sha256/ecdsa-p256 for the matching
+	// SigningMode variants.
+	KeyName string `json:"keyName"`
+
+	// KeyType selects the OpenBao transit key type. Maps to the
+	// corresponding signature algorithm. Default ed25519 mirrors
+	// the in-process Ed25519Signer.
+	// +kubebuilder:default=ed25519
+	// +kubebuilder:validation:Enum=ed25519;ecdsa-p256;rsa-pss-2048
+	KeyType string `json:"keyType,omitempty"`
+
+	// AuthMount is the path of the Kubernetes auth method,
+	// e.g. "auth/kubernetes". Defaults to "auth/kubernetes".
+	// +kubebuilder:default=auth/kubernetes
+	AuthMount string `json:"authMount,omitempty"`
+
+	// AuthRole is the OpenBao Kubernetes auth role bound to the
+	// attestor's ServiceAccount. The role must permit the transit
+	// sign + read-key policies on the configured KeyName.
+	AuthRole string `json:"authRole"`
+
+	// CABundleSecret references a Secret holding the CA cert that
+	// signed the OpenBao server cert (PEM in key "ca.crt"). Empty
+	// uses the system CA store.
+	CABundleSecret *SecretReference `json:"caBundleSecret,omitempty"`
+
+	// InsecureSkipVerify disables TLS verification — dev/lab only.
+	// +kubebuilder:default=false
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
+}
+
+// SecretReference is a namespace-scoped Secret pointer.
+type SecretReference struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // DualModeConfig tunes dual-signature verification semantics.
