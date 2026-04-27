@@ -13,7 +13,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -110,6 +112,32 @@ func runMain() error {
 	providers := map[string]git.Provider{
 		"noop": git.NewNoopProvider(),
 	}
+	if cfg != nil {
+		for i := range cfg.Providers {
+			gp := cfg.Providers[i]
+			if gp.Type == "github" {
+				token, terr := loadProviderToken(context.Background(), bootClient, configNamespace, gp.Auth.SecretRef.Name)
+				if terr != nil {
+					log.Info("github provider: token load failed; provider not registered", "name", gp.Name, "error", terr.Error())
+					continue
+				}
+				apiBase := ""
+				if gp.Host != "" && gp.Host != "github.com" {
+					apiBase = "https://" + gp.Host + "/api/v3"
+				}
+				ghp, gerr := git.NewGitHubProvider(git.GitHubProviderOptions{
+					APIBase: apiBase,
+					Token:   token,
+				})
+				if gerr != nil {
+					log.Info("github provider: construction failed", "name", gp.Name, "error", gerr.Error())
+					continue
+				}
+				providers[gp.Name] = ghp
+				log.Info("github provider registered", "name", gp.Name, "host", gp.Host)
+			}
+		}
+	}
 
 	if err = (&controller.EventResponseReconciler{
 		Client:      mgr.GetClient(),
@@ -126,6 +154,27 @@ func runMain() error {
 		return fmt.Errorf("manager exited: %w", err)
 	}
 	return nil
+}
+
+// loadProviderToken pulls the bearer token out of the Secret named in
+// GitProviderConfig.auth.secretRef. The expected key is "token"
+// (a fine-grained PAT, classic PAT, or GitHub App installation token);
+// fallbacks to "github-token" for compatibility with the secrets
+// shipped by some bootstrap charts.
+func loadProviderToken(ctx context.Context, c client.Client, namespace, secretName string) (string, error) {
+	if secretName == "" {
+		return "", fmt.Errorf("auth.secretRef.name is empty")
+	}
+	sec := &corev1.Secret{}
+	if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: secretName}, sec); err != nil {
+		return "", fmt.Errorf("get secret %s/%s: %w", namespace, secretName, err)
+	}
+	for _, key := range []string{"token", "github-token", "GITHUB_TOKEN"} {
+		if v, ok := sec.Data[key]; ok && len(v) > 0 {
+			return strings.TrimSpace(string(v)), nil
+		}
+	}
+	return "", fmt.Errorf("secret %s/%s has no token / github-token / GITHUB_TOKEN key", namespace, secretName)
 }
 
 // loadConfig fetches the GitOpsResponderConfig singleton, preferring

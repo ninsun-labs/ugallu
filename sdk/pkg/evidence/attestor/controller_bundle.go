@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,10 +36,10 @@ import (
 // `KeyPrefix`) so different installations or tenants can layout their
 // buckets differently. clusterID may be empty in test contexts; the
 // layout still validates.
-func wormKeyFor(bundle *securityv1alpha1.AttestationBundle, when metav1.Time) string {
-	cluster := "unknown"
-	if bundle != nil && bundle.Spec.AttestedFor.Namespace != "" {
-		cluster = bundle.Spec.AttestedFor.Namespace
+func wormKeyFor(bundle *securityv1alpha1.AttestationBundle, clusterID string, when metav1.Time) string {
+	cluster := strings.TrimSpace(clusterID)
+	if cluster == "" {
+		cluster = "unknown"
 	}
 	uid := "no-uid"
 	if bundle != nil && bundle.UID != "" {
@@ -105,7 +106,7 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	now := metav1.Now()
 
 	// Build the in-toto Statement for the parent CR.
-	stmt, statementBytes, err := r.buildStatement(ctx, &bundle.Spec.AttestedFor, now)
+	stmt, statementBytes, clusterID, err := r.buildStatement(ctx, &bundle.Spec.AttestedFor, now)
 	if err != nil {
 		rlog.Error(err, "build statement failed")
 		return ctrl.Result{}, err
@@ -141,7 +142,7 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("marshal envelope: %w", err)
 	}
-	wormKey := wormKeyFor(bundle, now)
+	wormKey := wormKeyFor(bundle, clusterID, now)
 	putOpts := worm.PutOpts{
 		MediaType: "application/vnd.dev.sigstore.bundle+dsse",
 		Metadata: map[string]string{
@@ -253,39 +254,53 @@ func mergeConditions(existing []metav1.Condition, news ...metav1.Condition) []me
 }
 
 // buildStatement fetches the parent CR and produces an in-toto Statement
-// plus its canonical JSON bytes.
-func (r *AttestationBundleReconciler) buildStatement(ctx context.Context, ref *corev1.ObjectReference, signedAt metav1.Time) (sign.Statement, []byte, error) {
+// plus its canonical JSON bytes. Returns the parent's clusterIdentity.
+// clusterID so the caller can partition the WORM key by cluster.
+func (r *AttestationBundleReconciler) buildStatement(ctx context.Context, ref *corev1.ObjectReference, signedAt metav1.Time) (stmt sign.Statement, canonical []byte, clusterID string, err error) {
 	switch ref.Kind {
 	case "SecurityEvent":
 		se := &securityv1alpha1.SecurityEvent{}
 		if err := r.Get(ctx, client.ObjectKey{Name: ref.Name}, se); err != nil {
 			if apierrors.IsNotFound(err) {
-				return sign.Statement{}, nil, fmt.Errorf("parent SecurityEvent %q not found", ref.Name)
+				return sign.Statement{}, nil, "", fmt.Errorf("parent SecurityEvent %q not found", ref.Name)
 			}
-			return sign.Statement{}, nil, err
+			return sign.Statement{}, nil, "", err
 		}
 		stmt, err := sign.BuildSecurityEventStatement(se, r.AttestorMeta, signedAt)
 		if err != nil {
-			return sign.Statement{}, nil, err
+			return sign.Statement{}, nil, "", err
 		}
 		b, err := stmt.MarshalCanonical()
-		return stmt, b, err
+		return stmt, b, se.Spec.ClusterIdentity.ClusterID, err
 	case "EventResponse":
 		er := &securityv1alpha1.EventResponse{}
 		if err := r.Get(ctx, client.ObjectKey{Name: ref.Name}, er); err != nil {
 			if apierrors.IsNotFound(err) {
-				return sign.Statement{}, nil, fmt.Errorf("parent EventResponse %q not found", ref.Name)
+				return sign.Statement{}, nil, "", fmt.Errorf("parent EventResponse %q not found", ref.Name)
 			}
-			return sign.Statement{}, nil, err
+			return sign.Statement{}, nil, "", err
 		}
 		stmt, err := sign.BuildEventResponseStatement(er, r.AttestorMeta, signedAt)
 		if err != nil {
-			return sign.Statement{}, nil, err
+			return sign.Statement{}, nil, "", err
 		}
 		b, err := stmt.MarshalCanonical()
-		return stmt, b, err
+		// EventResponses inherit the parent SE's clusterID; fall back to
+		// the ER's own SecurityEventRef when present and look up its
+		// cluster — for v1alpha1 we just propagate via the SE fetch in
+		// markParentAttested. Returning empty here triggers the
+		// "unknown" fallback in wormKeyFor for EventResponse bundles
+		// until the SE fetch is wired in.
+		clusterID := ""
+		if ref := er.Spec.SecurityEventRef.Name; ref != "" {
+			parent := &securityv1alpha1.SecurityEvent{}
+			if getErr := r.Get(ctx, client.ObjectKey{Name: ref}, parent); getErr == nil {
+				clusterID = parent.Spec.ClusterIdentity.ClusterID
+			}
+		}
+		return stmt, b, clusterID, err
 	default:
-		return sign.Statement{}, nil, fmt.Errorf("unsupported AttestedFor.Kind %q", ref.Kind)
+		return sign.Statement{}, nil, "", fmt.Errorf("unsupported AttestedFor.Kind %q", ref.Kind)
 	}
 }
 
