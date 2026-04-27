@@ -5,6 +5,7 @@
 #   ttl-bin
 #   backpressure-bin
 #   gitops-responder-bin
+#   resolver-bin
 #
 # Cross-compile each binary with:
 #   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w'
@@ -22,5 +23,6 @@ COPY attestor-bin /bin/ugallu-attestor
 COPY ttl-bin /bin/ugallu-ttl
 COPY backpressure-bin /bin/ugallu-backpressure
 COPY gitops-responder-bin /bin/ugallu-gitops-responder
+COPY resolver-bin /bin/ugallu-resolver
 USER 65532:65532
 ENTRYPOINT ["/bin/ugallu-attestor"]
