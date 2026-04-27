@@ -1,0 +1,86 @@
+// Copyright 2026 The ninsun-labs Authors.
+// SPDX-License-Identifier: Apache-2.0
+
+package ttl
+
+import (
+	"context"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
+)
+
+// DefaultTTLConfigNamespace is the namespace TTL reconcilers consult
+// for the singleton TTLConfig CR.
+const DefaultTTLConfigNamespace = "ugallu-system"
+
+// effectiveTTLConfig wraps a (possibly nil) TTLConfigSpec and exposes
+// helpers that fall back to design 09 T3 defaults when the spec is
+// unavailable. nil spec is the "TTLConfig missing" path (T10).
+type effectiveTTLConfig struct {
+	spec *securityv1alpha1.TTLConfigSpec
+}
+
+// loadEffectiveTTLConfig fetches the TTLConfig singleton (preferring
+// name="default") from the given namespace. Missing TTLConfig is not
+// an error: the returned wrapper falls back to baked-in defaults.
+func loadEffectiveTTLConfig(ctx context.Context, c client.Client, namespace string) (effectiveTTLConfig, error) {
+	if namespace == "" {
+		namespace = DefaultTTLConfigNamespace
+	}
+	list := &securityv1alpha1.TTLConfigList{}
+	if err := c.List(ctx, list, client.InNamespace(namespace)); err != nil {
+		return effectiveTTLConfig{}, err
+	}
+	if len(list.Items) == 0 {
+		return effectiveTTLConfig{}, nil
+	}
+	for i := range list.Items {
+		if list.Items[i].Name == "default" {
+			return effectiveTTLConfig{spec: &list.Items[i].Spec}, nil
+		}
+	}
+	return effectiveTTLConfig{spec: &list.Items[0].Spec}, nil
+}
+
+// severityTTL returns the TTL for the given severity, honouring the
+// loaded TTLConfig and falling back to design 09 T3 defaults when
+// either the config or the specific field is unset.
+func (e effectiveTTLConfig) severityTTL(s securityv1alpha1.Severity) time.Duration {
+	if e.spec == nil {
+		return defaultSeverityTTL(s)
+	}
+	sev := e.spec.Defaults.SecurityEvent
+	var d time.Duration
+	switch s {
+	case securityv1alpha1.SeverityCritical:
+		d = sev.Critical.Duration
+	case securityv1alpha1.SeverityHigh:
+		d = sev.High.Duration
+	case securityv1alpha1.SeverityMedium:
+		d = sev.Medium.Duration
+	case securityv1alpha1.SeverityLow:
+		d = sev.Low.Duration
+	case securityv1alpha1.SeverityInfo:
+		d = sev.Info.Duration
+	}
+	if d <= 0 {
+		return defaultSeverityTTL(s)
+	}
+	return d
+}
+
+// bundleGrace returns the AttestationBundle sealed-to-archive grace
+// window from the loaded TTLConfig, falling back to defaultBundleGrace.
+func (e effectiveTTLConfig) bundleGrace() time.Duration {
+	if e.spec == nil {
+		return defaultBundleGrace
+	}
+	g := e.spec.Defaults.AttestationBundle.Grace.Duration
+	if g <= 0 {
+		return defaultBundleGrace
+	}
+	return g
+}
