@@ -6,12 +6,14 @@ package sign
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -137,13 +139,13 @@ func NewOpenBaoSigner(ctx context.Context, opts *OpenBaoSignerOptions) (*OpenBao
 
 	s := &OpenBaoSigner{opts: opts}
 
-	pem, err := s.fetchPublicKey(ctx)
+	pubPEM, err := s.fetchPublicKey(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetch transit public key: %w", err)
 	}
-	s.publicKey = pem
+	s.publicKey = pubPEM
 
-	sum := sha256.Sum256(pem)
+	sum := sha256.Sum256(pubPEM)
 	s.keyID = "openbao:" + opts.TransitMount + "/" + opts.KeyName + ":" + hex.EncodeToString(sum[:8])
 
 	return s, nil
@@ -265,7 +267,31 @@ func (s *OpenBaoSigner) fetchPublicKey(ctx context.Context) ([]byte, error) {
 	if !ok || v.PublicKey == "" {
 		return nil, fmt.Errorf("transit key %q has no version %s", s.opts.KeyName, versionKey)
 	}
-	return []byte(v.PublicKey), nil
+	// OpenBao returns the public key in different shapes per key type:
+	//   - ed25519: raw 32-byte key as base64 ("J3D8aPbo…=") — no PEM
+	//   - rsa-*  : PEM block "PUBLIC KEY" already PKIX-encoded
+	//   - ecdsa-*: PEM block "PUBLIC KEY" already PKIX-encoded
+	// Downstream consumers (Rekor) need a PEM PUBLIC KEY block, so we
+	// canonicalise: if the response already starts with -----BEGIN we
+	// pass it through, otherwise we treat it as raw ed25519 bytes and
+	// wrap it in PKIX.
+	raw := strings.TrimSpace(v.PublicKey)
+	if strings.HasPrefix(raw, "-----BEGIN") {
+		return []byte(v.PublicKey), nil
+	}
+	pubBytes, decErr := base64.StdEncoding.DecodeString(raw)
+	if decErr != nil {
+		return nil, fmt.Errorf("decode raw ed25519 public key: %w", decErr)
+	}
+	if len(pubBytes) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("unexpected raw public key length %d (want %d for ed25519)",
+			len(pubBytes), ed25519.PublicKeySize)
+	}
+	pkixDER, mErr := x509.MarshalPKIXPublicKey(ed25519.PublicKey(pubBytes))
+	if mErr != nil {
+		return nil, fmt.Errorf("marshal PKIX public key: %w", mErr)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pkixDER}), nil
 }
 
 // ensureToken acquires (or renews) the OpenBao client token via the
