@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
@@ -108,10 +109,20 @@ func (r *SecurityEventTTLReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-// SetupWithManager wires the reconciler.
+// SetupWithManager wires the reconciler with controller-runtime
+// defaults (single worker, default workqueue rate limiter).
 func (r *SecurityEventTTLReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return r.SetupWithManagerAndOptions(mgr, controller.Options{})
+}
+
+// SetupWithManagerAndOptions wires the reconciler with caller-supplied
+// controller.Options (typically MaxConcurrentReconciles + a tuned
+// RateLimiter). Used by SetupReconcilers to apply TTLConfig.spec.worker
+// uniformly across the three TTL reconcilers.
+func (r *SecurityEventTTLReconciler) SetupWithManagerAndOptions(mgr ctrl.Manager, opts controller.Options) error { //nolint:gocritic // mirrors controller-runtime's by-value Options API
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("securityevent-ttl").
 		For(&securityv1alpha1.SecurityEvent{}).
+		WithOptions(opts).
 		Complete(r)
 }

@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
@@ -137,10 +138,19 @@ func (r *EventResponseTTLReconciler) parentClusterID(ctx context.Context, er *se
 	return parent.Spec.ClusterIdentity.ClusterID
 }
 
-// SetupWithManager wires the reconciler.
+// SetupWithManager wires the reconciler with controller-runtime
+// defaults. Prefer SetupWithManagerAndOptions in production wiring
+// so TTLConfig.spec.worker tuning takes effect.
 func (r *EventResponseTTLReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return r.SetupWithManagerAndOptions(mgr, controller.Options{})
+}
+
+// SetupWithManagerAndOptions registers the reconciler with the
+// supplied controller.Options.
+func (r *EventResponseTTLReconciler) SetupWithManagerAndOptions(mgr ctrl.Manager, opts controller.Options) error { //nolint:gocritic // mirrors controller-runtime's by-value Options API
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("eventresponse-ttl").
 		For(&securityv1alpha1.EventResponse{}).
+		WithOptions(opts).
 		Complete(r)
 }

@@ -84,3 +84,36 @@ func (e effectiveTTLConfig) bundleGrace() time.Duration {
 	}
 	return g
 }
+
+// DefaultWorkerPoolSize is the per-reconciler concurrency used when
+// neither a CLI flag nor the TTLConfig CR provides a value. Picked
+// conservatively to keep small clusters quiet while still providing
+// headroom over the controller-runtime default of 1.
+const DefaultWorkerPoolSize = 4
+
+// workerPoolSize returns the per-reconciler MaxConcurrentReconciles
+// from the loaded TTLConfig, falling back to DefaultWorkerPoolSize
+// when missing. Values <= 0 are treated as "unset".
+func (e effectiveTTLConfig) workerPoolSize() int {
+	if e.spec == nil {
+		return DefaultWorkerPoolSize
+	}
+	if e.spec.Worker.PoolSize <= 0 {
+		return DefaultWorkerPoolSize
+	}
+	return e.spec.Worker.PoolSize
+}
+
+// queueQPS returns the workqueue token-bucket fill rate (events/sec)
+// when configured, or 0 to mean "no global throttle" (controller-
+// runtime falls back to the per-item exponential backoff).
+func (e effectiveTTLConfig) queueQPS() float64 {
+	if e.spec == nil || e.spec.Worker.QueueRateLimit == nil {
+		return 0
+	}
+	v, ok := e.spec.Worker.QueueRateLimit.AsInt64()
+	if !ok || v <= 0 {
+		return 0
+	}
+	return float64(v)
+}

@@ -4,10 +4,15 @@
 package ttl
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"golang.org/x/time/rate"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/worm"
 )
@@ -48,6 +53,18 @@ type Options struct {
 
 	// WatchdogDedupWindow overrides the anomaly emission dedup window.
 	WatchdogDedupWindow time.Duration
+
+	// MaxConcurrentReconciles caps per-reconciler parallelism. Zero
+	// consults the TTLConfig CR's spec.worker.poolSize (or
+	// DefaultWorkerPoolSize when the CR is absent or unset).
+	MaxConcurrentReconciles int
+
+	// QueueQPS optionally throttles the global rate at which items
+	// are pulled off the workqueue (events/sec). Zero consults the
+	// TTLConfig CR's spec.worker.queueRateLimit; zero on both sides
+	// means "no global throttle" — only the per-item exponential
+	// backoff applies.
+	QueueQPS float64
 }
 
 // SetupReconcilers wires the three TTL reconcilers
@@ -70,13 +87,39 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 		opts.WormUploader = u
 	}
 
+	// Resolve the worker tunables: explicit Options field wins; absent
+	// fields consult the TTLConfig CR; absent CR yields baked defaults.
+	ns := opts.TTLConfigNamespace
+	if ns == "" {
+		ns = DefaultTTLConfigNamespace
+	}
+	cfg, err := loadEffectiveTTLConfig(context.Background(), mgr.GetClient(), ns)
+	if err != nil {
+		// Treat lookup failure as "no CR": preserves bootability when
+		// the CRD or RBAC is mid-deploy. Reconcilers themselves load
+		// the CR per-reconcile so live updates still take effect.
+		cfg = effectiveTTLConfig{}
+	}
+	maxConcurrent := opts.MaxConcurrentReconciles
+	if maxConcurrent <= 0 {
+		maxConcurrent = cfg.workerPoolSize()
+	}
+	queueQPS := opts.QueueQPS
+	if queueQPS <= 0 {
+		queueQPS = cfg.queueQPS()
+	}
+	ctrlOpts := controller.Options{MaxConcurrentReconciles: maxConcurrent}
+	if queueQPS > 0 {
+		ctrlOpts.RateLimiter = newTunedRateLimiter(queueQPS)
+	}
+
 	if err := (&SecurityEventTTLReconciler{
 		Client:                  mgr.GetClient(),
 		Scheme:                  mgr.GetScheme(),
 		WormUploader:            opts.WormUploader,
 		PostponeOnMissingBundle: opts.PostponeOnMissingBundle,
 		TTLConfigNamespace:      opts.TTLConfigNamespace,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManagerAndOptions(mgr, ctrlOpts); err != nil {
 		return fmt.Errorf("setup SecurityEventTTLReconciler: %w", err)
 	}
 	if err := (&EventResponseTTLReconciler{
@@ -85,7 +128,7 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 		WormUploader:            opts.WormUploader,
 		PostponeOnMissingBundle: opts.PostponeOnMissingBundle,
 		TTLConfigNamespace:      opts.TTLConfigNamespace,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManagerAndOptions(mgr, ctrlOpts); err != nil {
 		return fmt.Errorf("setup EventResponseTTLReconciler: %w", err)
 	}
 	if err := (&AttestationBundleTTLReconciler{
@@ -94,7 +137,7 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 		WormUploader:       opts.WormUploader,
 		Grace:              opts.BundleGrace,
 		TTLConfigNamespace: opts.TTLConfigNamespace,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManagerAndOptions(mgr, ctrlOpts); err != nil {
 		return fmt.Errorf("setup AttestationBundleTTLReconciler: %w", err)
 	}
 
@@ -103,10 +146,6 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 		enableWatchdog = *opts.EnableWatchdog
 	}
 	if enableWatchdog {
-		ns := opts.TTLConfigNamespace
-		if ns == "" {
-			ns = DefaultTTLConfigNamespace
-		}
 		if err := (&AttestorWatchdogReconciler{
 			Client:         mgr.GetClient(),
 			Scheme:         mgr.GetScheme(),
@@ -118,4 +157,19 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 		}
 	}
 	return nil
+}
+
+// newTunedRateLimiter combines the standard per-item exponential
+// failure backoff with a global token bucket so a hot reconciler can't
+// drown the apiserver. qps is the bucket fill rate; burst is fixed at
+// 2x qps to absorb minor spikes.
+func newTunedRateLimiter(qps float64) workqueue.TypedRateLimiter[reconcile.Request] {
+	burst := int(qps * 2)
+	if burst < 1 {
+		burst = 1
+	}
+	return workqueue.NewTypedMaxOfRateLimiter(
+		workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](5*time.Millisecond, 1000*time.Second),
+		&workqueue.TypedBucketRateLimiter[reconcile.Request]{Limiter: rate.NewLimiter(rate.Limit(qps), burst)},
+	)
 }

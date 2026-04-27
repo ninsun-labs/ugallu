@@ -87,6 +87,12 @@ func runMain() error {
 	flag.BoolVar(&enableWatchdog, "enable-attestor-watchdog", true, "Emit anomaly SEs when the attestor Lease is stale")
 	flag.DurationVar(&watchdogStale, "watchdog-stale-after", 5*time.Minute, "Lease staleness threshold for attestor watchdog")
 	flag.DurationVar(&watchdogDedup, "watchdog-dedup-window", 5*time.Minute, "Watchdog SE emission dedup window")
+	var (
+		maxConcurrent int
+		queueQPS      float64
+	)
+	flag.IntVar(&maxConcurrent, "max-concurrent-reconciles", 0, "Per-reconciler worker pool size; 0 consults TTLConfig.spec.worker.poolSize")
+	flag.Float64Var(&queueQPS, "queue-qps", 0, "Workqueue token-bucket fill rate (events/sec); 0 consults TTLConfig.spec.worker.queueRateLimit")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
@@ -126,6 +132,8 @@ func runMain() error {
 		EnableWatchdog:          &enableWatchdog,
 		WatchdogStaleAfter:      watchdogStale,
 		WatchdogDedupWindow:     watchdogDedup,
+		MaxConcurrentReconciles: maxConcurrent,
+		QueueQPS:                queueQPS,
 	}); err != nil {
 		return fmt.Errorf("setup ttl reconcilers: %w", err)
 	}
