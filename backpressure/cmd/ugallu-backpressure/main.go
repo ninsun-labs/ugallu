@@ -17,6 +17,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -91,6 +92,14 @@ func runMain() error {
 		LeaderElection:          true,
 		LeaderElectionID:        "ugallu-backpressure-leader",
 		LeaderElectionNamespace: leaderElectionNS,
+		// The backpressure controller writes a single ConfigMap in
+		// cmNamespace; restrict the informer cache to that namespace
+		// so the SA only needs namespaced list/watch perms.
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				cmNamespace: {},
+			},
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("manager creation: %w", err)
