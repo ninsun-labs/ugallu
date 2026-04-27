@@ -28,8 +28,27 @@ type AttestorConfigSpec struct {
 
 // FulcioConfig describes the Fulcio CA + OIDC issuer.
 type FulcioConfig struct {
-	Issuer    string `json:"issuer"`
+	// Issuer is the OIDC issuer URL (e.g. the K8s API server's
+	// well-known issuer, or a SPIFFE/Auth0/etc identity provider).
+	Issuer string `json:"issuer"`
+
+	// FulcioURL is the Fulcio v2 CA endpoint base URL.
 	FulcioURL string `json:"fulcioURL"`
+
+	// OIDCTokenPath is the file path of the OIDC token presented to
+	// Fulcio. Defaults to the projected SA token mount when empty
+	// (DefaultFulcioOIDCTokenPath in the SDK).
+	OIDCTokenPath string `json:"oidcTokenPath,omitempty"`
+
+	// CABundleSecret references a Secret containing the Fulcio CA
+	// trust bundle in key "ca.crt". Empty uses the system trust
+	// store (the default for the public Sigstore Fulcio).
+	CABundleSecret *SecretReference `json:"caBundleSecret,omitempty"`
+
+	// InsecureSkipVerify disables TLS verification toward Fulcio —
+	// dev/lab only.
+	// +kubebuilder:default=false
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 }
 
 // OpenBaoConfig describes the OpenBao transit endpoint and key.

@@ -64,9 +64,38 @@ spec:
                 description: Fulcio configures Fulcio keyless signing (used when SigningMode
                   is fulcio-keyless or dual).
                 properties:
+                  caBundleSecret:
+                    description: |-
+                      CABundleSecret references a Secret containing the Fulcio CA
+                      trust bundle in key "ca.crt". Empty uses the system trust
+                      store (the default for the public Sigstore Fulcio).
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    required:
+                    - name
+                    type: object
                   fulcioURL:
+                    description: FulcioURL is the Fulcio v2 CA endpoint base URL.
                     type: string
+                  insecureSkipVerify:
+                    default: false
+                    description: |-
+                      InsecureSkipVerify disables TLS verification toward Fulcio —
+                      dev/lab only.
+                    type: boolean
                   issuer:
+                    description: |-
+                      Issuer is the OIDC issuer URL (e.g. the K8s API server's
+                      well-known issuer, or a SPIFFE/Auth0/etc identity provider).
+                    type: string
+                  oidcTokenPath:
+                    description: |-
+                      OIDCTokenPath is the file path of the OIDC token presented to
+                      Fulcio. Defaults to the projected SA token mount when empty
+                      (DefaultFulcioOIDCTokenPath in the SDK).
                     type: string
                 required:
                 - fulcioURL

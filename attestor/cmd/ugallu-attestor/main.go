@@ -227,20 +227,41 @@ func runMain() error {
 
 // buildFactoryOptions translates AttestorConfig.* into the
 // mode-specific options consumed by sign.NewSigner. Returns nil for
-// modes that don't require options (ed25519-dev, fulcio-keyless stub).
+// modes that don't require options (ed25519-dev).
 func buildFactoryOptions(mode securityv1alpha1.SigningMode, cfg *securityv1alpha1.AttestorConfigSpec) (*sign.FactoryOptions, error) {
-	if mode != securityv1alpha1.SigningModeOpenBaoTransit && mode != securityv1alpha1.SigningModeDual {
+	out := &sign.FactoryOptions{}
+
+	needFulcio := mode == securityv1alpha1.SigningModeFulcioKeyless || mode == securityv1alpha1.SigningModeDual
+	needOpenBao := mode == securityv1alpha1.SigningModeOpenBaoTransit || mode == securityv1alpha1.SigningModeDual
+
+	if !needFulcio && !needOpenBao {
 		return nil, nil
 	}
-	if cfg == nil || cfg.OpenBao == nil {
-		return nil, fmt.Errorf("AttestorConfig.spec.openbao is required for mode=%s", mode)
+
+	if needFulcio {
+		if cfg == nil || cfg.Fulcio == nil {
+			return nil, fmt.Errorf("AttestorConfig.spec.fulcio is required for mode=%s", mode)
+		}
+		fc := cfg.Fulcio
+		if fc.FulcioURL == "" {
+			return nil, fmt.Errorf("fulcio config requires fulcioURL")
+		}
+		out.Fulcio = &sign.FulcioSignerOptions{
+			FulcioURL:          fc.FulcioURL,
+			OIDCTokenPath:      fc.OIDCTokenPath,
+			InsecureSkipVerify: fc.InsecureSkipVerify,
+		}
 	}
-	ob := cfg.OpenBao
-	if ob.Address == "" || ob.KeyName == "" || ob.AuthRole == "" {
-		return nil, fmt.Errorf("openbao config requires address + keyName + authRole")
-	}
-	return &sign.FactoryOptions{
-		OpenBao: &sign.OpenBaoSignerOptions{
+
+	if needOpenBao {
+		if cfg == nil || cfg.OpenBao == nil {
+			return nil, fmt.Errorf("AttestorConfig.spec.openbao is required for mode=%s", mode)
+		}
+		ob := cfg.OpenBao
+		if ob.Address == "" || ob.KeyName == "" || ob.AuthRole == "" {
+			return nil, fmt.Errorf("openbao config requires address + keyName + authRole")
+		}
+		out.OpenBao = &sign.OpenBaoSignerOptions{
 			Address:            ob.Address,
 			TransitMount:       ob.TransitMount,
 			KeyName:            ob.KeyName,
@@ -248,8 +269,10 @@ func buildFactoryOptions(mode securityv1alpha1.SigningMode, cfg *securityv1alpha
 			AuthMount:          ob.AuthMount,
 			AuthRole:           ob.AuthRole,
 			InsecureSkipVerify: ob.InsecureSkipVerify,
-		},
-	}, nil
+		}
+	}
+
+	return out, nil
 }
 
 // buildWormUploader returns the configured WORM uploader, or nil to
