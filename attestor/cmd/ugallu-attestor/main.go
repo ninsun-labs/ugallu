@@ -82,8 +82,10 @@ func runMain() error {
 	flag.StringVar(&instanceName, "instance", os.Getenv("HOSTNAME"), "Attestor instance identifier (recorded in the in-toto Statement; defaults to $HOSTNAME)")
 	flag.StringVar(&rekorURL, "rekor-url", "", "Rekor v1 base URL override. Empty consults AttestorConfig (rekor.enabled+rekor.url); a missing/disabled config falls back to the StubLogger.")
 	flag.StringVar(&attestorConfigNS, "attestor-config-namespace", "ugallu-system", "Namespace of the AttestorConfig singleton")
+	var wormConfigNS string
+	flag.StringVar(&wormConfigNS, "worm-config-namespace", "ugallu-system", "Namespace of the WORMConfig singleton")
 
-	flag.StringVar(&wormBackend, "worm-backend", "stub", "WORM backend: stub|s3")
+	flag.StringVar(&wormBackend, "worm-backend", "", "WORM backend override: stub|s3. Empty consults WORMConfig (S3 backends imply s3) and falls back to stub.")
 	flag.StringVar(&wormStubDir, "worm-stub-dir", "/tmp/ugallu-worm", "Filesystem WORM stub base directory (worm-backend=stub)")
 	flag.StringVar(&s3Bucket, "worm-s3-bucket", "", "S3 bucket for evidence (worm-backend=s3)")
 	flag.StringVar(&s3Region, "worm-s3-region", "us-east-1", "S3 region")
@@ -124,13 +126,18 @@ func runMain() error {
 	// flags consult the AttestorConfig CR; absent CR falls back to
 	// baked-in defaults (ed25519-dev, no Rekor).
 	effSigningMode, effRekorURL := signingMode, rekorURL
-	var attestorCfg *securityv1alpha1.AttestorConfigSpec
+	var (
+		attestorCfg *securityv1alpha1.AttestorConfigSpec
+		wormCfg     *securityv1alpha1.WORMConfigSpec
+		bootClient  client.Client
+	)
 	{
-		bootClient, bcErr := client.New(mgr.GetConfig(), client.Options{Scheme: scheme})
+		bc, bcErr := client.New(mgr.GetConfig(), client.Options{Scheme: scheme})
 		if bcErr != nil {
 			return fmt.Errorf("bootstrap client: %w", bcErr)
 		}
-		spec, lcErr := attestor.LoadAttestorConfig(context.Background(), bootClient, attestorConfigNS)
+		bootClient = bc
+		spec, lcErr := attestor.LoadAttestorConfig(context.Background(), bc, attestorConfigNS)
 		if lcErr != nil {
 			log.Info("AttestorConfig load failed; falling back to defaults", "error", lcErr.Error())
 		} else if spec != nil {
@@ -141,6 +148,12 @@ func runMain() error {
 			if effRekorURL == "" && spec.Rekor.Enabled {
 				effRekorURL = spec.Rekor.URL
 			}
+		}
+		wspec, wErr := attestor.LoadWORMConfig(context.Background(), bc, wormConfigNS)
+		if wErr != nil {
+			log.Info("WORMConfig load failed; falling back to flags", "error", wErr.Error())
+		} else if wspec != nil {
+			wormCfg = wspec
 		}
 	}
 	if effSigningMode == "" {
@@ -175,7 +188,14 @@ func runMain() error {
 		log.Info("rekor logger ready", "url", effRekorURL)
 	}
 
-	wormUploader, err := buildWormUploader(wormBackend, s3Bucket, s3Region, s3Endpoint, s3PathStyle, s3KeyPrefix, s3LockMode, s3AccessKey, s3SecretKey, s3SecretKeyFile)
+	effWormRetention := wormRetention
+	if effWormRetention == 0 && wormCfg != nil && wormCfg.Retention.Bundle.Duration > 0 {
+		effWormRetention = wormCfg.Retention.Bundle.Duration
+	}
+
+	wormUploader, err := buildWormUploader(context.Background(), bootClient, wormConfigNS, wormCfg, wormBackend,
+		s3Bucket, s3Region, s3Endpoint, s3PathStyle, s3KeyPrefix, s3LockMode,
+		s3AccessKey, s3SecretKey, s3SecretKeyFile)
 	if err != nil {
 		return fmt.Errorf("worm uploader: %w", err)
 	}
@@ -188,7 +208,7 @@ func runMain() error {
 		Logger:        transparencyLogger,
 		WormUploader:  wormUploader,
 		WormStubDir:   wormStubDir,
-		WormRetention: wormRetention,
+		WormRetention: effWormRetention,
 		Attestor: sign.AttestorMeta{
 			Name:     "ugallu-attestor",
 			Version:  version,
@@ -234,14 +254,42 @@ func buildFactoryOptions(mode securityv1alpha1.SigningMode, cfg *securityv1alpha
 
 // buildWormUploader returns the configured WORM uploader, or nil to
 // have attestor.SetupReconcilers build a default StubUploader at
-// WormStubDir.
-func buildWormUploader(backend, bucket, region, endpoint string, pathStyle bool, keyPrefix, lockMode, accessKey, secretKey, secretKeyFile string) (worm.Uploader, error) {
+// WormStubDir. Resolution precedence is flag > WORMConfig CR > default;
+// an empty --worm-backend selects "s3" iff a WORMConfig with an S3
+// backend is present, otherwise falls back to the stub.
+func buildWormUploader(
+	ctx context.Context,
+	c client.Client,
+	wormCfgNS string,
+	wormCfg *securityv1alpha1.WORMConfigSpec,
+	backend, bucket, region, endpoint string,
+	pathStyle bool,
+	keyPrefix, lockMode, accessKey, secretKey, secretKeyFile string,
+) (worm.Uploader, error) {
+	if backend == "" {
+		if wormCfg != nil && isS3Backend(wormCfg.Backend) {
+			backend = "s3"
+		} else {
+			backend = "stub"
+		}
+	}
 	switch backend {
-	case "", "stub":
+	case "stub":
 		return nil, nil
 	case "s3":
+		if wormCfg != nil {
+			if bucket == "" {
+				bucket = wormCfg.Bucket
+			}
+			if region == "" {
+				region = wormCfg.Region
+			}
+			if endpoint == "" {
+				endpoint = wormCfg.Endpoint
+			}
+		}
 		if bucket == "" {
-			return nil, fmt.Errorf("--worm-s3-bucket is required when --worm-backend=s3")
+			return nil, fmt.Errorf("worm s3 backend requires a bucket (flag --worm-s3-bucket or WORMConfig.spec.bucket)")
 		}
 		if secretKey == "" && secretKeyFile != "" {
 			b, err := os.ReadFile(secretKeyFile) //nolint:gosec // path comes from operator-controlled flag
@@ -250,7 +298,14 @@ func buildWormUploader(backend, bucket, region, endpoint string, pathStyle bool,
 			}
 			secretKey = string(b)
 		}
-		return worm.NewS3Uploader(context.Background(), &worm.S3UploaderOptions{
+		if accessKey == "" && secretKey == "" && wormCfg != nil {
+			ak, sk, err := attestor.ResolveWORMCredentials(ctx, c, wormCfgNS, wormCfg)
+			if err != nil {
+				return nil, fmt.Errorf("resolve worm credentials: %w", err)
+			}
+			accessKey, secretKey = ak, sk
+		}
+		return worm.NewS3Uploader(ctx, &worm.S3UploaderOptions{
 			Bucket:         bucket,
 			Region:         region,
 			EndpointURL:    endpoint,
@@ -262,5 +317,18 @@ func buildWormUploader(backend, bucket, region, endpoint string, pathStyle bool,
 		})
 	default:
 		return nil, fmt.Errorf("unknown --worm-backend %q (want stub|s3)", backend)
+	}
+}
+
+// isS3Backend reports whether the configured WORM backend resolves to
+// the S3-compatible uploader.
+func isS3Backend(b securityv1alpha1.WORMBackend) bool {
+	switch b {
+	case securityv1alpha1.WORMBackendSeaweedFS,
+		securityv1alpha1.WORMBackendAWSS3,
+		securityv1alpha1.WORMBackendRustFS:
+		return true
+	default:
+		return false
 	}
 }
