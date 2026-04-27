@@ -1,13 +1,13 @@
 // Copyright 2026 The ninsun-labs Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Command ugallu-resolver is the DaemonSet binary providing subject lookup
-// to detection sources, reasoners, and responders.
+// Command ugallu-resolver is the DaemonSet binary providing subject
+// lookup to detection sources, reasoners, and responders.
 //
-// This is a pre-alpha skeleton: the gRPC server registers all RPCs from
-// the v1 proto contract, but every lookup returns Unresolved=true with a
-// diagnostic. The eBPF cgroup tracker, informer cache, indices, and
-// tombstone GC are pending.
+// Phase 1: informer-backed cache + four working RPCs (PodIP, PodUID,
+// ContainerID, SAUsername). The eBPF cgroup tracker (ResolveByCgroupID)
+// and /proc walker (ResolveByPID) are stubbed Unresolved and land in
+// follow-up commits per the resolver phasing plan in design 03.
 package main
 
 import (
@@ -17,15 +17,21 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"sync"
 	"syscall"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
-	resolverv1 "github.com/ninsun-labs/ugallu/sdk/pkg/resolver/clientv1"
+	serverv1 "github.com/ninsun-labs/ugallu/sdk/pkg/resolver/serverv1"
 )
 
 const version = "v0.0.1-alpha.1"
@@ -39,11 +45,21 @@ func main() {
 
 func runMain() error {
 	var (
-		grpcAddr   string
-		unixSocket string
+		grpcAddr          string
+		unixSocket        string
+		metricsAddr       string
+		kubeconfig        string
+		informerResync    time.Duration
+		tombstoneGrace    time.Duration
+		tombstoneInterval time.Duration
 	)
 	flag.StringVar(&grpcAddr, "grpc-addr", ":9000", "TCP address for cross-node gRPC server")
 	flag.StringVar(&unixSocket, "unix-socket", "/var/run/ugallu/resolver.sock", "Unix socket path for local-node gRPC")
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "Prometheus metrics bind address")
+	flag.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig file (empty uses in-cluster config)")
+	flag.DurationVar(&informerResync, "informer-resync", 10*time.Minute, "Shared informer full re-list interval")
+	flag.DurationVar(&tombstoneGrace, "tombstone-grace", 60*time.Second, "Pod tombstone retention window")
+	flag.DurationVar(&tombstoneInterval, "tombstone-interval", 30*time.Second, "Tombstone GC scan period")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil)).With(
@@ -55,16 +71,48 @@ func runMain() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	if err := run(ctx, log, grpcAddr, unixSocket); err != nil {
-		return err
+	cfg, err := loadKubeConfig(kubeconfig)
+	if err != nil {
+		return fmt.Errorf("kube config: %w", err)
 	}
-	log.Info("shutdown complete")
-	return nil
+	client, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("kube client: %w", err)
+	}
+
+	srv, err := serverv1.Bootstrap(ctx, serverv1.Options{
+		Client:            client,
+		Log:               log,
+		InformerResync:    informerResync,
+		TombstoneGrace:    tombstoneGrace,
+		TombstoneInterval: tombstoneInterval,
+	})
+	if err != nil {
+		return fmt.Errorf("resolver bootstrap: %w", err)
+	}
+	log.Info("resolver bootstrap complete", "cache", srv.Cache.String())
+
+	return run(ctx, log, grpcAddr, unixSocket, metricsAddr, srv)
 }
 
-func run(ctx context.Context, log *slog.Logger, grpcAddr, unixSocket string) error {
-	server := grpc.NewServer()
-	resolverv1.RegisterResolverServer(server, &skeletonServer{log: log})
+func loadKubeConfig(path string) (*rest.Config, error) {
+	if path != "" {
+		return clientcmd.BuildConfigFromFlags("", path)
+	}
+	cfg, err := rest.InClusterConfig()
+	if err == nil {
+		return cfg, nil
+	}
+	if errors.Is(err, rest.ErrNotInCluster) {
+		return clientcmd.BuildConfigFromFlags("",
+			clientcmd.NewDefaultClientConfigLoadingRules().GetDefaultFilename())
+	}
+	return nil, err
+}
+
+func run(ctx context.Context, log *slog.Logger, grpcAddr, unixSocket, metricsAddr string, srv *serverv1.Server) error {
+	grpcSrv := grpc.NewServer()
+	serverv1.Register(grpcSrv, srv)
 
 	tcpListener, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
@@ -88,13 +136,19 @@ func run(ctx context.Context, log *slog.Logger, grpcAddr, unixSocket string) err
 		}
 	}
 
+	metricsSrv := &http.Server{
+		Addr:              metricsAddr,
+		Handler:           promhttp.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
 	var wg sync.WaitGroup
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 3)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if serveErr := server.Serve(tcpListener); serveErr != nil && !errors.Is(serveErr, grpc.ErrServerStopped) {
+		if serveErr := grpcSrv.Serve(tcpListener); serveErr != nil && !errors.Is(serveErr, grpc.ErrServerStopped) {
 			errCh <- fmt.Errorf("tcp serve: %w", serveErr)
 		}
 	}()
@@ -103,71 +157,35 @@ func run(ctx context.Context, log *slog.Logger, grpcAddr, unixSocket string) err
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if serveErr := server.Serve(unixListener); serveErr != nil && !errors.Is(serveErr, grpc.ErrServerStopped) {
+			if serveErr := grpcSrv.Serve(unixListener); serveErr != nil && !errors.Is(serveErr, grpc.ErrServerStopped) {
 				errCh <- fmt.Errorf("unix serve: %w", serveErr)
 			}
 		}()
 	}
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Info("listening", "transport", "metrics", "addr", metricsAddr)
+		if serveErr := metricsSrv.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			errCh <- fmt.Errorf("metrics serve: %w", serveErr)
+		}
+	}()
+
 	select {
 	case <-ctx.Done():
 		log.Info("signal received, draining gRPC")
-		server.GracefulStop()
+		grpcSrv.GracefulStop()
+		shutCtx, shutCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_ = metricsSrv.Shutdown(shutCtx)
+		shutCancel()
 		wg.Wait()
+		log.Info("shutdown complete")
 		return nil
 	case err := <-errCh:
-		server.GracefulStop()
+		grpcSrv.GracefulStop()
+		_ = metricsSrv.Close()
 		wg.Wait()
 		return err
-	}
-}
-
-// skeletonServer returns Unresolved=true for every lookup. Replace with the
-// real implementation when the eBPF tracker + informer cache land.
-type skeletonServer struct {
-	resolverv1.UnimplementedResolverServer
-	log *slog.Logger
-}
-
-func (s *skeletonServer) ResolveByCgroupID(_ context.Context, req *resolverv1.CgroupIDRequest) (*resolverv1.SubjectResponse, error) {
-	s.log.Debug("ResolveByCgroupID", "cgroup_id", req.GetCgroupId())
-	return unresolved("ResolveByCgroupID skeleton"), nil
-}
-
-func (s *skeletonServer) ResolveByPID(_ context.Context, req *resolverv1.PIDRequest) (*resolverv1.SubjectResponse, error) {
-	s.log.Debug("ResolveByPID", "pid", req.GetPid())
-	return unresolved("ResolveByPID skeleton"), nil
-}
-
-func (s *skeletonServer) ResolveByPodIP(_ context.Context, req *resolverv1.PodIPRequest) (*resolverv1.SubjectResponse, error) {
-	s.log.Debug("ResolveByPodIP", "ip", req.GetIp())
-	return unresolved("ResolveByPodIP skeleton"), nil
-}
-
-func (s *skeletonServer) ResolveByPodUID(_ context.Context, req *resolverv1.PodUIDRequest) (*resolverv1.SubjectResponse, error) {
-	s.log.Debug("ResolveByPodUID", "uid", req.GetUid())
-	return unresolved("ResolveByPodUID skeleton"), nil
-}
-
-func (s *skeletonServer) ResolveByContainerID(_ context.Context, req *resolverv1.ContainerIDRequest) (*resolverv1.SubjectResponse, error) {
-	s.log.Debug("ResolveByContainerID", "id", req.GetContainerId())
-	return unresolved("ResolveByContainerID skeleton"), nil
-}
-
-func (s *skeletonServer) ResolveBySAUsername(_ context.Context, req *resolverv1.SAUsernameRequest) (*resolverv1.SubjectResponse, error) {
-	s.log.Debug("ResolveBySAUsername", "username", req.GetUsername())
-	return unresolved("ResolveBySAUsername skeleton"), nil
-}
-
-func (s *skeletonServer) Watch(_ *resolverv1.WatchRequest, _ resolverv1.Resolver_WatchServer) error {
-	// Skeleton: close stream immediately. Real implementation will stream
-	// SubjectChange events from the informer cache.
-	return nil
-}
-
-func unresolved(diag string) *resolverv1.SubjectResponse {
-	return &resolverv1.SubjectResponse{
-		Unresolved: true,
-		Diagnostic: diag,
 	}
 }
