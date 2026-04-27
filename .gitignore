@@ -10,6 +10,7 @@ out/
 
 # Compiled binaries dropped at module root by `go build ./...`
 /attestor/ugallu-attestor
+/backpressure/ugallu-backpressure
 /resolver/ugallu-resolver
 /ttl/ugallu-ttl
 /cmd/ugallu/ugallu
