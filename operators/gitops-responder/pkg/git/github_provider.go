@@ -29,9 +29,16 @@ type GitHubProviderOptions struct {
 	// APIBase is the REST API root. Empty defaults to DefaultGitHubAPI.
 	APIBase string
 
-	// Token is the personal access token (or GitHub App installation
-	// token) used as Bearer credential. Required.
+	// Token is a static Bearer credential — typically a fine-grained
+	// or classic PAT. Mutually exclusive with AppCreds: at least one
+	// of the two must be set.
 	Token string
+
+	// AppCreds carries GitHub App credentials (AppID +
+	// InstallationID + PrivateKeyPEM). When set, the provider mints a
+	// short-lived JWT, exchanges it for an installation access token,
+	// and refreshes the token before expiry on every Apply.
+	AppCreds *GitHubAppCreds
 
 	// HTTPClient is reused across requests; nil triggers a default
 	// 30s-timeout client.
@@ -52,14 +59,21 @@ type GitHubProviderOptions struct {
 //
 //nolint:revive // GitHub*-prefixed names match the upstream API.
 type GitHubProvider struct {
-	opts GitHubProviderOptions
+	opts   GitHubProviderOptions
+	tokens tokenSource
 }
 
-// NewGitHubProvider constructs a provider. token is required; APIBase
-// falls back to DefaultGitHubAPI when empty.
+// NewGitHubProvider constructs a provider. Exactly one of opts.Token
+// or opts.AppCreds must be set. APIBase falls back to DefaultGitHubAPI
+// when empty.
 func NewGitHubProvider(opts GitHubProviderOptions) (*GitHubProvider, error) {
-	if strings.TrimSpace(opts.Token) == "" {
-		return nil, errors.New("github provider: Token is required")
+	hasToken := strings.TrimSpace(opts.Token) != ""
+	hasApp := opts.AppCreds != nil
+	switch {
+	case !hasToken && !hasApp:
+		return nil, errors.New("github provider: either Token or AppCreds must be set")
+	case hasToken && hasApp:
+		return nil, errors.New("github provider: Token and AppCreds are mutually exclusive")
 	}
 	if opts.APIBase == "" {
 		opts.APIBase = DefaultGitHubAPI
@@ -68,7 +82,17 @@ func NewGitHubProvider(opts GitHubProviderOptions) (*GitHubProvider, error) {
 	if opts.HTTPClient == nil {
 		opts.HTTPClient = &http.Client{Timeout: 30 * time.Second}
 	}
-	return &GitHubProvider{opts: opts}, nil
+	var tokens tokenSource
+	if hasApp {
+		ats, err := newAppTokenSource(*opts.AppCreds, opts.APIBase, opts.HTTPClient)
+		if err != nil {
+			return nil, fmt.Errorf("github app credentials: %w", err)
+		}
+		tokens = ats
+	} else {
+		tokens = staticTokenSource{value: opts.Token}
+	}
+	return &GitHubProvider{opts: opts, tokens: tokens}, nil
 }
 
 // Name reports the provider identifier.
@@ -343,7 +367,11 @@ func (p *GitHubProvider) do(ctx context.Context, method, url string, payload any
 	if err != nil {
 		return nil, 0, fmt.Errorf("build request: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+p.opts.Token)
+	bearer, tokErr := p.tokens.Token(ctx)
+	if tokErr != nil {
+		return nil, 0, fmt.Errorf("acquire bearer token: %w", tokErr)
+	}
+	req.Header.Set("Authorization", "Bearer "+bearer)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 	if payload != nil {

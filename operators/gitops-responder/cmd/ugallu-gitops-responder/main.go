@@ -115,27 +115,45 @@ func runMain() error {
 	if cfg != nil {
 		for i := range cfg.Providers {
 			gp := cfg.Providers[i]
-			if gp.Type == "github" {
-				token, terr := loadProviderToken(context.Background(), bootClient, configNamespace, gp.Auth.SecretRef.Name)
-				if terr != nil {
-					log.Info("github provider: token load failed; provider not registered", "name", gp.Name, "error", terr.Error())
-					continue
-				}
-				apiBase := ""
-				if gp.Host != "" && gp.Host != "github.com" {
-					apiBase = "https://" + gp.Host + "/api/v3"
-				}
-				ghp, gerr := git.NewGitHubProvider(git.GitHubProviderOptions{
-					APIBase: apiBase,
-					Token:   token,
-				})
-				if gerr != nil {
-					log.Info("github provider: construction failed", "name", gp.Name, "error", gerr.Error())
-					continue
-				}
-				providers[gp.Name] = ghp
-				log.Info("github provider registered", "name", gp.Name, "host", gp.Host)
+			if gp.Type != "github" {
+				continue
 			}
+			apiBase := ""
+			if gp.Host != "" && gp.Host != "github.com" {
+				apiBase = "https://" + gp.Host + "/api/v3"
+			}
+			gpOpts := git.GitHubProviderOptions{APIBase: apiBase}
+
+			// Resolve credentials: Secret may carry either a static
+			// PAT (key=token) or GitHub App credentials (app-id +
+			// installation-id + private-key.pem). App-mode wins when
+			// both are present.
+			creds, terr := loadGitHubCredentials(context.Background(), bootClient, configNamespace, gp.Auth.SecretRef.Name)
+			if terr != nil {
+				log.Info("github provider: credentials load failed; provider not registered", "name", gp.Name, "error", terr.Error())
+				continue
+			}
+			switch {
+			case creds.appCreds != nil:
+				gpOpts.AppCreds = creds.appCreds
+			case creds.token != "":
+				gpOpts.Token = creds.token
+			default:
+				log.Info("github provider: secret has neither token nor app credentials", "name", gp.Name)
+				continue
+			}
+
+			ghp, gerr := git.NewGitHubProvider(gpOpts)
+			if gerr != nil {
+				log.Info("github provider: construction failed", "name", gp.Name, "error", gerr.Error())
+				continue
+			}
+			providers[gp.Name] = ghp
+			mode := "pat"
+			if creds.appCreds != nil {
+				mode = "github-app"
+			}
+			log.Info("github provider registered", "name", gp.Name, "host", gp.Host, "mode", mode)
 		}
 	}
 
@@ -156,25 +174,53 @@ func runMain() error {
 	return nil
 }
 
-// loadProviderToken pulls the bearer token out of the Secret named in
-// GitProviderConfig.auth.secretRef. The expected key is "token"
-// (a fine-grained PAT, classic PAT, or GitHub App installation token);
-// fallbacks to "github-token" for compatibility with the secrets
-// shipped by some bootstrap charts.
-func loadProviderToken(ctx context.Context, c client.Client, namespace, secretName string) (string, error) {
+// gitHubCredentials carries whichever auth shape the operator
+// configured. Exactly one of (token, appCreds) is non-zero; an empty
+// struct means the Secret was found but had no recognised keys.
+type gitHubCredentials struct {
+	token    string
+	appCreds *git.GitHubAppCreds
+}
+
+// loadGitHubCredentials inspects the Secret referenced by
+// GitProviderConfig.auth.secretRef and returns either a PAT (key
+// "token" / "github-token" / "GITHUB_TOKEN") or a GitHub App credential
+// triple (app-id + installation-id + private-key.pem). When both
+// shapes coexist, the App credentials win because they are
+// shorter-lived and don't need rotation.
+func loadGitHubCredentials(ctx context.Context, c client.Client, namespace, secretName string) (gitHubCredentials, error) {
+	out := gitHubCredentials{}
 	if secretName == "" {
-		return "", fmt.Errorf("auth.secretRef.name is empty")
+		return out, fmt.Errorf("auth.secretRef.name is empty")
 	}
 	sec := &corev1.Secret{}
 	if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: secretName}, sec); err != nil {
-		return "", fmt.Errorf("get secret %s/%s: %w", namespace, secretName, err)
+		return out, fmt.Errorf("get secret %s/%s: %w", namespace, secretName, err)
 	}
+	// GitHub App shape — both AppID/ClientID + InstallationID + PEM
+	// must be present; otherwise we fall through to PAT.
+	appID := strings.TrimSpace(string(sec.Data["app-id"]))
+	if appID == "" {
+		appID = strings.TrimSpace(string(sec.Data["client-id"]))
+	}
+	installationID := strings.TrimSpace(string(sec.Data["installation-id"]))
+	pem := sec.Data["private-key.pem"]
+	if appID != "" && installationID != "" && len(pem) > 0 {
+		out.appCreds = &git.GitHubAppCreds{
+			AppID:          appID,
+			InstallationID: installationID,
+			PrivateKeyPEM:  pem,
+		}
+		return out, nil
+	}
+	// PAT shape.
 	for _, key := range []string{"token", "github-token", "GITHUB_TOKEN"} {
 		if v, ok := sec.Data[key]; ok && len(v) > 0 {
-			return strings.TrimSpace(string(v)), nil
+			out.token = strings.TrimSpace(string(v))
+			return out, nil
 		}
 	}
-	return "", fmt.Errorf("secret %s/%s has no token / github-token / GITHUB_TOKEN key", namespace, secretName)
+	return out, fmt.Errorf("secret %s/%s has neither GitHub App creds (app-id/client-id + installation-id + private-key.pem) nor a PAT key (token/github-token/GITHUB_TOKEN)", namespace, secretName)
 }
 
 // loadConfig fetches the GitOpsResponderConfig singleton, preferring
