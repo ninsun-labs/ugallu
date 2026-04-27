@@ -33,13 +33,34 @@ type Options struct {
 
 	// TombstoneInterval overrides the GC scan period (default 30s).
 	TombstoneInterval time.Duration
+
+	// SysFsCgroupRoot overrides the cgroup v2 mountpoint
+	// (DefaultSysFsCgroup when empty).
+	SysFsCgroupRoot string
+
+	// ProcRoot overrides /proc (DefaultProcRoot when empty).
+	ProcRoot string
+
+	// CgroupRescanInterval is the period at which the cgroup walker
+	// re-runs to pick up pods created after bootstrap. Zero or
+	// negative values disable the rescan loop. Defaults to
+	// DefaultCgroupRescanInterval. Phase 3's eBPF tracer will obsolete
+	// this in favour of live updates.
+	CgroupRescanInterval time.Duration
+
+	// SkipCgroupWalk disables the cold-walk + rescan entirely (used
+	// in unit tests where /sys/fs/cgroup isn't a kubepods hierarchy).
+	SkipCgroupWalk bool
 }
 
 // Bootstrap builds the Cache, attaches informer event handlers, waits
 // for cache sync, registers metrics, and returns the gRPC server
 // implementation ready to be installed on a *grpc.Server. The
 // tombstone GC runs in a goroutine bound to ctx.
-func Bootstrap(ctx context.Context, opts Options) (*Server, error) {
+func Bootstrap(ctx context.Context, opts *Options) (*Server, error) {
+	if opts == nil {
+		return nil, fmt.Errorf("opts is required")
+	}
 	if opts.Client == nil {
 		return nil, fmt.Errorf("Options.Client is required")
 	}
@@ -62,7 +83,28 @@ func Bootstrap(ctx context.Context, opts Options) (*Server, error) {
 
 	go RunTombstoneGC(ctx, cache, opts.TombstoneInterval, log)
 
-	return NewServer(cache, log), nil
+	if !opts.SkipCgroupWalk {
+		// Cold-walk seeds the cgroup-ID index for every pod that
+		// existed at startup. New pods after bootstrap are picked up
+		// by the rescan loop (until Phase 3 eBPF replaces it with
+		// live updates).
+		n, err := WalkCgroupFS(opts.SysFsCgroupRoot, cache)
+		if err != nil {
+			// Permission errors and missing /sys/fs/cgroup on dev
+			// machines are common; log and continue rather than
+			// failing the binary.
+			log.Warn("cgroup cold-walk failed (continuing without cgroup index)", "err", err.Error())
+		} else {
+			log.Info("cgroup cold-walk complete", "indexed", n)
+			updateCgroupIndexSize(cache)
+		}
+		go RunCgroupRescan(ctx, cache, opts.SysFsCgroupRoot, opts.CgroupRescanInterval, log)
+	}
+
+	srv := NewServer(cache, log)
+	srv.SysFsCgroupRoot = opts.SysFsCgroupRoot
+	srv.ProcRoot = opts.ProcRoot
+	return srv, nil
 }
 
 // Register installs s on the given gRPC server (just a thin wrapper

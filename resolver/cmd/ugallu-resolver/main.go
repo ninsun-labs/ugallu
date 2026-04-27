@@ -45,13 +45,16 @@ func main() {
 
 func runMain() error {
 	var (
-		grpcAddr          string
-		unixSocket        string
-		metricsAddr       string
-		kubeconfig        string
-		informerResync    time.Duration
-		tombstoneGrace    time.Duration
-		tombstoneInterval time.Duration
+		grpcAddr             string
+		unixSocket           string
+		metricsAddr          string
+		kubeconfig           string
+		informerResync       time.Duration
+		tombstoneGrace       time.Duration
+		tombstoneInterval    time.Duration
+		sysFsCgroupRoot      string
+		procRoot             string
+		cgroupRescanInterval time.Duration
 	)
 	flag.StringVar(&grpcAddr, "grpc-addr", ":9000", "TCP address for cross-node gRPC server")
 	flag.StringVar(&unixSocket, "unix-socket", "/var/run/ugallu/resolver.sock", "Unix socket path for local-node gRPC")
@@ -60,6 +63,9 @@ func runMain() error {
 	flag.DurationVar(&informerResync, "informer-resync", 10*time.Minute, "Shared informer full re-list interval")
 	flag.DurationVar(&tombstoneGrace, "tombstone-grace", 60*time.Second, "Pod tombstone retention window")
 	flag.DurationVar(&tombstoneInterval, "tombstone-interval", 30*time.Second, "Tombstone GC scan period")
+	flag.StringVar(&sysFsCgroupRoot, "sysfs-cgroup-root", serverv1.DefaultSysFsCgroup, "cgroup v2 mountpoint (host path or container bind-mount)")
+	flag.StringVar(&procRoot, "proc-root", serverv1.DefaultProcRoot, "/proc root (mount the host /proc at /host/proc inside the DaemonSet)")
+	flag.DurationVar(&cgroupRescanInterval, "cgroup-rescan-interval", serverv1.DefaultCgroupRescanInterval, "Cgroup index rescan period (0 disables; Phase 3 eBPF will obsolete this)")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil)).With(
@@ -80,12 +86,15 @@ func runMain() error {
 		return fmt.Errorf("kube client: %w", err)
 	}
 
-	srv, err := serverv1.Bootstrap(ctx, serverv1.Options{
-		Client:            client,
-		Log:               log,
-		InformerResync:    informerResync,
-		TombstoneGrace:    tombstoneGrace,
-		TombstoneInterval: tombstoneInterval,
+	srv, err := serverv1.Bootstrap(ctx, &serverv1.Options{
+		Client:               client,
+		Log:                  log,
+		InformerResync:       informerResync,
+		TombstoneGrace:       tombstoneGrace,
+		TombstoneInterval:    tombstoneInterval,
+		SysFsCgroupRoot:      sysFsCgroupRoot,
+		ProcRoot:             procRoot,
+		CgroupRescanInterval: cgroupRescanInterval,
 	})
 	if err != nil {
 		return fmt.Errorf("resolver bootstrap: %w", err)

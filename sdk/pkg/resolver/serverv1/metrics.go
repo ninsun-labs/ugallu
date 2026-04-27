@@ -98,3 +98,7 @@ func updateIndexSizes(c *Cache) {
 	metricIndexSize.WithLabelValues("ips").Set(float64(ips))
 	metricIndexSize.WithLabelValues("containers").Set(float64(containers))
 }
+
+func updateCgroupIndexSize(c *Cache) {
+	metricIndexSize.WithLabelValues("cgroups").Set(float64(c.CgroupSizes()))
+}

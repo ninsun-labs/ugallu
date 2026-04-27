@@ -42,6 +42,16 @@ type Cache struct {
 	podByIP          map[string]types.UID
 	podByContainerID map[string]types.UID
 
+	// podByCgroupID maps a kernel cgroup ID (inode of the cgroup
+	// directory in cgroup v2) to the owning Pod UID. Populated by
+	// the cgroup walker (Phase 2) and, in the future, by the eBPF
+	// tracker (Phase 3).
+	podByCgroupID map[uint64]types.UID
+
+	// cgroupIDsByPod is the reverse mapping used to evict cgroup
+	// entries when a Pod is purged after its tombstone window.
+	cgroupIDsByPod map[types.UID][]uint64
+
 	// SaLister and NodeLister are populated by the informer factory.
 	// They are exported so the gRPC server can do direct ns/name
 	// lookups against the standard client-go listers without us
@@ -62,6 +72,8 @@ func NewCache(tombstoneGrace time.Duration) *Cache {
 		podByUID:         make(map[types.UID]*PodSnapshot),
 		podByIP:          make(map[string]types.UID),
 		podByContainerID: make(map[string]types.UID),
+		podByCgroupID:    make(map[uint64]types.UID),
+		cgroupIDsByPod:   make(map[types.UID][]uint64),
 		tombstoneGrace:   tombstoneGrace,
 	}
 }
@@ -109,6 +121,77 @@ func (c *Cache) PodByContainerID(id string) (*PodSnapshot, bool) {
 	}
 	s, ok := c.podByUID[uid]
 	return s, ok
+}
+
+// PodByCgroupID returns the snapshot owning the given kernel cgroup
+// ID (the inode of the cgroup directory). Populated by the cgroup
+// walker / eBPF tracker; lookups for cgroups that haven't been
+// indexed yet return (nil, false).
+func (c *Cache) PodByCgroupID(id uint64) (*PodSnapshot, bool) {
+	if id == 0 {
+		return nil, false
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	uid, ok := c.podByCgroupID[id]
+	if !ok {
+		return nil, false
+	}
+	s, ok := c.podByUID[uid]
+	return s, ok
+}
+
+// IndexCgroup records that the given cgroup ID belongs to podUID.
+// containerID is also indexed in podByContainerID when non-empty so
+// the same call can register both mappings for a container scope. It
+// is safe to call concurrently and is idempotent for an unchanged
+// pair.
+func (c *Cache) IndexCgroup(cgroupID uint64, podUID types.UID, containerID string) {
+	if cgroupID == 0 || podUID == "" {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if existing, ok := c.podByCgroupID[cgroupID]; ok && existing != podUID {
+		// Re-pointing a cgroupID; drop the prior reverse entry.
+		c.dropCgroupReverseLocked(existing, cgroupID)
+	}
+	c.podByCgroupID[cgroupID] = podUID
+	c.cgroupIDsByPod[podUID] = appendUnique(c.cgroupIDsByPod[podUID], cgroupID)
+	if containerID != "" {
+		c.podByContainerID[strings.ToLower(containerID)] = podUID
+	}
+}
+
+// CgroupSizes returns the size of the cgroup index for metrics.
+func (c *Cache) CgroupSizes() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.podByCgroupID)
+}
+
+// dropCgroupReverseLocked removes cgroupID from the reverse mapping
+// for podUID. Caller holds the write lock.
+func (c *Cache) dropCgroupReverseLocked(podUID types.UID, cgroupID uint64) {
+	ids := c.cgroupIDsByPod[podUID]
+	for i, id := range ids {
+		if id == cgroupID {
+			c.cgroupIDsByPod[podUID] = append(ids[:i], ids[i+1:]...)
+			break
+		}
+	}
+	if len(c.cgroupIDsByPod[podUID]) == 0 {
+		delete(c.cgroupIDsByPod, podUID)
+	}
+}
+
+func appendUnique(s []uint64, v uint64) []uint64 {
+	for _, x := range s {
+		if x == v {
+			return s
+		}
+	}
+	return append(s, v)
 }
 
 // upsertPod is called from the Add/Update event handlers. It refreshes
@@ -162,10 +245,22 @@ func (c *Cache) PurgeExpired(now time.Time) int {
 		}
 		c.removeIPLocked(snap.Pod, uid)
 		c.removeContainerLocked(snap.Pod, uid)
+		c.removeCgroupsLocked(uid)
 		delete(c.podByUID, uid)
 		purged++
 	}
 	return purged
+}
+
+// removeCgroupsLocked drops every cgroupID associated with the given
+// pod UID. Caller holds the write lock.
+func (c *Cache) removeCgroupsLocked(uid types.UID) {
+	for _, id := range c.cgroupIDsByPod[uid] {
+		if cur, ok := c.podByCgroupID[id]; ok && cur == uid {
+			delete(c.podByCgroupID, id)
+		}
+	}
+	delete(c.cgroupIDsByPod, uid)
 }
 
 // Sizes returns current index sizes for metrics.

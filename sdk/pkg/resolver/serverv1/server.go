@@ -18,14 +18,22 @@ import (
 
 // Server implements the resolver gRPC service backed by a Cache.
 //
-// ResolveByCgroupID + ResolveByPID return Unresolved=true in this
-// phase; the eBPF tracker (Phase 3) and /proc walker (Phase 2) are
-// deferred to follow-up commits. Watch is also deferred (Phase 4).
+// Phase 2 wires ResolveByCgroupID via the cgroup-ID index populated
+// by the filesystem walker, and ResolveByPID via /proc/<pid>/cgroup.
+// Watch (Phase 4) is still deferred. Phase 3 will replace the cold
+// walk with an eBPF tracer for live updates.
 type Server struct {
 	resolverv1.UnimplementedResolverServer
 
 	Cache *Cache
 	Log   *slog.Logger
+
+	// SysFsCgroupRoot overrides the cgroup mountpoint
+	// (DefaultSysFsCgroup when empty).
+	SysFsCgroupRoot string
+
+	// ProcRoot overrides /proc (DefaultProcRoot when empty).
+	ProcRoot string
 }
 
 // NewServer wires a Cache to a slog logger. Either argument may be
@@ -97,18 +105,57 @@ func (s *Server) ResolveBySAUsername(_ context.Context, req *resolverv1.SAUserna
 
 // --- Phase 2/3 placeholders -----------------------------------------
 
-// ResolveByCgroupID is a Phase 3 placeholder: requires the eBPF
-// cgroup tracker, currently returns Unresolved.
-func (s *Server) ResolveByCgroupID(_ context.Context, _ *resolverv1.CgroupIDRequest) (*resolverv1.SubjectResponse, error) {
-	recordResolve(methodCgroupID, outcomeUnresolved, time.Now())
-	return unresolved("ResolveByCgroupID: eBPF tracker pending (Phase 3)"), nil
+// ResolveByCgroupID resolves a kernel cgroup ID via the cgroup index
+// populated by the cold-walker (and, in Phase 3, by the live eBPF
+// tracer).
+func (s *Server) ResolveByCgroupID(_ context.Context, req *resolverv1.CgroupIDRequest) (*resolverv1.SubjectResponse, error) {
+	start := time.Now()
+	id := req.GetCgroupId()
+	if id == 0 {
+		recordResolve(methodCgroupID, outcomeMiss, start)
+		return unresolved("ResolveByCgroupID: zero id"), nil
+	}
+	snap, ok := s.Cache.PodByCgroupID(id)
+	if !ok {
+		recordResolve(methodCgroupID, outcomeMiss, start)
+		return unresolved("ResolveByCgroupID: cgroup id not in index"), nil
+	}
+	return s.responseFromSnapshot(snap, methodCgroupID, start), nil
 }
 
-// ResolveByPID is a Phase 2 placeholder: requires the /proc walker,
-// currently returns Unresolved.
-func (s *Server) ResolveByPID(_ context.Context, _ *resolverv1.PIDRequest) (*resolverv1.SubjectResponse, error) {
-	recordResolve(methodPID, outcomeUnresolved, time.Now())
-	return unresolved("ResolveByPID: /proc walker pending (Phase 2)"), nil
+// ResolveByPID maps a host PID to a Subject by reading /proc/<pid>/cgroup
+// and resolving the unified cgroup either via the cgroup-ID index or
+// by parsing the path directly into a Pod UID (path-based fallback).
+func (s *Server) ResolveByPID(_ context.Context, req *resolverv1.PIDRequest) (*resolverv1.SubjectResponse, error) {
+	start := time.Now()
+	pid := req.GetPid()
+	if pid <= 0 {
+		recordResolve(methodPID, outcomeMiss, start)
+		return unresolved("ResolveByPID: non-positive pid"), nil
+	}
+
+	// Fast path: resolve via cgroup-ID index when /sys/fs/cgroup is
+	// available. This is the production path on Linux DaemonSets.
+	if cgroupID, _, err := CgroupIDForPID(s.ProcRoot, s.SysFsCgroupRoot, pid); err == nil {
+		if snap, ok := s.Cache.PodByCgroupID(cgroupID); ok {
+			return s.responseFromSnapshot(snap, methodPID, start), nil
+		}
+	}
+
+	// Fallback: parse the cgroup path directly to extract the Pod UID
+	// and look it up in the primary index. This works even for pods
+	// created after the cold-walk because the path itself encodes the
+	// UID — at the cost of not exposing the cgroup ID to the caller.
+	info, err := PodInfoForPID(s.ProcRoot, pid)
+	if err != nil {
+		recordResolve(methodPID, outcomeMiss, start)
+		return unresolved("ResolveByPID: " + err.Error()), nil
+	}
+	if snap, ok := s.Cache.PodByUID(types.UID(info.PodUID)); ok {
+		return s.responseFromSnapshot(snap, methodPID, start), nil
+	}
+	recordResolve(methodPID, outcomeMiss, start)
+	return unresolved("ResolveByPID: pod uid " + info.PodUID + " not in cache"), nil
 }
 
 // Watch is a Phase 4 placeholder: streaming SubjectChange events

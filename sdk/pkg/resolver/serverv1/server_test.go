@@ -130,10 +130,11 @@ func bootstrap(t *testing.T, objects ...runtime.Object) *serverv1.Server {
 	client := fake.NewClientset(objects...)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	t.Cleanup(cancel)
-	srv, err := serverv1.Bootstrap(ctx, serverv1.Options{
+	srv, err := serverv1.Bootstrap(ctx, &serverv1.Options{
 		Client:            client,
 		TombstoneGrace:    2 * time.Second,
 		TombstoneInterval: 500 * time.Millisecond,
+		SkipCgroupWalk:    true,
 	})
 	if err != nil {
 		t.Fatalf("Bootstrap: %v", err)
@@ -312,16 +313,46 @@ func TestTombstoneOnDelete(t *testing.T) {
 	}
 }
 
-// TestUnimplementedRPCsReturnUnresolved makes sure the Phase 2/3
-// stubs explicitly return Unresolved with a diagnostic.
-func TestUnimplementedRPCsReturnUnresolved(t *testing.T) {
-	srv := bootstrap(t)
-	resp, _ := srv.ResolveByCgroupID(context.Background(), &resolverv1.CgroupIDRequest{CgroupId: 12345})
+// TestResolveByCgroupID_MissAndHit exercises the cgroup-ID index.
+func TestResolveByCgroupID_MissAndHit(t *testing.T) {
+	srv := bootstrap(t, fixturePod())
+
+	// Miss before indexing.
+	resp, _ := srv.ResolveByCgroupID(context.Background(), &resolverv1.CgroupIDRequest{CgroupId: 4242})
 	if !resp.Unresolved {
-		t.Errorf("ResolveByCgroupID: want Unresolved, got %+v", resp)
+		t.Errorf("expected Unresolved before index, got %+v", resp)
 	}
-	resp, _ = srv.ResolveByPID(context.Background(), &resolverv1.PIDRequest{Pid: 999})
+
+	// Index then hit.
+	srv.Cache.IndexCgroup(4242, types.UID("pod-uid-001"), "abc")
+	resp, _ = srv.ResolveByCgroupID(context.Background(), &resolverv1.CgroupIDRequest{CgroupId: 4242})
+	if resp.Unresolved {
+		t.Fatalf("expected Resolved after index, got %s", resp.Diagnostic)
+	}
+	if resp.Uid != "pod-uid-001" {
+		t.Errorf("uid = %q, want pod-uid-001", resp.Uid)
+	}
+}
+
+// TestResolveByCgroupID_RejectsZero ensures we don't silently treat 0
+// as a valid cgroup id.
+func TestResolveByCgroupID_RejectsZero(t *testing.T) {
+	srv := bootstrap(t)
+	resp, _ := srv.ResolveByCgroupID(context.Background(), &resolverv1.CgroupIDRequest{CgroupId: 0})
 	if !resp.Unresolved {
-		t.Errorf("ResolveByPID: want Unresolved, got %+v", resp)
+		t.Errorf("expected Unresolved for cgroup_id=0, got %+v", resp)
+	}
+}
+
+// TestResolveByPID_MissOnUnknownPID covers the cross-platform
+// "no /proc entry" path.
+func TestResolveByPID_MissOnUnknownPID(t *testing.T) {
+	srv := bootstrap(t)
+	resp, _ := srv.ResolveByPID(context.Background(), &resolverv1.PIDRequest{Pid: 1})
+	// On non-Linux this returns the unsupported diag; on Linux a
+	// pid=1 read may succeed but won't match a kubepods cgroup. In
+	// either case we expect Unresolved=true.
+	if !resp.Unresolved {
+		t.Errorf("expected Unresolved, got %+v", resp)
 	}
 }
