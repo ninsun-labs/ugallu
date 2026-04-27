@@ -5,6 +5,7 @@ package attestor
 
 import (
 	"fmt"
+	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -23,13 +24,13 @@ type Options struct {
 
 	// Logger publishes the signed envelope to a transparency log. If nil,
 	// an in-process StubLogger is used (dev/test). Production deployments
-	// should inject a real RekorLogger (next iteration).
+	// should inject a real RekorLogger.
 	Logger logger.Logger
 
 	// WormUploader persists the signed envelope to immutable storage. If
-	// nil, a filesystem-backed StubUploader rooted at /tmp/ugallu-worm is
-	// used (dev/test). Production deployments should inject a real
-	// S3-backed uploader (next iteration).
+	// nil, a filesystem-backed StubUploader rooted at WormStubDir (or
+	// /tmp/ugallu-worm by default) is used. Production deployments
+	// should inject an S3Uploader.
 	WormUploader worm.Uploader
 
 	// WormStubDir overrides the StubUploader base directory when
@@ -39,6 +40,10 @@ type Options struct {
 	// Attestor identifies the running attestor instance; recorded in the
 	// in-toto Statement predicate. If empty Name is set, defaults are used.
 	Attestor sign.AttestorMeta
+
+	// WormRetention is the Object Lock retain-until duration applied to
+	// archived DSSE envelopes. Zero disables the lock header.
+	WormRetention time.Duration
 }
 
 // SetupReconcilers wires the three attestor reconcilers
@@ -91,12 +96,13 @@ func SetupReconcilers(mgr ctrl.Manager, opts *Options) error {
 		return fmt.Errorf("setup EventResponseBundleReconciler: %w", err)
 	}
 	if err := (&AttestationBundleReconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		Signer:       opts.Signer,
-		Logger:       opts.Logger,
-		WormUploader: opts.WormUploader,
-		AttestorMeta: opts.Attestor,
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		Signer:        opts.Signer,
+		Logger:        opts.Logger,
+		WormUploader:  opts.WormUploader,
+		AttestorMeta:  opts.Attestor,
+		WormRetention: opts.WormRetention,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("setup AttestationBundleReconciler: %w", err)
 	}

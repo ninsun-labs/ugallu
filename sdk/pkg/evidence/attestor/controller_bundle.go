@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,9 +28,13 @@ import (
 // wormKeyFor returns the WORM object key used for the DSSE envelope of
 // the given bundle. Layout per design 07 W3:
 //
-//	attestations/<clusterID>/<YYYY>/<MM>/<bundleUID>.intoto.jsonl
+//	<clusterID>/<YYYY>/<MM>/<bundleUID>.intoto.jsonl
 //
-// clusterID may be empty in test contexts; the layout still validates.
+// The "attestations/" parent prefix is intentionally NOT baked into the
+// key: operators configure it at the uploader level (e.g. WORM
+// `KeyPrefix`) so different installations or tenants can layout their
+// buckets differently. clusterID may be empty in test contexts; the
+// layout still validates.
 func wormKeyFor(bundle *securityv1alpha1.AttestationBundle, when metav1.Time) string {
 	cluster := "unknown"
 	if bundle != nil && bundle.Spec.AttestedFor.Namespace != "" {
@@ -39,7 +44,7 @@ func wormKeyFor(bundle *securityv1alpha1.AttestationBundle, when metav1.Time) st
 	if bundle != nil && bundle.UID != "" {
 		uid = string(bundle.UID)
 	}
-	return fmt.Sprintf("attestations/%s/%04d/%02d/%s.intoto.jsonl",
+	return fmt.Sprintf("%s/%04d/%02d/%s.intoto.jsonl",
 		cluster,
 		when.Year(), int(when.Month()),
 		uid,
@@ -67,6 +72,10 @@ type AttestationBundleReconciler struct {
 	Logger       logger.Logger
 	WormUploader worm.Uploader
 	AttestorMeta sign.AttestorMeta
+	// WormRetention is the duration past now() applied as Object Lock
+	// retain-until on the archived DSSE envelope. Zero disables the
+	// lock header (StubUploader and lock-disabled buckets ignore it).
+	WormRetention time.Duration
 }
 
 // Reconcile drives the pipeline for one AttestationBundle.
@@ -133,7 +142,7 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, fmt.Errorf("marshal envelope: %w", err)
 	}
 	wormKey := wormKeyFor(bundle, now)
-	wormRef, err := r.WormUploader.Put(ctx, wormKey, bytes.NewReader(envelopeJSON), worm.PutOpts{
+	putOpts := worm.PutOpts{
 		MediaType: "application/vnd.dev.sigstore.bundle+dsse",
 		Metadata: map[string]string{
 			"bundleUID":       string(bundle.UID),
@@ -141,7 +150,11 @@ func (r *AttestationBundleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			"signerKeyID":     r.Signer.KeyID(),
 			"logIndex":        fmt.Sprintf("%d", logEntry.LogIndex),
 		},
-	})
+	}
+	if r.WormRetention > 0 {
+		putOpts.LockUntil = now.Add(r.WormRetention)
+	}
+	wormRef, err := r.WormUploader.Put(ctx, wormKey, bytes.NewReader(envelopeJSON), putOpts)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("WORM upload: %w", err)
 	}
