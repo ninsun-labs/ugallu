@@ -70,11 +70,14 @@ func LoadCgroupTracker(c *Cache, log *slog.Logger) (*CgroupTracker, error) {
 		log = slog.Default()
 	}
 
-	// Lift the RLIMIT_MEMLOCK ceiling so the verifier can lock
-	// program + map memory. No-op on kernel 5.11+ (which uses
-	// memcg-based accounting) but harmless.
+	// On kernels ≥ 5.11, BPF allocations are tracked via memcg and
+	// RLIMIT_MEMLOCK is no longer consulted; the call here is a
+	// no-op precaution for older kernels. We log + ignore failures
+	// rather than aborting because the typical cause is "container
+	// has CAP_BPF but not CAP_SYS_RESOURCE" — a configuration that
+	// works fine on every kernel we target.
 	if err := rlimit.RemoveMemlock(); err != nil {
-		return nil, fmt.Errorf("rlimit RLIMIT_MEMLOCK: %w", err)
+		log.Debug("rlimit RLIMIT_MEMLOCK adjust failed (kernel ≥ 5.11 doesn't need it)", "err", err.Error())
 	}
 
 	t := &CgroupTracker{cache: c, log: log}
