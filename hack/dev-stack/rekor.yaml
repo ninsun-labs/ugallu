@@ -1,0 +1,351 @@
+# Minimal Rekor + Trillian + MySQL + Redis stack for kind smoke tests.
+#
+# NOT for production: emptyDir storage, no TLS, single replica per
+# component, no resource quotas tuned for shared nodes.
+#
+# The Trillian MySQL schema ConfigMap is NOT inlined here — `up.sh`
+# fetches the live schema from google/trillian master and creates the
+# ConfigMap so the deployment manifest stays readable.
+apiVersion: v1
+kind: Service
+metadata:
+  name: trillian-mysql
+  namespace: ugallu-evidence
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: trillian-mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trillian-mysql
+  namespace: ugallu-evidence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trillian-mysql
+  template:
+    metadata:
+      labels:
+        app: trillian-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: zaphod
+            - name: MYSQL_DATABASE
+              value: test
+            - name: MYSQL_USER
+              value: test
+            - name: MYSQL_PASSWORD
+              value: zaphod
+          args: ["--default-authentication-plugin=mysql_native_password"]
+          ports:
+            - containerPort: 3306
+          readinessProbe:
+            tcpSocket:
+              port: 3306
+            periodSeconds: 5
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          volumeMounts:
+            - name: schema
+              mountPath: /docker-entrypoint-initdb.d
+            - name: data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: schema
+          configMap:
+            name: trillian-schema
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trillian-log-server
+  namespace: ugallu-evidence
+spec:
+  ports:
+    - name: grpc
+      port: 8090
+      targetPort: 8090
+    - name: http
+      port: 8091
+      targetPort: 8091
+  selector:
+    app: trillian-log-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trillian-log-server
+  namespace: ugallu-evidence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trillian-log-server
+  template:
+    metadata:
+      labels:
+        app: trillian-log-server
+    spec:
+      containers:
+        - name: log-server
+          image: gcr.io/trillian-opensource-ci/log_server:latest
+          args:
+            - --storage_system=mysql
+            - --mysql_uri=test:zaphod@tcp(trillian-mysql:3306)/test
+            - --rpc_endpoint=0.0.0.0:8090
+            - --http_endpoint=0.0.0.0:8091
+            - --alsologtostderr
+          ports:
+            - name: grpc
+              containerPort: 8090
+            - name: http
+              containerPort: 8091
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8091
+            periodSeconds: 5
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trillian-log-signer
+  namespace: ugallu-evidence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trillian-log-signer
+  template:
+    metadata:
+      labels:
+        app: trillian-log-signer
+    spec:
+      containers:
+        - name: log-signer
+          image: gcr.io/trillian-opensource-ci/log_signer:latest
+          args:
+            - --storage_system=mysql
+            - --mysql_uri=test:zaphod@tcp(trillian-mysql:3306)/test
+            - --rpc_endpoint=0.0.0.0:8090
+            - --http_endpoint=0.0.0.0:8091
+            - --force_master
+            - --alsologtostderr
+          ports:
+            - containerPort: 8090
+            - containerPort: 8091
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# rekor-config ConfigMap is created here without a `treeID` key:
+# scaffolding/createtree:v0.7.18 expects to *find* the ConfigMap and
+# patches it with the freshly-allocated treeID. If the key is present
+# with an empty value, createtree treats it as "already configured"
+# and skips. up.sh strips the key (if leftover from a prior empty
+# bootstrap) before reapply. rekor-server's pod will fail to start
+# until the Job completes; up.sh restarts the deployment afterwards.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rekor-config
+  namespace: ugallu-evidence
+data: {}
+---
+# RBAC + Job that calls Trillian admin gRPC to create a tree, and
+# writes rekor-config with the treeID.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: createtree
+  namespace: ugallu-evidence
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: createtree
+  namespace: ugallu-evidence
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: createtree
+  namespace: ugallu-evidence
+subjects:
+  - kind: ServiceAccount
+    name: createtree
+    namespace: ugallu-evidence
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: createtree
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: createtree
+  namespace: ugallu-evidence
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: createtree
+      containers:
+        - name: createtree
+          image: ghcr.io/sigstore/scaffolding/createtree:v0.7.18
+          args:
+            - "--admin_server=trillian-log-server:8090"
+            - "--display_name=ugallu"
+            - "--namespace=ugallu-evidence"
+            - "--configmap=rekor-config"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ugallu-evidence
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: ugallu-evidence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rekor-server
+  namespace: ugallu-evidence
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: rekor-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rekor-server
+  namespace: ugallu-evidence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rekor-server
+  template:
+    metadata:
+      labels:
+        app: rekor-server
+    spec:
+      containers:
+        - name: rekor-server
+          image: gcr.io/projectsigstore/rekor-server:v1.4.2
+          args:
+            - serve
+            - --rekor_server.address=0.0.0.0
+            - --trillian_log_server.address=trillian-log-server
+            - --trillian_log_server.port=8090
+            - --trillian_log_server.tlog_id=$(TLOG_ID)
+            - --enable_attestation_storage
+            - --attestation_storage_bucket=file:///var/run/attestations
+            - --enable_retrieve_api=true
+            - --redis_server.address=redis
+            - --redis_server.port=6379
+            - --search_index.storage_provider=redis
+          env:
+            - name: TLOG_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: rekor-config
+                  key: treeID
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 60
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: attestations
+              mountPath: /var/run/attestations
+      volumes:
+        - name: attestations
+          emptyDir: {}
