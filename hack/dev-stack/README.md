@@ -61,6 +61,52 @@ with both `RekorEntry` and `WormRef` populated.
 | createtree (Job)         | `ghcr.io/sigstore/scaffolding/createtree:v0.7.18`  | bootstrap a Trillian tree            |
 | aws-cli (pod)            | `amazon/aws-cli:2.27.50`                           | bucket admin + interactive S3 ops    |
 
+## Resolver e2e (Phase 1+2+3)
+
+The resolver subchart can be smoke-tested on the same kind cluster
+once a real image is loaded. Build the binary with `ko`, override
+`resolver.image.*`, set `resolver.placeholder=false` and
+`resolver.args=["--enable-ebpf-tracker=true",...]`, then verify the
+gRPC service via `grpcurl` against the DaemonSet.
+
+```bash
+# port-forward + import the resolver proto from the SDK
+kubectl port-forward -n ugallu-system-privileged daemonset/ugallu-resolver 9000:9000 &
+grpcurl -plaintext \
+  -import-path sdk/proto -proto resolver/v1/resolver.proto \
+  -d '{"username":"system:serviceaccount:default:default"}' \
+  localhost:9000 ugallu.resolver.v1.Resolver/ResolveBySAUsername
+```
+
+### Known limitation: kind + rootless podman + Phase 2/3
+
+The cgroup walker (Phase 2) and eBPF live tracker (Phase 3) are
+**not exercisable** on a kind cluster running under rootless podman:
+
+1. **Rootless userns blocks BPF map create**: even with CAP_BPF +
+   CAP_PERFMON + CAP_SYS_ADMIN added to the resolver pod, the kernel
+   denies BPF object creation when the call happens from a non-init
+   user namespace. cilium/ebpf surfaces this as a generic
+   "operation not permitted (MEMLOCK may be too low)" error.
+2. **Non-standard cgroup root**: kind+podman sets kubelet's
+   `cgroupRoot: /kubelet` instead of the systemd convention
+   (`/kubepods.slice/...`). `ParseCgroupPath` won't recognise the
+   former because it's a kind-specific quirk; production K8s nodes
+   (RKE2, EKS, GKE) follow the systemd convention.
+
+The resolver reacts gracefully: BPF load failure is logged
+(`eBPF tracker load failed; falling back to rescan`) and the
+DaemonSet stays Ready, serving informer-backed Phase 1 RPCs
+(`ResolveByPodUID`, `ResolveByPodIP`, `ResolveByContainerID`,
+`ResolveBySAUsername`) without interruption.
+
+**For a real Phase 2+3 e2e** you need either:
+- A kind cluster on a rootful container runtime
+  (`sudo systemctl start podman.socket` + `KIND_EXPERIMENTAL_PROVIDER`
+  pointing at the system service), or
+- A bare K8s node (RKE2, k3s, kubeadm-on-VM) where /kubepods.slice
+  is real and the kubelet runs under PID 1's user namespace.
+
 ## Inspecting state
 
 ```bash
