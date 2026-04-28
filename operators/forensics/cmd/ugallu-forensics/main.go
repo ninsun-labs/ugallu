@@ -181,6 +181,24 @@ func runMain() error {
 		return fmt.Errorf("step runner: %w", err)
 	}
 
+	wormCreds, err := readWORMCredsFromEnv()
+	if err != nil {
+		return err
+	}
+	evidenceUploader, err := forensics.NewEvidenceUploader(context.Background(), &forensics.EvidenceUploaderOptions{
+		Bucket:       wormBucket,
+		Endpoint:     wormEndpoint,
+		Region:       wormRegion,
+		UsePathStyle: wormUsePathStyle,
+		AccessKey:    wormCreds.AccessKey,
+		SecretKey:    wormCreds.SecretKey,
+		LockMode:     wormLockMode,
+		LockUntil:    wormLockUntil,
+	})
+	if err != nil {
+		return fmt.Errorf("evidence uploader: %w", err)
+	}
+
 	pipe, err := forensics.NewPipeline(&forensics.PipelineOptions{
 		Client:            mgr.GetClient(),
 		Emitter:           em,
@@ -188,6 +206,7 @@ func runMain() error {
 		Snapshotter:       snap,
 		CredentialsMirror: mirror,
 		StepRunner:        stepRunner,
+		EvidenceUploader:  evidenceUploader,
 		ClusterIdentity:   clusterIdentity,
 		Log:               slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})),
 	})
@@ -245,4 +264,28 @@ func parsePullPolicy(p string) corev1.PullPolicy {
 	default:
 		return corev1.PullIfNotPresent
 	}
+}
+
+// wormCreds carries the access/secret pair the operator side
+// needs to write the manifest blob through the same WORM bucket
+// the snapshot ephemeral container uploads to. The values come
+// from env (mounted via the chart's WORM secret) so the operator
+// pod inherits the existing rotation cadence rather than reading
+// the Secret cluster-wide each reconcile.
+type wormCreds struct {
+	AccessKey string
+	SecretKey string
+}
+
+// readWORMCredsFromEnv reads WORM_ACCESS_KEY + WORM_SECRET_KEY off
+// the operator pod's env. The chart wires these from the same
+// `ugallu-worm-creds` Secret the snapshot ephemeral container
+// uses (mirrored into the suspect Pod namespace at injection time).
+func readWORMCredsFromEnv() (*wormCreds, error) {
+	a := strings.TrimSpace(os.Getenv("WORM_ACCESS_KEY"))
+	s := strings.TrimSpace(os.Getenv("WORM_SECRET_KEY"))
+	if a == "" || s == "" {
+		return nil, fmt.Errorf("WORM credentials missing: env WORM_ACCESS_KEY + WORM_SECRET_KEY must both be set")
+	}
+	return &wormCreds{AccessKey: a, SecretKey: s}, nil
 }

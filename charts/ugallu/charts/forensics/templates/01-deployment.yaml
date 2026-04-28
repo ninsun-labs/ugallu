@@ -49,6 +49,19 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: {{ toJson .Values.command }}
           args: {{ include "forensics.args" . }}
+          {{- if not .Values.placeholder }}
+          env:
+            - name: WORM_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.worm.secret.name }}
+                  key: access-key
+            - name: WORM_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.worm.secret.name }}
+                  key: secret-key
+          {{- end }}
           ports:
             - name: metrics
               containerPort: {{ .Values.metricsPort }}

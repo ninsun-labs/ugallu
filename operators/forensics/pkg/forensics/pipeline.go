@@ -45,6 +45,13 @@ type PipelineOptions struct {
 	// for IR-as-code attestation. Sprint 3 wires it; Sprint 2 ran
 	// the freezer + snapshotter directly.
 	StepRunner *StepRunner
+
+	// EvidenceUploader writes the per-incident manifest to WORM
+	// as the closing step of the pipeline. nil disables the step
+	// (the completion SE then falls back to inlining evidence
+	// signals — Sprint-2 behaviour, kept as escape hatch for
+	// air-gapped deployments without S3).
+	EvidenceUploader *EvidenceUploader
 }
 
 // Pipeline is the per-incident orchestrator. It owns a semaphore
@@ -191,8 +198,33 @@ func (p *Pipeline) run(ctx context.Context, incident *Incident) {
 		})
 	}
 
-	// Step 3 — EvidenceUpload manifest lands in commit B; for
-	// commit A the completion SE inlines evidence references.
+	// Step 3 — EvidenceUpload manifest. The pipeline-level
+	// evidence list now contains the single manifest ref instead
+	// of the prior per-chunk inlining; the completion SE
+	// references the manifest as its sole evidence pointer.
+	if p.opts.EvidenceUploader != nil {
+		if err := p.opts.StepRunner.Run(ctx, &EvidenceUploadStep{
+			Uploader:        p.opts.EvidenceUploader,
+			ClusterIdentity: p.opts.ClusterIdentity,
+		}, exec); err != nil {
+			pipelineStepsTotal.WithLabelValues("evidence_upload", "error").Inc()
+			p.fail(ctx, incident, "evidence_upload", err)
+			return
+		}
+		pipelineStepsTotal.WithLabelValues("evidence_upload", "ok").Inc()
+		// The manifest ref is the LAST entry the step appended.
+		// Replace the per-chunk evidence list on the incident with
+		// just the manifest reference — that's what the
+		// completion SE points at.
+		manifestRef := exec.Evidence[len(exec.Evidence)-1]
+		incident.Evidence = []EvidenceEntry{{
+			Step:      "evidence-upload",
+			URL:       manifestRef.URL,
+			SHA256:    manifestRef.SHA256,
+			Size:      manifestRef.Size,
+			MediaType: manifestRef.MediaType,
+		}}
+	}
 
 	if err := p.emitCompletion(ctx, incident, pod); err != nil {
 		log.Warn("emit completion SE", "err", err)
