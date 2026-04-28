@@ -12,6 +12,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -178,7 +179,8 @@ type UnfreezeReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Freezer *Freezer
+	Freezer    *Freezer
+	StepRunner *StepRunner
 }
 
 // Reconcile reverses the freeze state for the SE's subject Pod and
@@ -215,7 +217,33 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			UID:       se.Spec.Subject.UID,
 		},
 	}
-	if err := r.Freezer.Unfreeze(ctx, pod); err != nil {
+	// Reconstruct enough Incident state to feed the step runner.
+	// The completion SE picked up here carries `incident.uid` in
+	// its signals so re-running the unfreeze on the same incident
+	// converges on the deterministic ER name.
+	incidentUID := se.Spec.Signals["incident.uid"]
+	if incidentUID == "" {
+		// Fallback: synthesize from the SE UID so the ER name
+		// stays deterministic per acknowledged SE.
+		incidentUID = string(se.UID)
+	}
+	exec := &StepExecution{
+		Incident: &Incident{
+			UID:           incidentUID,
+			TriggerSE:     se,
+			SuspectPod:    types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
+			SuspectPodUID: string(pod.UID),
+		},
+		Pod: pod,
+	}
+	if r.StepRunner == nil {
+		// Unwired path (tests / pre-Sprint-3 callers): fall back
+		// to the freezer directly so the unfreeze still happens.
+		if err := r.Freezer.Unfreeze(ctx, pod); err != nil {
+			rlog.Info("unfreeze step failed (direct path)", "err", err)
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+	} else if err := r.StepRunner.Run(ctx, &PodUnfreezeStep{Freezer: r.Freezer}, exec); err != nil {
 		rlog.Info("unfreeze step failed", "err", err)
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}

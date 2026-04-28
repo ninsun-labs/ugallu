@@ -175,13 +175,20 @@ func runMain() error {
 		TargetName: wormSecretName,
 	}
 
+	clusterIdentity := securityv1alpha1.ClusterIdentity{ClusterID: clusterID, ClusterName: clusterID}
+	stepRunner, err := forensics.NewStepRunner(mgr.GetClient(), clusterIdentity)
+	if err != nil {
+		return fmt.Errorf("step runner: %w", err)
+	}
+
 	pipe, err := forensics.NewPipeline(&forensics.PipelineOptions{
 		Client:            mgr.GetClient(),
 		Emitter:           em,
 		Freezer:           freezer,
 		Snapshotter:       snap,
 		CredentialsMirror: mirror,
-		ClusterIdentity:   securityv1alpha1.ClusterIdentity{ClusterID: clusterID, ClusterName: clusterID},
+		StepRunner:        stepRunner,
+		ClusterIdentity:   clusterIdentity,
 		Log:               slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})),
 	})
 	if err != nil {
@@ -196,11 +203,20 @@ func runMain() error {
 		return fmt.Errorf("setup SE reconciler: %w", err)
 	}
 	if err = (&forensics.UnfreezeReconciler{
-		Client:  mgr.GetClient(),
-		Scheme:  mgr.GetScheme(),
-		Freezer: freezer,
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Freezer:    freezer,
+		StepRunner: stepRunner,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("setup unfreeze reconciler: %w", err)
+	}
+	if err = (&forensics.ConfigReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		CNI:      cni,
+		Pipeline: pipe,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("setup ForensicsConfig reconciler: %w", err)
 	}
 
 	if addErr := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {

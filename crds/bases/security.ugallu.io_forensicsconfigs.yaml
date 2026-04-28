@@ -289,6 +289,13 @@ spec:
                   (Cilium / CoreV1) the operator chose at startup. Refreshed
                   periodically.
                 type: string
+              inFlightIncidents:
+                description: |-
+                  InFlightIncidents reports the live concurrent-incident count
+                  at the most recent reconcile. Drift between this and
+                  MaxConcurrentIncidents (in spec) signals capacity pressure.
+                format: int64
+                type: integer
               lastConfigLoadAt:
                 description: |-
                   LastConfigLoadAt marks the most recent successful read of the

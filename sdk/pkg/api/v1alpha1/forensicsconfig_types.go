@@ -120,6 +120,11 @@ type ForensicsConfigStatus struct {
 	// LastConfigLoadAt marks the most recent successful read of the
 	// spec.
 	LastConfigLoadAt *metav1.Time `json:"lastConfigLoadAt,omitempty"`
+
+	// InFlightIncidents reports the live concurrent-incident count
+	// at the most recent reconcile. Drift between this and
+	// MaxConcurrentIncidents (in spec) signals capacity pressure.
+	InFlightIncidents int64 `json:"inFlightIncidents,omitempty"`
 }
 
 // +kubebuilder:object:root=true

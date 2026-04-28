@@ -40,6 +40,11 @@ type PipelineOptions struct {
 	MaxConcurrent int
 
 	Log *slog.Logger
+
+	// StepRunner runs each Step inside a per-step EventResponse
+	// for IR-as-code attestation. Sprint 3 wires it; Sprint 2 ran
+	// the freezer + snapshotter directly.
+	StepRunner *StepRunner
 }
 
 // Pipeline is the per-incident orchestrator. It owns a semaphore
@@ -69,6 +74,9 @@ func NewPipeline(opts *PipelineOptions) (*Pipeline, error) {
 	}
 	if opts.Snapshotter == nil {
 		return nil, errors.New("pipeline: Snapshotter is required")
+	}
+	if opts.StepRunner == nil {
+		return nil, errors.New("pipeline: StepRunner is required")
 	}
 	if opts.MaxConcurrent <= 0 {
 		opts.MaxConcurrent = 5
@@ -150,28 +158,41 @@ func (p *Pipeline) run(ctx context.Context, incident *Incident) {
 		}
 	}
 
-	if freezeErr := p.opts.Freezer.Freeze(ctx, pod); freezeErr != nil {
-		p.fail(ctx, incident, "pod_freeze", freezeErr)
+	exec := &StepExecution{Incident: incident, Pod: pod}
+
+	// Step 1 — PodFreeze. Sequential blocker for the next step
+	// (the snapshot must run on an isolated Pod).
+	if err := p.opts.StepRunner.Run(ctx, &PodFreezeStep{Freezer: p.opts.Freezer}, exec); err != nil {
+		pipelineStepsTotal.WithLabelValues("pod_freeze", "error").Inc()
+		p.fail(ctx, incident, "pod_freeze", err)
 		return
 	}
 	pipelineStepsTotal.WithLabelValues("pod_freeze", "ok").Inc()
 	p.emitForensicSE(ctx, securityv1alpha1.TypePodFrozen, securityv1alpha1.SeverityInfo, incident, pod, nil)
 
+	// Step 2 — FilesystemSnapshot. Sequential after freeze; the
+	// snapshot binary runs against a Pod with active isolation.
 	cfg := p.activeSnapshotConfig(ctx)
-	res, err := p.opts.Snapshotter.Capture(ctx, pod, incident, &cfg)
-	if err != nil {
+	if err := p.opts.StepRunner.Run(ctx, &FilesystemSnapshotStep{
+		Snapshotter: p.opts.Snapshotter,
+		Config:      &cfg,
+	}, exec); err != nil {
 		pipelineStepsTotal.WithLabelValues("filesystem_snapshot", "error").Inc()
 		p.fail(ctx, incident, "filesystem_snapshot", err)
 		return
 	}
 	pipelineStepsTotal.WithLabelValues("filesystem_snapshot", "ok").Inc()
-	incident.AppendEvidence("filesystem_snapshot", &EvidenceEntry{
-		URL:       res.URL,
-		SHA256:    res.SHA256,
-		Size:      res.Size,
-		MediaType: res.MediaType,
-		Truncated: res.Truncated,
-	})
+	for i := range exec.Evidence {
+		incident.AppendEvidence("filesystem_snapshot", &EvidenceEntry{
+			URL:       exec.Evidence[i].URL,
+			SHA256:    exec.Evidence[i].SHA256,
+			Size:      exec.Evidence[i].Size,
+			MediaType: exec.Evidence[i].MediaType,
+		})
+	}
+
+	// Step 3 — EvidenceUpload manifest lands in commit B; for
+	// commit A the completion SE inlines evidence references.
 
 	if err := p.emitCompletion(ctx, incident, pod); err != nil {
 		log.Warn("emit completion SE", "err", err)
