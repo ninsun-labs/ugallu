@@ -76,6 +76,7 @@ type ActionType string
 // ActionType constants.
 const (
 	ActionPodFreeze          ActionType = "PodFreeze"
+	ActionPodUnfreeze        ActionType = "PodUnfreeze"
 	ActionNetworkDeny        ActionType = "NetworkDeny"
 	ActionFilesystemSnapshot ActionType = "FilesystemSnapshot"
 	ActionMemorySnapshot     ActionType = "MemorySnapshot"

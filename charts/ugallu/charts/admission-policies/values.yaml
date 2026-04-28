@@ -8,3 +8,9 @@ ackAuthorizedSAs: []
 # Where ugallu-ttl runs (Policy 3 scope).
 ttlControllerNamespace: ugallu-system
 ttlControllerSAName: ugallu-ttl
+
+# SAs allowed to set / remove the `ugallu.io/frozen` label on Pods
+# (Policy 7). Default targets the forensics operator SA; override to
+# add break-glass admins if your operations need a fallback.
+frozenLabelAuthorizedSAs:
+  - system:serviceaccount:ugallu-system-privileged:ugallu-forensics

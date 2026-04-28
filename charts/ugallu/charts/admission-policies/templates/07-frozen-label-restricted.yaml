@@ -1,0 +1,71 @@
+{{- /*
+Policy 7 - The `ugallu.io/frozen` Pod label is reserved for the
+ugallu-forensics ServiceAccount.
+
+When forensics decides to capture an incident it patches the suspect
+Pod with `metadata.labels[ugallu.io/frozen] = <pod-uid>` and applies
+a (Cilium)NetworkPolicy that selects on that label. Without this
+admission gate, any user with `pods/update` RBAC could remove the
+label and silently un-isolate the suspect — defeating the freeze.
+
+The policy denies UPDATE/PATCH on Pods that change the label value
+unless the request comes from the forensics SA (which lives in the
+privileged namespace).
+*/ -}}
+{{- $authorized := .Values.frozenLabelAuthorizedSAs | default (list "system:serviceaccount:ugallu-system-privileged:ugallu-forensics") -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.frozen-label-restricted
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   [""]
+        apiVersions: ["v1"]
+        operations:  ["UPDATE"]
+        resources:   ["pods"]
+  matchConditions:
+    - name: frozen-label-changing
+      # The label is "changing" when the value differs between the
+      # request and the stored object — covers add (old missing),
+      # remove (new missing), and overwrite (both present, value
+      # differs). The CEL conjunction is verbose but explicit.
+      expression: |
+        (
+          (has(object.metadata.labels) && has(object.metadata.labels['ugallu.io/frozen']))
+          !=
+          (has(oldObject.metadata.labels) && has(oldObject.metadata.labels['ugallu.io/frozen']))
+        ) ||
+        (
+          has(object.metadata.labels) && has(object.metadata.labels['ugallu.io/frozen']) &&
+          has(oldObject.metadata.labels) && has(oldObject.metadata.labels['ugallu.io/frozen']) &&
+          object.metadata.labels['ugallu.io/frozen'] != oldObject.metadata.labels['ugallu.io/frozen']
+        )
+  validations:
+    - expression: |
+        request.userInfo.username in [
+        {{- range $i, $sa := $authorized }}{{ if $i }},{{ end }}
+          '{{ $sa }}'
+        {{- end }}
+        ]
+      message: "label ugallu.io/frozen is reserved for the ugallu-forensics ServiceAccount; remove via the forensics IR pipeline (acknowledge the incident SE)."
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.frozen-label-restricted
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.frozen-label-restricted
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   [""]
+        apiVersions: ["v1"]
+        operations:  ["UPDATE"]
+        resources:   ["pods"]

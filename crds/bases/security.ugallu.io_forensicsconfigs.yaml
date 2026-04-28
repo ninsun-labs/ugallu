@@ -1,0 +1,303 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: forensicsconfigs.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: ForensicsConfig
+    listKind: ForensicsConfigList
+    plural: forensicsconfigs
+    shortNames:
+    - forensicscfg
+    singular: forensicsconfig
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.freezeBackend
+      name: Backend
+      type: string
+    - jsonPath: .spec.maxConcurrentIncidents
+      name: Concurrency
+      type: integer
+    - jsonPath: .spec.trigger.requireAttested
+      name: Attested
+      type: boolean
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          ForensicsConfig is the cluster-scoped singleton (name="default")
+          that governs the ugallu-forensics operator.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              ForensicsConfigSpec is the runtime config the ugallu-forensics
+              operator reads to decide which SecurityEvents trigger an incident
+              capture and how the snapshot pipeline behaves (design 20 §F2).
+            properties:
+              cleanup:
+                description: |-
+                  Cleanup tunes the post-incident lifecycle (manual / auto
+                  unfreeze, ack-allowlist).
+                properties:
+                  acknowledgeAuthorizedSAs:
+                    description: |-
+                      AcknowledgeAuthorizedSAs lists ServiceAccount usernames allowed
+                      to set the `ugallu.io/incident-acknowledged=true` annotation on
+                      Forensic SEs. Pattern matches admission policy 4.
+                    items:
+                      type: string
+                    type: array
+                  autoUnfreezeAfter:
+                    default: 0s
+                    description: |-
+                      AutoUnfreezeAfter is the duration past which a frozen Pod is
+                      automatically unfrozen if no admin acknowledged the incident.
+                      Zero = never auto-unfreeze (manual ack required, MVP default).
+                    type: string
+                type: object
+              maxConcurrentIncidents:
+                default: 5
+                description: |-
+                  MaxConcurrentIncidents caps how many incidents forensics will
+                  have in flight at once. Past the cap, additional triggers are
+                  queued (max 100, FIFO with age-out at 5 minutes per design F8).
+                type: integer
+              snapshot:
+                description: Snapshot tunes the capture pipeline (filesystem, future
+                  memory).
+                properties:
+                  excludePaths:
+                    description: |-
+                      ExcludePaths are glob patterns excluded from the filesystem
+                      capture (PII, large dirs, known-clean baselines).
+                    items:
+                      type: string
+                    type: array
+                  filesystemPaths:
+                    description: |-
+                      FilesystemPaths is the list of in-pod paths to capture. Default
+                      `/proc/<pid>/root` = full container fs view.
+                    items:
+                      type: string
+                    type: array
+                  filesystemSnapshot:
+                    default: true
+                    description: FilesystemSnapshot toggles the fs-snapshot step.
+                    type: boolean
+                  image:
+                    description: |-
+                      Image overrides the snapshot ephemeral container image. Empty
+                      falls back to the chart default (multi-binary runtime image
+                      pinned to the operator's release).
+                    type: string
+                  maxBytes:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    default: 2Gi
+                    description: |-
+                      MaxBytes caps the snapshot upload size. The streaming uploader
+                      aborts at the cap and emits SE{Type: IncidentCaptureFailed}.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  memorySnapshot:
+                    default: false
+                    description: MemorySnapshot toggles the mem-snapshot step (Phase
+                      3).
+                    type: boolean
+                  timeoutSeconds:
+                    default: 300
+                    description: TimeoutSeconds caps the snapshot duration end-to-end.
+                    type: integer
+                required:
+                - filesystemSnapshot
+                type: object
+              trigger:
+                description: |-
+                  Trigger is the predicate evaluated against each incoming SE.
+                  All conditions must match for the operator to start a capture.
+                properties:
+                  classes:
+                    default:
+                    - Detection
+                    - Anomaly
+                    description: Classes restricts capture to SEs of the listed classes.
+                    items:
+                      allOf:
+                      - enum:
+                        - Detection
+                        - Anomaly
+                        - PolicyViolation
+                        - Forensic
+                        - Compliance
+                        - Audit
+                      - enum:
+                        - Detection
+                        - Anomaly
+                        - PolicyViolation
+                        - Forensic
+                        - Compliance
+                        - Audit
+                      description: Class is the top-level classification of a SecurityEvent
+                        (design D1, locked enum).
+                      type: string
+                    type: array
+                  minSeverities:
+                    default:
+                    - high
+                    - critical
+                    description: MinSeverities is the lower-bound severity allowlist.
+                    items:
+                      allOf:
+                      - enum:
+                        - critical
+                        - high
+                        - medium
+                        - low
+                        - info
+                      - enum:
+                        - critical
+                        - high
+                        - medium
+                        - low
+                        - info
+                      description: Severity is the 5-grade severity scale (design
+                        D7).
+                      type: string
+                    type: array
+                  namespaceAllowlist:
+                    description: |-
+                      NamespaceAllowlist restricts capture to suspect Pods living in
+                      these namespaces. Empty = all namespaces.
+                    items:
+                      type: string
+                    type: array
+                  requireAttested:
+                    default: true
+                    description: |-
+                      RequireAttested gates capture on AttestationBundle.Phase=Sealed.
+                      Default true; setting false enables capture on raw (unsigned)
+                      events — discouraged but supported for chase-the-attacker
+                      scenarios where the attestor itself is being compromised.
+                    type: boolean
+                required:
+                - requireAttested
+                type: object
+              whitelistedTypes:
+                description: |-
+                  WhitelistedTypes lists the SE Types eligible for capture. Empty
+                  list = none (safe default; explicit opt-in only).
+                items:
+                  type: string
+                type: array
+            required:
+            - snapshot
+            - trigger
+            type: object
+          status:
+            description: |-
+              ForensicsConfigStatus surfaces operator-side runtime state for
+              kubectl visibility.
+            properties:
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              freezeBackend:
+                description: |-
+                  FreezeBackend is the auto-detected NetworkPolicy backend
+                  (Cilium / CoreV1) the operator chose at startup. Refreshed
+                  periodically.
+                type: string
+              lastConfigLoadAt:
+                description: |-
+                  LastConfigLoadAt marks the most recent successful read of the
+                  spec.
+                format: date-time
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
