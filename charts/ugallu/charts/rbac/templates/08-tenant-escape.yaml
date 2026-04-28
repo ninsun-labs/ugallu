@@ -2,11 +2,17 @@
 {{- /*
 ugallu-tenant-escape RBAC.
 
-Singleton Deployment in ugallu-system. Wave 3 Sprint 4 ships
-scaffolding RBAC: SA + ClusterRole for SE emit + own CRD read.
-Cluster-wide read on Pods/Secrets/Namespaces/SAs and the
-NetworkPolicy/CiliumNetworkPolicy/RBAC informers extend in Sprint 4
-commit 5 (chart real).
+Singleton Deployment in ugallu-system with leader-elect.
+Cluster-wide reads back the 4 cross-tenant detectors:
+  - secrets/pods/namespaces/serviceaccounts: enriching
+    audit-bus events with current cluster state.
+  - networkpolicies: cross-tenant ingress detector source.
+  - ciliumnetworkpolicies: same, on Cilium-CNI clusters
+    (gated by .Values.ciliumNetworkPolicies — disable when
+    Cilium is not in use).
+  - tenantboundaries (read+status): the operator's own CRD.
+  - leases: leader-election in ugallu-system.
+  - securityevents: emitter create rights.
 */ -}}
 apiVersion: v1
 kind: ServiceAccount
@@ -32,6 +38,17 @@ rules:
   - apiGroups: ["security.ugallu.io"]
     resources: ["tenantboundaries/status"]
     verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "secrets", "serviceaccounts"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  {{- if .Values.ciliumNetworkPolicies }}
+  - apiGroups: ["cilium.io"]
+    resources: ["ciliumnetworkpolicies"]
+    verbs: ["get", "list", "watch"]
+  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -43,6 +60,38 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: ugallu-tenant-escape
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-tenant-escape
+    namespace: {{ include "rbac.ns.system" . }}
+---
+# Leader-election lease (Wave 3 §T1: 2 replicas).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-tenant-escape-leader-election
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-tenant-escape-leader-election
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-tenant-escape-leader-election
 subjects:
   - kind: ServiceAccount
     name: ugallu-tenant-escape

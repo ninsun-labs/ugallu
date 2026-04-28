@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ugallu-tenant-escape-metrics
+  namespace: {{ include "tenantescape.namespace" . }}
+  labels:
+    {{- include "tenantescape.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "tenantescape.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.metricsPort }}
+      targetPort: metrics
+      protocol: TCP

@@ -66,6 +66,33 @@ resources:
 metricsPort: 9090
 healthProbePort: 8081
 
+# audit-detection event bus (Wave 3 §S2). When eventBus.enabled=true
+# the operator exposes the AuditStream gRPC server at busPort and
+# binds the matching Service. The chart ships an
+# AuditDetectionConfig CR mirroring these values; flipping
+# eventBus.enabled here MUST be matched by an AuditDetectionConfig
+# update before subscribers can connect.
+busPort: 8444
+
+eventBus:
+  enabled: false
+  consumers:
+    # tenant-escape consumer (design 21 §T) — pre-declared so
+    # flipping eventBus.enabled=true is enough for tenant-escape
+    # to connect.
+    - name: tenant-escape
+      filter:
+        objectRefHasNamespace: true
+        verbAllowlist: ["get", "list", "watch", "create", "update", "patch"]
+      maxEventsPerSec: 1000
+
+# Bearer token Secret for the bus (subscribers carry it as
+# "Authorization: Bearer ..."). Empty secretName disables auth
+# (lab-only).
+busTokenSecret:
+  secretName: ugallu-audit-bus-token
+  key: token
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

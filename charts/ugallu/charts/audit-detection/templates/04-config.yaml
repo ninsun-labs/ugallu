@@ -1,0 +1,25 @@
+{{- /*
+AuditDetectionConfig singleton mirrors the chart's eventBus values.
+Wave-2 retrocompat: when eventBus.enabled=false the operator skips
+the gRPC server entirely and runs in file/webhook → sigma → emit
+mode (no fan-out).
+*/ -}}
+apiVersion: security.ugallu.io/v1alpha1
+kind: AuditDetectionConfig
+metadata:
+  name: default
+  labels:
+    {{- include "auditdetection.labels" . | nindent 4 }}
+spec:
+  eventBus:
+    enabled: {{ .Values.eventBus.enabled }}
+    listenAddr: ":{{ .Values.busPort }}"
+    {{- if .Values.busTokenSecret.secretName }}
+    tokenSecret:
+      name: {{ .Values.busTokenSecret.secretName }}
+      key: {{ .Values.busTokenSecret.key }}
+    {{- end }}
+  {{- with .Values.eventBus.consumers }}
+  consumers:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

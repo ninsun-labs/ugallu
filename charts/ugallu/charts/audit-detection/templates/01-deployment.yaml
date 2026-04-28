@@ -56,6 +56,11 @@ spec:
             - name: webhook
               containerPort: 8443
               protocol: TCP
+            {{- if .Values.eventBus.enabled }}
+            - name: bus
+              containerPort: {{ .Values.busPort }}
+              protocol: TCP
+            {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

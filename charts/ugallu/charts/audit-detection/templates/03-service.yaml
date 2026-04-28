@@ -31,3 +31,21 @@ spec:
       targetPort: webhook
       protocol: TCP
 {{- end }}
+{{- if .Values.eventBus.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ugallu-audit-detection-bus
+  namespace: {{ include "auditdetection.namespace" . }}
+  labels:
+    {{- include "auditdetection.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "auditdetection.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: bus
+      port: {{ .Values.busPort }}
+      targetPort: bus
+      protocol: TCP
+{{- end }}
