@@ -58,3 +58,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/audit-detection
     condition: audit-detection.enabled
+  - name: forensics
+    version: 0.0.1-alpha.1
+    repository: file://charts/forensics
+    condition: forensics.enabled

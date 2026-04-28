@@ -66,3 +66,9 @@ backpressure:
 # DaemonSet that tails the kubelet/apiserver audit-log file.
 audit-detection:
   enabled: true
+
+# forensics subchart (Wave 2 §B): SE-triggered IR-as-code pipeline
+# (pod freeze + filesystem snapshot + WORM evidence). Runs leader-
+# elected in ugallu-system-privileged.
+forensics:
+  enabled: true

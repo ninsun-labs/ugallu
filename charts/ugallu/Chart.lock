@@ -26,5 +26,8 @@ dependencies:
 - name: audit-detection
   repository: file://charts/audit-detection
   version: 0.0.1-alpha.1
-digest: sha256:3fbf68c70e1d24ccc133ec2208e5027462890b3d0c2971d298c0b3ab126a2e38
-generated: "2026-04-28T09:00:44.187230734+02:00"
+- name: forensics
+  repository: file://charts/forensics
+  version: 0.0.1-alpha.1
+digest: sha256:20d4f03a29a48e3deac5487d129a75b44f8d723f30c68324d60a6793993dee53
+generated: "2026-04-28T11:20:26.001320268+02:00"

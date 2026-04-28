@@ -1,9 +1,27 @@
 {{- if .Values.forensics.enabled }}
 {{- /*
-ugallu-forensics: Deployment that orchestrates IncidentResponse workflows.
-Elevated privileges: pods/exec, pods/ephemeralcontainers, optionally
-CiliumNetworkPolicy create. Lives in the privileged namespace; image
-attestation is enforced (design 14 hardening checklist).
+ugallu-forensics RBAC.
+
+The forensics operator runs leader-elected in the privileged
+namespace. Its mandate (design 20 §F1-§F7) is:
+
+  - watch SecurityEvents cluster-wide and start IR pipelines
+    against the suspect Pod;
+  - apply (Cilium)NetworkPolicy to isolate the suspect (Cilium
+    preferred when present, core v1 fallback);
+  - patch the suspect Pod with `ugallu.io/frozen` and inject an
+    ephemeral container that runs the forensics-snapshot binary;
+  - mirror the WORM credentials Secret into the suspect's
+    namespace so the ephemeral container's secretKeyRef resolves;
+  - emit Forensic-class SecurityEvents (PodFrozen,
+    IncidentCaptureCompleted, IncidentCaptureFailed,
+    PodUnfrozen).
+
+Pods/ephemeralcontainers requires its own RBAC entry — the
+subresource is gated separately from pods/update.
+
+The frozen-label patch is gated by admission policy 7 (only this
+SA can write `ugallu.io/frozen`).
 */ -}}
 apiVersion: v1
 kind: ServiceAccount
@@ -20,45 +38,62 @@ metadata:
   labels:
     {{- include "rbac.labels" . | nindent 4 }}
 rules:
-  # Emit SE/ER (no read on others).
+  # Predicate input: SecurityEvent + ForensicsConfig + Forensic SE
+  # acknowledge annotation. Patch on SE for the unfreeze-applied
+  # marker; create for the lifecycle SEs (PodFrozen / completed /
+  # failed / PodUnfrozen) is supplied by the emitter SDK.
   - apiGroups: ["security.ugallu.io"]
-    resources: ["securityevents", "eventresponses"]
-    verbs: ["create"]
-
-  # /status subresource on own EventResponses (workflow steps).
+    resources: ["securityevents"]
+    verbs: ["get", "list", "watch", "create", "patch"]
   - apiGroups: ["security.ugallu.io"]
-    resources: ["eventresponses/status"]
+    resources: ["securityevents/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["forensicsconfigs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["forensicsconfigs/status"]
     verbs: ["update", "patch"]
 
-  # IncidentResponse is forensics' own CRD (operator-specific). Full CRUD.
-  - apiGroups: ["security.ugallu.io"]
-    resources: ["incidentresponses"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["security.ugallu.io"]
-    resources: ["incidentresponses/status"]
-    verbs: ["update", "patch"]
-
-  # Pod read in all namespaces (snapshot fs/mem of subject).
+  # Suspect Pod metadata + ephemeral container injection +
+  # snapshot log scrape.
   - apiGroups: [""]
     resources: ["pods", "pods/log"]
     verbs: ["get", "list", "watch"]
-
-  # Pod ephemeral container insert (debug container snapshot).
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["patch"]
   - apiGroups: [""]
     resources: ["pods/ephemeralcontainers"]
     verbs: ["update", "patch"]
 
-  # Pod exec (live snapshot tools).
+  # WORM credentials mirror: read the master Secret, create a copy
+  # in the suspect Pod's namespace.
   - apiGroups: [""]
-    resources: ["pods/exec"]
-    verbs: ["create"]
+    resources: ["secrets"]
+    verbs: ["get", "create"]
 
+  # Pod isolation: core v1 NetworkPolicy fallback always; Cilium
+  # CNP when the chart's `ciliumNetworkPolicies` flag is on.
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "create", "delete"]
   {{- if .Values.ciliumNetworkPolicies }}
-  # CiliumNetworkPolicy for PodFreeze action (design 04 GitOpsChange).
   - apiGroups: ["cilium.io"]
     resources: ["ciliumnetworkpolicies"]
     verbs: ["get", "list", "create", "delete"]
   {{- end }}
+
+  # EventResponse (future IR-as-code per-step audit trail). Sprint 2
+  # MVP inlines evidence in SE signals, but the create permission is
+  # granted now so Sprint 3's per-step ER chain doesn't require an
+  # RBAC bump.
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["eventresponses"]
+    verbs: ["get", "list", "watch", "create", "patch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["eventresponses/status"]
+    verbs: ["update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

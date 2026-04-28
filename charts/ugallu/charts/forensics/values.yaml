@@ -1,0 +1,90 @@
+global:
+  namespaces:
+    privileged: ugallu-system-privileged
+    system: ugallu-system
+
+# Cluster identity stamped on every emitted SecurityEvent.
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# Singleton ForensicsConfig CR shipped with the chart. The trigger
+# defaults track design 20 §F2 (Detection / Anomaly classes,
+# high+critical severities, attestation required, manual ack only,
+# explicit type whitelist).
+forensicsConfig:
+  enabled: true
+  trigger:
+    classes: [Detection, Anomaly]
+    minSeverities: [high, critical]
+    requireAttested: true
+    namespaceAllowlist: []
+  whitelistedTypes:
+    - PrivilegedPodChange
+    - HostPathMount
+    - CapAddDangerous
+    - ExecIntoPod
+    - PortForwardOpened
+    - ServiceAccountTokenRequest
+    - ClusterAdminGranted
+  snapshot:
+    filesystemSnapshot: true
+    memorySnapshot: false
+    maxBytes: 2Gi
+    timeoutSeconds: 300
+  cleanup:
+    autoUnfreezeAfter: 0s
+    acknowledgeAuthorizedSAs: []
+  maxConcurrentIncidents: 5
+
+# WORM backend for snapshots. Lab default targets the in-cluster
+# SeaweedFS at ugallu-evidence; production would point at AWS S3 or
+# a dedicated object-lock-enabled bucket.
+worm:
+  endpoint: "http://seaweedfs.ugallu-evidence.svc.cluster.local:8333"
+  bucket: ugallu
+  region: us-east-1
+  usePathStyle: true
+  lockMode: COMPLIANCE
+  lockUntil: 168h
+  secret:
+    # The master Secret carrying access-key + secret-key. The
+    # operator mirrors it into suspect Pod namespaces before
+    # injecting the snapshot ephemeral container.
+    name: ugallu-worm-creds
+    namespace: ugallu-system
+
+# Placeholder until the real binary ships at
+# ghcr.io/ninsun-labs/ugallu/forensics:<chart-tag>. Override
+# `placeholder=false` + `image.*` to point at a real image.
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+# When placeholder=true the container runs sleep so the pod is
+# Schedulable for kubectl/Argo health checks. Override to
+# `["/bin/ugallu-forensics"]` in the lab values when the real
+# binary is loaded onto the nodes.
+command: ["/bin/sleep", "infinity"]
+args: []
+
+# Singleton with leader election. 2 replicas is the design default
+# (one active + one warm spare).
+replicas: 2
+
+resources:
+  requests:
+    cpu: "20m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+metricsPort: 9090
+healthProbePort: 8081
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

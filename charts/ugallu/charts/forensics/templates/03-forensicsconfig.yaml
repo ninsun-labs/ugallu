@@ -1,0 +1,31 @@
+{{- if .Values.forensicsConfig.enabled }}
+apiVersion: security.ugallu.io/v1alpha1
+kind: ForensicsConfig
+metadata:
+  name: default
+  labels:
+    {{- include "forensics.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  trigger:
+    classes: {{ toJson .Values.forensicsConfig.trigger.classes }}
+    minSeverities: {{ toJson .Values.forensicsConfig.trigger.minSeverities }}
+    requireAttested: {{ .Values.forensicsConfig.trigger.requireAttested }}
+    {{- with .Values.forensicsConfig.trigger.namespaceAllowlist }}
+    namespaceAllowlist: {{ toJson . }}
+    {{- end }}
+  whitelistedTypes: {{ toJson .Values.forensicsConfig.whitelistedTypes }}
+  snapshot:
+    filesystemSnapshot: {{ .Values.forensicsConfig.snapshot.filesystemSnapshot }}
+    memorySnapshot: {{ .Values.forensicsConfig.snapshot.memorySnapshot }}
+    maxBytes: {{ .Values.forensicsConfig.snapshot.maxBytes | quote }}
+    timeoutSeconds: {{ .Values.forensicsConfig.snapshot.timeoutSeconds }}
+  cleanup:
+    autoUnfreezeAfter: {{ .Values.forensicsConfig.cleanup.autoUnfreezeAfter | quote }}
+    {{- with .Values.forensicsConfig.cleanup.acknowledgeAuthorizedSAs }}
+    acknowledgeAuthorizedSAs: {{ toJson . }}
+    {{- end }}
+  maxConcurrentIncidents: {{ .Values.forensicsConfig.maxConcurrentIncidents }}
+{{- end }}

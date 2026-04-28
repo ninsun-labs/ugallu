@@ -76,16 +76,16 @@ spec:
             wave: "2"
             path: charts/ugallu/charts/audit-detection
             component: audit-detection
+          - name: ugallu-forensics
+            wave: "2"
+            path: charts/ugallu/charts/forensics
+            component: forensics
 
           # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs
           #   wave: "0"
           #   path: charts/ugallu/charts/seaweedfs
           #   component: seaweedfs
-          # - name: ugallu-forensics
-          #   wave: "2"
-          #   path: charts/ugallu/charts/forensics
-          #   component: forensics
 
   template:
     metadata:

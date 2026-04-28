@@ -1,0 +1,17 @@
+apiVersion: v2
+name: forensics
+description: "ugallu-forensics operator (SE-triggered IR-as-code: pod freeze + filesystem snapshot)"
+type: application
+version: 0.0.1-alpha.1
+appVersion: "0.0.1-alpha.1"
+kubeVersion: ">=1.30.0-0"
+
+home: https://ninsun.io/ugallu
+sources:
+  - https://github.com/ninsun-labs/ugallu
+
+keywords:
+  - kubernetes
+  - security
+  - forensics
+  - incident-response
