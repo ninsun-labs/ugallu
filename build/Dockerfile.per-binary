@@ -1,0 +1,47 @@
+# Per-binary runtime image. The CI matrix builds one image per
+# binary so each component carries its own signature, SBOM, and
+# CVE-scan attribution. Lab dev loops still use the multi-binary
+# image (build/Dockerfile) because per-binary `ctr import` × 8
+# slows the local cycle without buying anything.
+#
+# Build args:
+#   BINARY     — short name (audit-detection, forensics, ...).
+#   BIN_FILE   — pre-built binary path relative to the build
+#                context. Defaults to "<BINARY>-bin".
+#
+# Build context expects:
+#   - the pre-built static binary adjacent to this Dockerfile,
+#     produced by `task build:bin BINARY=<name>`.
+#
+# Cross-compile each binary with:
+#   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+#       go build -trimpath -ldflags='-s -w' -o build/_artifacts/<binary>-bin <pkg>
+#
+# CA bundle pulled from alpine so HTTPS works from a scratch base.
+
+ARG BINARY
+ARG BIN_FILE=${BINARY}-bin
+
+FROM alpine:3.20 AS certs
+RUN apk add --no-cache ca-certificates
+
+FROM scratch
+ARG BINARY
+ARG BIN_FILE
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+# Binary lives at the fixed path /app/ugallu so JSON-form
+# ENTRYPOINT (which doesn't expand ARGs) can reference it
+# directly. Image identity is carried by the OCI labels + image
+# name, not the entrypoint string.
+COPY ${BIN_FILE} /app/ugallu
+
+# OCI metadata — picked up by GHCR + supply-chain scanners. The
+# `org.opencontainers.image.revision` lands per-build via the CI
+# label flag.
+LABEL org.opencontainers.image.title="ugallu-${BINARY}" \
+      org.opencontainers.image.source="https://github.com/ninsun-labs/ugallu" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.vendor="ninsun-labs"
+
+USER 65532:65532
+ENTRYPOINT ["/app/ugallu"]

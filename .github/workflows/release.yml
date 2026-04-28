@@ -1,0 +1,136 @@
+name: Release (binary images + cosign keyless)
+
+# Triggered on every annotated tag matching wave* / v* and on the
+# manual dispatch path. Each tag produces 8 per-binary OCI images
+# pushed to GHCR + a cosign keyless signature (Fulcio cert via
+# GitHub OIDC, Rekor public log).
+
+on:
+  push:
+    tags:
+      - 'wave*-final'
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to publish (defaults to short SHA)'
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  GO_VERSION: '1.26.2'
+  REGISTRY: ghcr.io/ninsun-labs/ugallu
+  COSIGN_VERSION: v2.6.1
+
+jobs:
+  publish:
+    name: Build + sign + push (${{ matrix.binary }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - binary: attestor
+            pkg:    ./attestor/cmd/ugallu-attestor
+          - binary: ttl
+            pkg:    ./ttl/cmd/ugallu-ttl
+          - binary: backpressure
+            pkg:    ./backpressure/cmd/ugallu-backpressure
+          - binary: gitops-responder
+            pkg:    ./operators/gitops-responder/cmd/ugallu-gitops-responder
+          - binary: resolver
+            pkg:    ./resolver/cmd/ugallu-resolver
+          - binary: audit-detection
+            pkg:    ./operators/audit-detection/cmd/ugallu-audit-detection
+          - binary: forensics
+            pkg:    ./operators/forensics/cmd/ugallu-forensics
+          - binary: forensics-snapshot
+            pkg:    ./operators/forensics/cmd/ugallu-forensics-snapshot
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+
+      - name: Compute image tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cross-compile binary
+        run: |
+          mkdir -p build/_artifacts
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath -ldflags='-s -w' \
+            -o build/_artifacts/${{ matrix.binary }}-bin \
+            ${{ matrix.pkg }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build + push image
+        uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: build/_artifacts
+          file: build/Dockerfile.per-binary
+          push: true
+          provenance: true
+          sbom: true
+          tags: ${{ env.REGISTRY }}/${{ matrix.binary }}:${{ steps.tag.outputs.tag }}
+          build-args: |
+            BINARY=${{ matrix.binary }}
+            BIN_FILE=${{ matrix.binary }}-bin
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.tag }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: ${{ env.COSIGN_VERSION }}
+
+      - name: Sign image (keyless via GitHub OIDC)
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          cosign sign --yes \
+            --oidc-issuer https://token.actions.githubusercontent.com \
+            ${{ env.REGISTRY }}/${{ matrix.binary }}@${{ steps.build.outputs.digest }}
+
+      - name: Attach SBOM (cosign attestation)
+        run: |
+          cosign attest --yes \
+            --predicate <(docker buildx imagetools inspect \
+              ${{ env.REGISTRY }}/${{ matrix.binary }}:${{ steps.tag.outputs.tag }} \
+              --format "{{ '{{' }} json .SBOM.SPDX {{ '}}' }}") \
+            --type spdxjson \
+            ${{ env.REGISTRY }}/${{ matrix.binary }}@${{ steps.build.outputs.digest }}
+
+      - name: Verify signature roundtrip
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp 'https://github.com/ninsun-labs/ugallu/.+' \
+            ${{ env.REGISTRY }}/${{ matrix.binary }}@${{ steps.build.outputs.digest }}

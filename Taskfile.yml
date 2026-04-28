@@ -40,15 +40,78 @@ tasks:
           (cd {{.ITEM}} && go build -o /dev/null ./...)
 
   build:bin:
-    desc: Build binaries into bin/
+    desc: Build binaries into bin/ (host arch, dev convenience)
     cmds:
       - mkdir -p bin
       - go build -o bin/ugallu-resolver ./resolver/cmd/ugallu-resolver
       - go build -o bin/ugallu-attestor ./attestor/cmd/ugallu-attestor
       - go build -o bin/ugallu-ttl ./ttl/cmd/ugallu-ttl
+      - go build -o bin/ugallu-backpressure ./backpressure/cmd/ugallu-backpressure
+      - go build -o bin/ugallu-gitops-responder ./operators/gitops-responder/cmd/ugallu-gitops-responder
       - go build -o bin/ugallu ./cmd/ugallu
       - go build -o bin/ugallu-audit-detection ./operators/audit-detection/cmd/ugallu-audit-detection
       - go build -o bin/ugallu-forensics ./operators/forensics/cmd/ugallu-forensics
+      - go build -o bin/ugallu-forensics-snapshot ./operators/forensics/cmd/ugallu-forensics-snapshot
+
+  build:images:
+    desc: |
+      Cross-compile every binary linux/amd64 + build the matching
+      per-binary OCI image into the local podman engine. Tag is
+      `ghcr.io/ninsun-labs/ugallu/<binary>:dev` by default; CI
+      overrides via IMAGE_REGISTRY + IMAGE_TAG env.
+    vars:
+      REGISTRY: '{{.IMAGE_REGISTRY | default "ghcr.io/ninsun-labs/ugallu"}}'
+      TAG:      '{{.IMAGE_TAG | default "dev"}}'
+      BINARIES:
+        - "attestor:./attestor/cmd/ugallu-attestor"
+        - "ttl:./ttl/cmd/ugallu-ttl"
+        - "backpressure:./backpressure/cmd/ugallu-backpressure"
+        - "gitops-responder:./operators/gitops-responder/cmd/ugallu-gitops-responder"
+        - "resolver:./resolver/cmd/ugallu-resolver"
+        - "audit-detection:./operators/audit-detection/cmd/ugallu-audit-detection"
+        - "forensics:./operators/forensics/cmd/ugallu-forensics"
+        - "forensics-snapshot:./operators/forensics/cmd/ugallu-forensics-snapshot"
+    cmds:
+      - mkdir -p build/_artifacts
+      - for:
+          var: BINARIES
+          as: spec
+        cmd: |
+          name="{{splitList ":" .spec | first}}"
+          pkg="{{splitList ":" .spec | last}}"
+          echo "==> build $name (linux/amd64)"
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' \
+            -o build/_artifacts/${name}-bin "$pkg"
+          echo "==> image {{.REGISTRY}}/${name}:{{.TAG}}"
+          podman build \
+            --build-arg BINARY=${name} \
+            --build-arg BIN_FILE=${name}-bin \
+            -t {{.REGISTRY}}/${name}:{{.TAG}} \
+            -f build/Dockerfile.per-binary \
+            build/_artifacts
+
+  build:image-multi:
+    desc: |
+      Build the multi-binary lab image localhost/ugallu-runtime:dev
+      (one tarball per node, fast dev loop). Use this for the lab
+      ssh+ctr workflow; CI uses build:images for the per-binary
+      production publish.
+    cmds:
+      - task: build:bin-linux
+      - cd build/_artifacts && cp ../Dockerfile . && podman build --no-cache -t localhost/ugallu-runtime:dev -f Dockerfile .
+
+  build:bin-linux:
+    desc: Cross-compile every binary into build/_artifacts/ (linux/amd64).
+    cmds:
+      - mkdir -p build/_artifacts
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/attestor-bin ./attestor/cmd/ugallu-attestor
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/ttl-bin ./ttl/cmd/ugallu-ttl
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/backpressure-bin ./backpressure/cmd/ugallu-backpressure
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/gitops-responder-bin ./operators/gitops-responder/cmd/ugallu-gitops-responder
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/resolver-bin ./resolver/cmd/ugallu-resolver
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/audit-detection-bin ./operators/audit-detection/cmd/ugallu-audit-detection
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/forensics-bin ./operators/forensics/cmd/ugallu-forensics
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/forensics-snapshot-bin ./operators/forensics/cmd/ugallu-forensics-snapshot
 
   test:
     desc: Run go test (-race) on every module (envtest assets auto-fetched)
