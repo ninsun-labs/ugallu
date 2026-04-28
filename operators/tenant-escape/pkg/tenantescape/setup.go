@@ -2,17 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package tenantescape exposes the controller-runtime wiring for the
-// ugallu-tenant-escape operator (design 21 §T). The 4 detectors +
-// source backends ship in subsequent commits.
+// ugallu-tenant-escape operator (design 21 §T). It assembles:
+//   - the TenantBoundary reconciler (rebuilds the in-memory boundary
+//     index on every CR Add/Update/Delete);
+//   - the audit-bus + Tetragon-stub source backends;
+//   - the dispatcher (fans events through the 4 detectors and emits
+//     SecurityEvents on hits).
 package tenantescape
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 	emitterv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/emitter/v1alpha1"
+
+	"github.com/ninsun-labs/ugallu/operators/tenant-escape/pkg/tenantescape/boundary"
+	"github.com/ninsun-labs/ugallu/operators/tenant-escape/pkg/tenantescape/detector"
+	"github.com/ninsun-labs/ugallu/operators/tenant-escape/pkg/tenantescape/dispatch"
+	"github.com/ninsun-labs/ugallu/operators/tenant-escape/pkg/tenantescape/source"
 )
 
 // Options bundles the runtime parameters cmd/ugallu-tenant-escape
@@ -31,18 +43,76 @@ type Options struct {
 	// AuditBusToken authenticates against the bus when AuthBearer
 	// is configured server-side.
 	AuditBusToken string
+
+	// AuditBusConsumerName overrides the default consumer name
+	// ("tenant-escape"); must match an entry in
+	// AuditDetectionConfig.spec.consumers.
+	AuditBusConsumerName string
 }
 
-// SetupWithManager registers the operator's reconcilers + sources
-// against mgr. Subsequent commits add real wiring; current scaffold
-// returns nil after validating Options.
-func SetupWithManager(_ ctrl.Manager, opts *Options) error {
+// SetupWithManager registers the TenantBoundary reconciler + adds the
+// dispatcher + audit-bus source + Tetragon-stub source as manager
+// Runnables. Returns the first wiring error encountered.
+func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 	if opts == nil {
 		return errors.New("tenantescape.SetupWithManager: nil Options")
 	}
 	if opts.Emitter == nil {
 		return errors.New("tenantescape.SetupWithManager: nil Emitter")
 	}
-	// TODO(wave3-sprint4-commit3+): wire 4 detectors + source backends + reconciler.
+	if opts.AuditBusEndpoint == "" {
+		return errors.New("tenantescape.SetupWithManager: empty AuditBusEndpoint")
+	}
+
+	idx := boundary.NewIndex()
+
+	if err := (&TenantBoundaryReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		Index:  idx,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("tenant-boundary reconciler: %w", err)
+	}
+
+	auditDetectors := []detector.AuditDetector{
+		detector.NewCrossTenantSecretAccessDetector(),
+		detector.NewCrossTenantHostPathOverlapDetector(),
+		detector.NewCrossTenantNetworkPolicyDetector(),
+	}
+	execDetectors := []detector.ExecDetector{
+		detector.NewCrossTenantExecDetector(),
+	}
+	disp := dispatch.New(auditDetectors, execDetectors, idx, opts.Emitter, opts.ClusterIdentity)
+
+	auditSrc, err := source.NewAuditBusSource(source.AuditBusConfig{
+		Endpoint:     opts.AuditBusEndpoint,
+		BearerToken:  opts.AuditBusToken,
+		ConsumerName: opts.AuditBusConsumerName,
+	})
+	if err != nil {
+		return fmt.Errorf("audit-bus source: %w", err)
+	}
+	execSrc := source.NewTetragonStubSource()
+
+	if err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+		ch, runErr := auditSrc.Run(ctx)
+		if runErr != nil {
+			return fmt.Errorf("audit-bus source: %w", runErr)
+		}
+		disp.RunAudit(ctx, ch)
+		return nil
+	})); err != nil {
+		return fmt.Errorf("audit-bus runnable: %w", err)
+	}
+	if err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+		ch, runErr := execSrc.Run(ctx)
+		if runErr != nil {
+			return fmt.Errorf("exec source: %w", runErr)
+		}
+		disp.RunExec(ctx, ch)
+		return nil
+	})); err != nil {
+		return fmt.Errorf("exec runnable: %w", err)
+	}
 	return nil
 }

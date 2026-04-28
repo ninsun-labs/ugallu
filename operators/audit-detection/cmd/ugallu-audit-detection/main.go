@@ -35,7 +35,11 @@ import (
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
 
 	"github.com/ninsun-labs/ugallu/operators/audit-detection/pkg/auditdetection"
+	"github.com/ninsun-labs/ugallu/operators/audit-detection/pkg/auditdetection/bus"
 	"github.com/ninsun-labs/ugallu/operators/audit-detection/pkg/auditdetection/engine"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const version = "v0.0.1-alpha.1"
@@ -68,6 +72,8 @@ func runMain() error {
 		webhookKeyFile      string
 		webhookClientCAFile string
 		webhookSecretEnv    string
+		configName          string
+		busTokenEnv         string
 	)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "Prometheus metrics bind address")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "Health probe bind address")
@@ -81,6 +87,8 @@ func runMain() error {
 	flag.StringVar(&webhookKeyFile, "webhook-key", "", "TLS key file (webhook source)")
 	flag.StringVar(&webhookClientCAFile, "webhook-client-ca", "", "Client CA bundle for mTLS (webhook source)")
 	flag.StringVar(&webhookSecretEnv, "webhook-secret-env", "AUDIT_WEBHOOK_TOKEN", "Env var name carrying the bearer-token shared secret (webhook source)")
+	flag.StringVar(&configName, "config-name", "default", "AuditDetectionConfig CR name (cluster-scoped). Wave 3 §S2 event-bus settings live here; missing CR or EventBus.Enabled=false runs in Wave-2 mode (no bus).")
+	flag.StringVar(&busTokenEnv, "bus-token-env", "AUDIT_BUS_TOKEN", "Env var name carrying the bearer-token shared secret for the event bus (Wave 3)")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
@@ -113,11 +121,26 @@ func runMain() error {
 		return fmt.Errorf("emitter: %w", err)
 	}
 
-	eng, err := engine.New(&engine.Options{
+	busServer, err := buildBusServer(mgr, configName, busTokenEnv)
+	if err != nil {
+		return fmt.Errorf("audit bus: %w", err)
+	}
+
+	engOpts := &engine.Options{
 		Emitter:         em,
 		ClusterIdentity: securityv1alpha1.ClusterIdentity{ClusterID: clusterID},
 		Log:             slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})),
-	})
+	}
+	if busServer != nil {
+		engOpts.Publisher = busServer
+		log.Info("audit event-bus enabled", "listen", busServer.ListenAddr())
+		if addErr := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+			return busServer.Start(ctx)
+		})); addErr != nil {
+			return fmt.Errorf("add bus runnable: %w", addErr)
+		}
+	}
+	eng, err := engine.New(engOpts)
 	if err != nil {
 		return fmt.Errorf("engine: %w", err)
 	}
@@ -151,6 +174,33 @@ func runMain() error {
 		return fmt.Errorf("manager exited: %w", err)
 	}
 	return nil
+}
+
+// buildBusServer reads the AuditDetectionConfig CR (when present)
+// and instantiates a bus.Server iff EventBus.Enabled=true. Returns
+// (nil, nil) when the bus is disabled or the CR is missing — that's
+// the Wave-2 retrocompat path. Bearer-token comes from env so it
+// never lands in process listings.
+func buildBusServer(mgr ctrl.Manager, configName, tokenEnv string) (*bus.Server, error) {
+	cfg := &securityv1alpha1.AuditDetectionConfig{}
+	if err := mgr.GetAPIReader().Get(context.Background(), types.NamespacedName{Name: configName}, cfg); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get AuditDetectionConfig %q: %w", configName, err)
+	}
+	if !cfg.Spec.EventBus.Enabled {
+		return nil, nil
+	}
+	listen := cfg.Spec.EventBus.ListenAddr
+	if listen == "" {
+		listen = ":8444"
+	}
+	return bus.New(bus.Config{
+		ListenAddr:  listen,
+		BearerToken: os.Getenv(tokenEnv),
+		Consumers:   cfg.Spec.Consumers,
+	})
 }
 
 // buildSource picks between the file and webhook backends based on

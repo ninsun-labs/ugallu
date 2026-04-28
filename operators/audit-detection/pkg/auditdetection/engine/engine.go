@@ -44,6 +44,16 @@ type Engine struct {
 	clusterIdentity securityv1alpha1.ClusterIdentity
 	log             *slog.Logger
 	rules           *RuleSet
+	publisher       Publisher
+}
+
+// Publisher is the optional fan-out hook the engine calls for every
+// AuditEvent it consumes — before the sigma matcher runs. The
+// audit-detection event bus (Wave 3 §S2) plugs in here so other
+// operators can subscribe to the raw stream without re-tailing the
+// audit log. nil = no-op.
+type Publisher interface {
+	Publish(*auditdetection.AuditEvent)
 }
 
 // Options configures NewEngine.
@@ -56,6 +66,10 @@ type Options struct {
 
 	// Log routes diagnostics. nil → discard.
 	Log *slog.Logger
+
+	// Publisher receives every AuditEvent before sigma matching.
+	// Optional; nil disables the fan-out (Wave 2 retrocompat).
+	Publisher Publisher
 }
 
 // New validates opts and returns a ready Engine. The returned RuleSet
@@ -74,6 +88,7 @@ func New(opts *Options) (*Engine, error) {
 		clusterIdentity: opts.ClusterIdentity,
 		log:             log,
 		rules:           NewRuleSet(),
+		publisher:       opts.Publisher,
 	}, nil
 }
 
@@ -94,6 +109,9 @@ func (e *Engine) Run(ctx context.Context, src auditdetection.Source) error {
 	for ev := range out {
 		if ev == nil {
 			continue
+		}
+		if e.publisher != nil {
+			e.publisher.Publish(ev)
 		}
 		e.dispatch(ctx, ev)
 	}
