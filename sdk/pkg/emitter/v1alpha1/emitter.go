@@ -209,9 +209,14 @@ func (e *Emitter) buildSubject(ctx context.Context, opts *EmitOpts) securityv1al
 		UID:       opts.SubjectUID,
 	}
 	if e.opts.Resolver == nil || opts.EnrichVia == "" {
-		if opts.SubjectName == "" && opts.SubjectUID == "" {
-			bare.Unresolved = true
-		}
+		// Without resolver enrichment the bare subject carries Kind +
+		// Name but no kind-specific discriminator (Pod / Container /
+		// ClusterRoleBinding / …). The subject-discriminator
+		// admission policy demands either a populated discriminator
+		// or Unresolved=true, so flag this branch as Unresolved.
+		// Callers that want a fully-populated discriminator must
+		// provide a Resolver and EnrichVia.
+		bare.Unresolved = true
 		return bare
 	}
 

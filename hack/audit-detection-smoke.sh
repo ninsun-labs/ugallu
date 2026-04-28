@@ -42,14 +42,27 @@ WEBHOOK_SECRET_NAME=${WEBHOOK_SECRET_NAME:-ugallu-audit-webhook-token}
 
 RULE=audit-smoke-cabg
 BAD_RULE=audit-smoke-bad-jsonpath
+# Unique suffix per run so deterministic SE names from previous runs
+# don't collide with this run's events (the emitter derives SE.Name
+# from auditID + type + subject — same inputs ⇒ same SE name ⇒
+# idempotent Create returns AlreadyExists, masking new "matches").
+RUN_ID=$(date +%s)-$$
 TOKEN=$(kubectl -n "$NS" get secret "$WEBHOOK_SECRET_NAME" -o jsonpath='{.data.token}' | base64 -d)
+WEBHOOK_SVC_NAME=${WEBHOOK_SVC_NAME:-ugallu-audit-detection-webhook}
+WEBHOOK_SVC_IP=$(kubectl -n "$NS" get svc "$WEBHOOK_SVC_NAME" -o jsonpath='{.spec.clusterIP}')
+[ -n "$WEBHOOK_SVC_IP" ] || fail "Service $WEBHOOK_SVC_NAME has no ClusterIP"
 
 # webhook_post(audit_json) — POSTs an EventList payload to the webhook
-# from a tiny one-shot Job (so we don't need cluster network access
-# from the laptop). The Job uses curl from the alpine/curl image.
+# from a tiny one-shot Job. The payload travels via a ConfigMap so its
+# JSON indentation does not collide with the YAML block scalar that
+# carries the curl command.
 webhook_post() {
   local payload="$1"
   kubectl -n "$NS" delete job audit-smoke-curl --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS" delete configmap audit-smoke-payload --ignore-not-found >/dev/null 2>&1 || true
+  printf '%s' "$payload" > /tmp/audit-smoke-body.json
+  kubectl -n "$NS" create configmap audit-smoke-payload \
+    --from-file=body.json=/tmp/audit-smoke-body.json >/dev/null
   cat <<EOF | kubectl -n "$NS" apply -f - >/dev/null
 apiVersion: batch/v1
 kind: Job
@@ -60,6 +73,12 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: curl
           image: alpine/curl:8.11.1
@@ -68,15 +87,22 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
-              set -e
-              cat >/tmp/body.json <<'PAYLOAD'
-$payload
-PAYLOAD
               curl -sk -X POST \
                 -H "Authorization: Bearer \$TOKEN" \
                 -H "Content-Type: application/json" \
-                --data @/tmp/body.json \
+                --data @/payload/body.json \
+                --resolve ${WEBHOOK_HOST}:${WEBHOOK_PORT}:${WEBHOOK_SVC_IP} \
                 https://${WEBHOOK_HOST}:${WEBHOOK_PORT}${WEBHOOK_PATH}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - { name: payload, mountPath: /payload }
+      volumes:
+        - name: payload
+          configMap:
+            name: audit-smoke-payload
 EOF
   kubectl -n "$NS" wait --for=condition=complete --timeout=60s job/audit-smoke-curl >/dev/null
 }
@@ -84,6 +110,8 @@ EOF
 cleanup() {
   kubectl delete sigmarule "$RULE" "$BAD_RULE" --ignore-not-found >/dev/null 2>&1 || true
   kubectl -n "$NS" delete job audit-smoke-curl --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS" delete configmap audit-smoke-payload --ignore-not-found >/dev/null 2>&1 || true
+  rm -f /tmp/audit-smoke-body.json 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -154,7 +182,7 @@ info "Test 3: matching audit event creates SecurityEvent"
 before=$(kubectl get securityevent -o name 2>/dev/null | wc -l)
 webhook_post '{
   "items": [{
-    "auditID": "smoke-create-1",
+    "auditID": "smoke-create-'"$RUN_ID"'",
     "stage": "ResponseComplete",
     "verb": "create",
     "user": {"username": "system:serviceaccount:kube-system:smoke-bot"},
@@ -184,7 +212,7 @@ info "Test 4: non-matching audit event ignored"
 mid=$(kubectl get securityevent -o name 2>/dev/null | wc -l)
 webhook_post '{
   "items": [{
-    "auditID": "smoke-non-match",
+    "auditID": "smoke-non-match-'"$RUN_ID"'",
     "verb": "get",
     "objectRef": {"resource": "pods", "name": "irrelevant"},
     "stageTimestamp": "2026-04-28T10:00:01Z"
@@ -202,16 +230,20 @@ for i in 1 2 3 4 5 6 7 8; do
   sep=","
   if [ $i -eq 1 ]; then sep=""; fi
   batch_items="${batch_items}${sep}{
-    \"auditID\": \"smoke-burst-$i\",
+    \"auditID\": \"smoke-burst-${RUN_ID}-$i\",
     \"verb\": \"create\",
     \"user\": {\"username\": \"system:serviceaccount:kube-system:smoke-bot\"},
     \"objectRef\": {\"apiGroup\": \"rbac.authorization.k8s.io\", \"resource\": \"clusterrolebindings\", \"name\": \"burst-$i\"},
     \"requestObject\": {\"roleRef\": {\"name\": \"cluster-admin\"}},
-    \"stageTimestamp\": \"2026-04-28T10:00:0$i Z\"
+    \"stageTimestamp\": \"2026-04-28T10:00:0${i}Z\"
   }"
 done
 webhook_post "{\"items\": [${batch_items}]}"
-for _ in $(seq 1 30); do
+# Status flushes on the reconciler's 30s requeue. Force one by
+# bumping an annotation; that way we don't have to wait the full
+# RequeueAfter window.
+kubectl annotate sigmarule "$RULE" --overwrite ugallu.io/smoke-bump="$(date +%s)" >/dev/null
+for _ in $(seq 1 60); do
   drop=$(kubectl get sigmarule "$RULE" -o jsonpath='{.status.droppedRateLimit}' 2>/dev/null || echo 0)
   if [ "${drop:-0}" -gt 0 ]; then break; fi
   sleep 1
@@ -226,7 +258,7 @@ sleep 2
 mid=$(kubectl get securityevent -o name 2>/dev/null | wc -l)
 webhook_post '{
   "items": [{
-    "auditID": "smoke-after-disable",
+    "auditID": "smoke-after-disable-'"$RUN_ID"'",
     "verb": "create",
     "objectRef": {"resource": "clusterrolebindings", "name": "should-be-ignored"},
     "requestObject": {"roleRef": {"name": "cluster-admin"}},
