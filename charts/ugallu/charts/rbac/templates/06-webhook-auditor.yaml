@@ -4,9 +4,15 @@ ugallu-webhook-auditor RBAC.
 
 Singleton Deployment in ugallu-system (PSA restricted). Watches the
 admission webhook configurations (cluster-scoped) and emits SE on
-threshold cross. No Secret access in Wave 3 Phase 1 — caBundle
-indirect reference resolution lands in Phase 2 with a narrow
-namespace-scoped Role.
+threshold cross.
+
+Secret access (Wave 3 Phase 2): one Role + RoleBinding per namespace
+listed in .Values.webhookAuditor.trustedCASources, granting only
+get,list,watch on Secrets in that namespace. Scope is intentionally
+narrow — the operator follows cert-manager-style indirect caBundle
+references (annotation cert-manager.io/inject-ca-from-secret) and
+needs to read the referenced Secret's ca.crt / tls.crt / ca.pem keys.
+The CABundleResolver enforces the same allowlist as defense-in-depth.
 */ -}}
 apiVersion: v1
 kind: ServiceAccount
@@ -89,4 +95,35 @@ subjects:
   - kind: ServiceAccount
     name: ugallu-webhook-auditor
     namespace: {{ include "rbac.ns.system" . }}
+{{- /* Per-namespace Secret read for caBundle indirect deref. */}}
+{{- range $idx, $ns := .Values.webhookAuditor.trustedCASources | default list }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-webhook-auditor-cabundle
+  namespace: {{ $ns }}
+  labels:
+    {{- include "rbac.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-webhook-auditor-cabundle
+  namespace: {{ $ns }}
+  labels:
+    {{- include "rbac.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-webhook-auditor-cabundle
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-webhook-auditor
+    namespace: {{ include "rbac.ns.system" $ }}
+{{- end }}
 {{- end }}

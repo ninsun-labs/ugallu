@@ -23,6 +23,15 @@ backpressure:
   enabled: true
 webhookAuditor:
   enabled: true
+  # Namespace allowlist where the operator can read Secret data to
+  # dereference cert-manager-style indirect caBundle references
+  # (annotation cert-manager.io/inject-ca-from-secret). The default
+  # mirrors WebhookAuditorConfig.spec.trustedCASources defaults; admins
+  # who add their own trustedCASources values must mirror them here
+  # via `helm upgrade --set rbac.webhookAuditor.trustedCASources='{...}'`.
+  trustedCASources:
+    - cert-manager
+    - kube-system
 
 # Cluster-flavor toggles. ciliumNetworkPolicies grants forensics CAP to
 # create/delete CiliumNetworkPolicy resources for PodFreeze. Disable if
