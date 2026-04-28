@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -63,6 +64,19 @@ type FreezerOptions struct {
 	// ForensicsAppLabel is the value forensics pods carry on
 	// app.kubernetes.io/name, used as the egress endpoint selector.
 	ForensicsAppLabel string
+
+	// DNSNamespace + DNSAppLabel locate the in-cluster DNS resolver
+	// the suspect Pod must reach for the snapshot ephemeral
+	// container to resolve the WORM endpoint FQDN. Default
+	// "kube-system" / "rke2-coredns" (override on EKS / kubeadm
+	// where the labels differ).
+	DNSNamespace string
+	DNSAppLabel  string
+
+	// WORMNamespace + WORMServiceLabel locate the WORM endpoint
+	// Service. Default "ugallu-evidence" / "seaweedfs".
+	WORMNamespace    string
+	WORMServiceLabel string
 }
 
 // Freezer applies (and removes) the network isolation + Pod label
@@ -83,6 +97,18 @@ func NewFreezer(opts *FreezerOptions) (*Freezer, error) {
 	}
 	if opts.ForensicsAppLabel == "" {
 		opts.ForensicsAppLabel = "ugallu-forensics"
+	}
+	if opts.DNSNamespace == "" {
+		opts.DNSNamespace = "kube-system"
+	}
+	if opts.DNSAppLabel == "" {
+		opts.DNSAppLabel = "rke2-coredns"
+	}
+	if opts.WORMNamespace == "" {
+		opts.WORMNamespace = "ugallu-evidence"
+	}
+	if opts.WORMServiceLabel == "" {
+		opts.WORMServiceLabel = "seaweedfs"
 	}
 	return &Freezer{opts: *opts}, nil
 }
@@ -178,6 +204,46 @@ func (f *Freezer) applyCorePolicy(ctx context.Context, pod *corev1.Pod) error {
 			},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{},
 			Egress: []networkingv1.NetworkPolicyEgressRule{
+				// DNS — kube-system coredns 53/UDP+TCP.
+				{
+					To: []networkingv1.NetworkPolicyPeer{
+						{
+							NamespaceSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"kubernetes.io/metadata.name": f.opts.DNSNamespace,
+								},
+							},
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"k8s-app": f.opts.DNSAppLabel,
+								},
+							},
+						},
+					},
+					Ports: []networkingv1.NetworkPolicyPort{
+						{Protocol: protocolPtr(corev1.ProtocolUDP), Port: portIntStr(53)},
+						{Protocol: protocolPtr(corev1.ProtocolTCP), Port: portIntStr(53)},
+					},
+				},
+				// WORM endpoint — snapshot multipart upload target.
+				{
+					To: []networkingv1.NetworkPolicyPeer{
+						{
+							NamespaceSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"kubernetes.io/metadata.name": f.opts.WORMNamespace,
+								},
+							},
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"app": f.opts.WORMServiceLabel,
+								},
+							},
+						},
+					},
+				},
+				// Forensics workload — design 20 §F4 carryover for
+				// future IR-as-code feedback signaling.
 				{
 					To: []networkingv1.NetworkPolicyPeer{
 						{
@@ -219,6 +285,45 @@ func (f *Freezer) applyCiliumPolicy(ctx context.Context, pod *corev1.Pod) error 
 		},
 		"ingress": []any{},
 		"egress": []any{
+			// Allow the snapshot ephemeral container (which runs
+			// inside the suspect Pod's network namespace) to reach
+			// the cluster DNS resolver. UDP/TCP 53 only.
+			map[string]any{
+				"toEndpoints": []any{
+					map[string]any{
+						"matchLabels": map[string]any{
+							"k8s:io.kubernetes.pod.namespace": f.opts.DNSNamespace,
+							"k8s:k8s-app":                     f.opts.DNSAppLabel,
+						},
+					},
+				},
+				"toPorts": []any{
+					map[string]any{
+						"ports": []any{
+							map[string]any{"port": "53", "protocol": "UDP"},
+							map[string]any{"port": "53", "protocol": "TCP"},
+						},
+					},
+				},
+			},
+			// Allow egress to the WORM endpoint so the snapshot
+			// binary's S3 multipart upload reaches SeaweedFS / MinIO
+			// / AWS S3 (whichever the chart points at).
+			map[string]any{
+				"toEndpoints": []any{
+					map[string]any{
+						"matchLabels": map[string]any{
+							"k8s:io.kubernetes.pod.namespace": f.opts.WORMNamespace,
+							"k8s:app":                         f.opts.WORMServiceLabel,
+						},
+					},
+				},
+			},
+			// Original design 20 §F4 allowance: suspect Pod can
+			// signal back to the forensics operator. Sprint 2 MVP
+			// does not use this path (the operator polls via the
+			// K8s API), but the rule survives for the IR-as-code
+			// feedback loop landing in Sprint 3.
 			map[string]any{
 				"toEndpoints": []any{
 					map[string]any{
@@ -277,4 +382,15 @@ func (f *Freezer) createOrUpdate(ctx context.Context, obj client.Object) error {
 // freeze in different namespaces.
 func (f *Freezer) policyName(pod *corev1.Pod) string {
 	return fmt.Sprintf("ugallu-forensics-freeze-%s", pod.UID)
+}
+
+// protocolPtr returns &p — networkingv1.NetworkPolicyPort.Protocol
+// expects a pointer because the field is optional in the v1 schema.
+func protocolPtr(p corev1.Protocol) *corev1.Protocol { return &p }
+
+// portIntStr wraps a numeric port in the union type the
+// networkingv1 schema demands (string-or-int).
+func portIntStr(p int32) *intstr.IntOrString {
+	v := intstr.FromInt32(p)
+	return &v
 }
