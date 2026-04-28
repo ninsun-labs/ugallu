@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -57,9 +58,9 @@ type DialerOpts struct {
 type Dialer struct {
 	opts DialerOpts
 
-	mu       sync.Mutex
-	conn     *grpc.ClientConn
-	stub     ResolverClient
+	mu        sync.Mutex
+	conn      *grpc.ClientConn
+	stub      ResolverClient
 	transport string // "uds" or "tcp", for metrics
 }
 
@@ -171,14 +172,16 @@ func (d *Dialer) dialUDS(ctx context.Context) (*grpc.ClientConn, error) {
 }
 
 // dialTCP connects via the in-cluster ClusterIP. Insecure flag toggles
-// TLS — production is always TLS-on.
+// TLS — production is always TLS-on. The TLS branch hands the
+// connection to the system root CA pool; callers that need a custom
+// trust anchor (SPIRE-issued, project CA, …) plug it in via
+// ExtraDialOpts.
 func (d *Dialer) dialTCP(ctx context.Context) (*grpc.ClientConn, error) {
 	dialOpts := append([]grpc.DialOption{}, d.opts.ExtraDialOpts...)
 	if d.opts.Insecure {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
-		// TLS via system CA — caller can override via ExtraDialOpts.
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(nil)))
 	}
 	conn, err := grpc.NewClient(d.opts.ClusterEndpoint, dialOpts...)
 	if err != nil {

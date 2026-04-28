@@ -1,6 +1,15 @@
 // Copyright 2026 The ninsun-labs Authors.
 // SPDX-License-Identifier: Apache-2.0
 
+// Package resolverv1 is the SDK-side gRPC client for the ugallu
+// resolver. It bundles three concerns into one composable type:
+// a UDS-first dialer with TCP fallback (Dialer), an LRU + per-method
+// circuit breaker wrapper around the generated stub (CachedClient),
+// and Prometheus metrics for cache hit / miss / breaker state.
+//
+// Operators that need Tier-1 subject hydration construct one
+// CachedClient at startup and pass it into the emitter SDK as
+// EmitterOpts.Resolver.
 package resolverv1
 
 import (

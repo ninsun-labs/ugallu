@@ -41,6 +41,14 @@ for mod in "${MODULES[@]}"; do
 done
 
 section "lint (per module, skip empty)"
+# Clean the golangci-lint cache once up front. The cache survives
+# across runs and can mask real issues when the local config / linter
+# version diverges from CI (golangci/golangci-lint#5414): an issue
+# present on the file the day you wrote it never resurfaces locally
+# even after the linter version bumps. Burning the cache costs ~30s
+# of cold lint; CI never sees it (fresh runner) so this only impacts
+# the local pre-push loop.
+golangci-lint cache clean >/dev/null
 for mod in "${MODULES[@]}"; do
   if find "$mod" -maxdepth 5 -name "*.go" -not -path "*/vendor/*" | head -1 | grep -q .; then
     echo "  $mod"

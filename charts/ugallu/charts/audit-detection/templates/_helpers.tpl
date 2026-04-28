@@ -13,8 +13,18 @@ app.kubernetes.io/name: ugallu-audit-detection
 app.kubernetes.io/component: audit-detection
 {{- end -}}
 
+{{/*
+Namespace selection by source mode:
+  - webhook: ugallu-system (PSA restricted, no host access needed)
+  - file:    ugallu-system-privileged (PSA privileged, hostPath required
+             to read the kubelet/apiserver audit log)
+*/}}
 {{- define "auditdetection.namespace" -}}
+{{- if eq .Values.source.mode "file" -}}
+{{ .Values.global.namespaces.privileged | default "ugallu-system-privileged" }}
+{{- else -}}
 {{ .Values.global.namespaces.system | default "ugallu-system" }}
+{{- end -}}
 {{- end -}}
 
 {{/* env block with shared secret + cluster identity. */}}

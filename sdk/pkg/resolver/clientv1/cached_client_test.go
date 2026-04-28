@@ -37,14 +37,14 @@ func (f *flakyResolver) ResolveByPodIP(_ context.Context, _ *resolverv1.PodIPReq
 	return f.resp, nil
 }
 
-func mustCachedClient(t *testing.T, inner resolverv1.ResolverClient, breaker gobreaker.Settings) *resolverv1.CachedClient {
+func mustCachedClient(t *testing.T, inner resolverv1.ResolverClient, breaker *gobreaker.Settings) *resolverv1.CachedClient {
 	t.Helper()
 	c, err := resolverv1.NewCachedClient(&resolverv1.CachedClientOpts{
 		Inner:           inner,
 		CacheSize:       16,
 		CacheTTL:        500 * time.Millisecond,
 		UnresolvedTTL:   100 * time.Millisecond,
-		BreakerSettings: breaker,
+		BreakerSettings: *breaker,
 	})
 	if err != nil {
 		t.Fatalf("NewCachedClient: %v", err)
@@ -56,7 +56,7 @@ func TestCachedClient_HitOnSecondCall(t *testing.T) {
 	inner := &flakyResolver{
 		resp: &resolverv1.SubjectResponse{Uid: "pod-uid-x"},
 	}
-	c := mustCachedClient(t, inner, gobreaker.Settings{Name: "x", Timeout: time.Hour, ReadyToTrip: func(_ gobreaker.Counts) bool { return false }})
+	c := mustCachedClient(t, inner, &gobreaker.Settings{Name: "x", Timeout: time.Hour, ReadyToTrip: func(_ gobreaker.Counts) bool { return false }})
 
 	for i := 0; i < 5; i++ {
 		resp, err := c.ResolveByPodUID(context.Background(), &resolverv1.PodUIDRequest{Uid: "pod-uid-x"})
@@ -77,7 +77,7 @@ func TestCachedClient_BreakerOpensAfterFailures(t *testing.T) {
 	inner := &flakyResolver{}
 	inner.failsLeft.Store(100) // always fail
 
-	c := mustCachedClient(t, inner, gobreaker.Settings{
+	c := mustCachedClient(t, inner, &gobreaker.Settings{
 		Name:        "test",
 		MaxRequests: 1,
 		Timeout:     50 * time.Millisecond,
@@ -105,7 +105,7 @@ func TestCachedClient_UnresolvedShortTTL(t *testing.T) {
 	inner := &flakyResolver{
 		resp: &resolverv1.SubjectResponse{Unresolved: true},
 	}
-	c := mustCachedClient(t, inner, gobreaker.Settings{Name: "x", Timeout: time.Hour, ReadyToTrip: func(_ gobreaker.Counts) bool { return false }})
+	c := mustCachedClient(t, inner, &gobreaker.Settings{Name: "x", Timeout: time.Hour, ReadyToTrip: func(_ gobreaker.Counts) bool { return false }})
 
 	if _, err := c.ResolveByPodUID(context.Background(), &resolverv1.PodUIDRequest{Uid: "y"}); err != nil {
 		t.Fatalf("first call: %v", err)
@@ -131,7 +131,7 @@ func TestCachedClient_PerMethodKeysAreIsolated(t *testing.T) {
 	inner := &flakyResolver{
 		resp: &resolverv1.SubjectResponse{Uid: "v1"},
 	}
-	c := mustCachedClient(t, inner, gobreaker.Settings{Name: "x", Timeout: time.Hour, ReadyToTrip: func(_ gobreaker.Counts) bool { return false }})
+	c := mustCachedClient(t, inner, &gobreaker.Settings{Name: "x", Timeout: time.Hour, ReadyToTrip: func(_ gobreaker.Counts) bool { return false }})
 
 	_, _ = c.ResolveByPodUID(context.Background(), &resolverv1.PodUIDRequest{Uid: "shared"})
 	_, _ = c.ResolveByPodIP(context.Background(), &resolverv1.PodIPRequest{Ip: "shared"})

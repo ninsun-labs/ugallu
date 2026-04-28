@@ -1,16 +1,36 @@
 {{- if .Values.auditDetection.enabled }}
 {{- /*
-ugallu-audit-detection: DaemonSet that consumes the K8s API server audit
-log via webhook backend, applies Sigma-style rules, emits SecurityEvent.
-The audit log content arrives over HTTPS from the apiserver, not via the
-K8s API, so no extra read RBAC is required. Subject snapshots come from
-the resolver gRPC.
+ugallu-audit-detection RBAC.
+
+Two deployment shapes share one operator binary, picked at install
+time via audit-detection.source.mode:
+
+  - webhook (default): singleton Deployment in ugallu-system (PSA
+    restricted). The audit log content arrives over HTTPS from the
+    apiserver, no host access needed.
+
+  - file: DaemonSet in ugallu-system-privileged (PSA privileged) so
+    it can hostPath-mount the kubelet/apiserver audit log. Subject
+    snapshots come from the resolver gRPC.
+
+Both shapes share one ClusterRole; per-mode SA + Role + RoleBinding
+live in the matching namespace so leader-election leases stay scoped
+correctly.
 */ -}}
+# --- ServiceAccounts (one per namespace) ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: ugallu-audit-detection
   namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ugallu-audit-detection
+  namespace: {{ include "rbac.ns.privileged" . }}
   labels:
     {{- include "rbac.labels" . | nindent 4 }}
 ---
@@ -48,8 +68,11 @@ subjects:
   - kind: ServiceAccount
     name: ugallu-audit-detection
     namespace: {{ include "rbac.ns.system" . }}
+  - kind: ServiceAccount
+    name: ugallu-audit-detection
+    namespace: {{ include "rbac.ns.privileged" . }}
 ---
-# Namespaced: own config CRD read + leader-elect.
+# --- Namespaced Role + Binding for ugallu-system (webhook mode) ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -58,8 +81,6 @@ metadata:
   labels:
     {{- include "rbac.labels" . | nindent 4 }}
 rules:
-  # Note: AuditDetectionConfig is operator-specific (ships with audit-detection
-  # operator), not in the SDK CRD bundle. RBAC granted in advance for clarity.
   - apiGroups: ["security.ugallu.io"]
     resources: ["auditdetectionconfigs"]
     verbs: ["get", "list", "watch"]
@@ -86,4 +107,40 @@ subjects:
   - kind: ServiceAccount
     name: ugallu-audit-detection
     namespace: {{ include "rbac.ns.system" . }}
+---
+# --- Namespaced Role + Binding for ugallu-system-privileged (file mode) ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-audit-detection
+  namespace: {{ include "rbac.ns.privileged" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["auditdetectionconfigs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["ugallu-audit-detection-leader"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-audit-detection
+  namespace: {{ include "rbac.ns.privileged" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-audit-detection
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-audit-detection
+    namespace: {{ include "rbac.ns.privileged" . }}
 {{- end }}
