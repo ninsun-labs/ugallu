@@ -1,0 +1,101 @@
+// Copyright 2026 The ninsun-labs Authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+// Package ugallu.auditstream.v1 is the gRPC contract for the
+// audit-detection event bus (design 21 §S2). audit-detection
+// re-emits every consumed apiserver audit event on a streaming
+// channel so other operators (tenant-escape Wave 3, future
+// reasoners) can subscribe without independently tailing the
+// apiserver audit log.
+//
+// The bus runs only when AuditDetectionConfig.spec.eventBus.enabled
+// is true.
+package ugallu.auditstream.v1;
+
+option go_package = "github.com/ninsun-labs/ugallu/sdk/pkg/auditstream/clientv1;auditstreamv1";
+
+import "google/protobuf/timestamp.proto";
+
+// AuditStream is the server-streaming RPC the audit-detection
+// operator exposes.
+service AuditStream {
+  // Subscribe streams every audit event matching the consumer
+  // filter until the client disconnects or the server shuts down.
+  rpc Subscribe(SubscribeRequest) returns (stream AuditEvent);
+}
+
+// SubscribeRequest is the client-side declaration sent once at the
+// start of the stream.
+message SubscribeRequest {
+  // ConsumerName is the human-readable consumer id (must match an
+  // entry in AuditDetectionConfig.spec.consumers — events are
+  // filtered + rate-limited per the matching consumer entry).
+  string consumer_name = 1;
+}
+
+// AuditEvent is one observed apiserver audit event, normalised
+// across the audit log shapes (file backend / webhook backend).
+// Fields are nullable when the source can't populate them.
+message AuditEvent {
+  google.protobuf.Timestamp timestamp = 1;
+
+  // AuditID is the apiserver-issued unique id (RFC 4122 UUID).
+  string audit_id = 2;
+
+  // Stage is the audit stage (RequestReceived, ResponseStarted,
+  // ResponseComplete, Panic). audit-detection forwards the
+  // ResponseComplete stage (the canonical "this happened" event).
+  string stage = 3;
+
+  // Verb is the HTTP-level verb (get, list, create, update, patch,
+  // delete, watch, deletecollection, ...).
+  string verb = 4;
+
+  // User is the authenticated user that issued the request.
+  AuditUser user = 5;
+
+  // ImpersonatedUser is the --as user when the request was
+  // impersonated. Non-nil when impersonation was used.
+  AuditUser impersonated_user = 6;
+
+  // ObjectRef identifies the resource the request targets.
+  ObjectReference object_ref = 7;
+
+  // RequestObject is the JSON-encoded request body. Empty for
+  // get/list/watch/delete (the apiserver audit policy controls
+  // when this is populated).
+  bytes request_object = 8;
+
+  // ResponseObject is the JSON-encoded response body. Same caveats
+  // as RequestObject.
+  bytes response_object = 9;
+
+  // ResponseStatus.code mirrors the HTTP status code returned to
+  // the client.
+  uint32 response_status_code = 10;
+
+  // SourceIPs is the chain of forwarder IPs (X-Forwarded-For style).
+  repeated string source_ips = 11;
+
+  // UserAgent is the client UA string.
+  string user_agent = 12;
+}
+
+// AuditUser identifies the authenticated principal.
+message AuditUser {
+  string username = 1;
+  repeated string groups = 2;
+}
+
+// ObjectReference identifies an apiserver resource.
+message ObjectReference {
+  string api_group = 1;
+  string api_version = 2;
+  string resource = 3;
+  string subresource = 4;
+  string namespace = 5;
+  string name = 6;
+  string uid = 7;
+}

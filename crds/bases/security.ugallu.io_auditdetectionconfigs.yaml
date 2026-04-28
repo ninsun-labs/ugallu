@@ -1,0 +1,224 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: auditdetectionconfigs.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: AuditDetectionConfig
+    listKind: AuditDetectionConfigList
+    plural: auditdetectionconfigs
+    shortNames:
+    - auditdetectioncfg
+    singular: auditdetectionconfig
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.eventBus.enabled
+      name: BusEnabled
+      type: boolean
+    - jsonPath: .status.consumersConnected
+      name: Consumers
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          AuditDetectionConfig is the cluster-scoped singleton (name="default")
+          that governs the ugallu-audit-detection operator.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              AuditDetectionConfigSpec is the runtime config the
+              ugallu-audit-detection operator reads. Wave 2 shipped the operator
+              without a config CR (everything via cmd flags); Wave 3 §S2 adds
+              the event-bus gRPC stream so other operators (tenant-escape, future
+              reasoners) can subscribe to the AuditEvent stream the sigma engine
+              already consumes.
+
+              Backwards-compatible: when the CR is absent, audit-detection runs
+              in Wave-2 mode (no gRPC bus). When present with EventBus.Enabled
+              false, same. When EventBus.Enabled=true, the operator exposes the
+              stream + applies the per-consumer filter + rate limit.
+            properties:
+              consumers:
+                description: |-
+                  Consumers declares the operators authorised to subscribe.
+                  Empty when the bus is disabled. Each consumer pulls events
+                  matching its filter + capped at MaxEventsPerSec.
+                items:
+                  description: AuditDetectionConsumer is one subscriber declaration.
+                  properties:
+                    filter:
+                      description: |-
+                        Filter narrows the event stream server-side. Empty filter =
+                        every event.
+                      properties:
+                        objectRefHasNamespace:
+                          description: |-
+                            ObjectRefHasNamespace, when true, drops cluster-scoped events.
+                            Useful for tenant-escape (only namespaced subjects matter).
+                          type: boolean
+                        verbAllowlist:
+                          description: VerbAllowlist constrains the verbs forwarded.
+                            Empty = match-all.
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    maxEventsPerSec:
+                      description: |-
+                        MaxEventsPerSec caps the per-consumer rate. Zero = no cap
+                        (server still applies its global token bucket).
+                      format: int32
+                      type: integer
+                    name:
+                      description: |-
+                        Name is the human-readable consumer id (e.g. "tenant-escape").
+                        Surfaced in metrics labels.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              eventBus:
+                description: |-
+                  EventBus exposes the audit-event stream as a server-streaming
+                  gRPC. Disabled by default (Wave 2 retrocompat).
+                properties:
+                  enabled:
+                    default: false
+                    type: boolean
+                  listenAddr:
+                    default: :8444
+                    description: ListenAddr is the gRPC bind address (e.g. ":8444").
+                    type: string
+                  tokenSecret:
+                    description: |-
+                      TokenSecret references the bearer-token Secret used during
+                      Wave 3 (mTLS lands as a follow-up). When unset, the bus runs
+                      without auth (lab-only).
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                    x-kubernetes-map-type: atomic
+                type: object
+            type: object
+          status:
+            description: AuditDetectionConfigStatus surfaces operator-side state.
+            properties:
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              consumersConnected:
+                description: ConsumersConnected is the live count of bus subscribers.
+                format: int32
+                type: integer
+              lastConfigLoadAt:
+                description: LastConfigLoadAt marks the most recent successful spec
+                  read.
+                format: date-time
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
