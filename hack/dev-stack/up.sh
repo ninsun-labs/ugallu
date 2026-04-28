@@ -77,18 +77,40 @@ kubectl -n ugallu-evidence rollout status deployment/rekor-server --timeout=300s
 info "Waiting for aws-cli pod"
 kubectl -n ugallu-evidence wait --for=condition=Ready pod/aws-cli --timeout=120s
 
-# Check whether the bucket already exists; if not, create it with
-# Object Lock enabled and verify retention configuration.
-info "Ensuring bucket 'ugallu' exists with Object Lock enabled"
+# Ensure the bucket exists AND has Object Lock + default retention
+# enabled. Object Lock can only be enabled at create-time on
+# SeaweedFS, so a pre-existing bucket without it gets recreated
+# (the dev-stack is explicitly NOT for production — see README).
+info "Ensuring bucket 'ugallu' exists with Object Lock + COMPLIANCE retention"
 EP="--endpoint-url=http://seaweedfs:8333"
 if kubectl -n ugallu-evidence exec aws-cli -- \
      aws s3api head-bucket --bucket ugallu $EP >/dev/null 2>&1; then
-  ok "bucket already exists (skipping create)"
+  if kubectl -n ugallu-evidence exec aws-cli -- \
+       aws s3api get-object-lock-configuration --bucket ugallu $EP >/dev/null 2>&1; then
+    ok "bucket already exists with Object Lock"
+  else
+    info "bucket exists but Object Lock is disabled — recreating (dev-stack only)"
+    kubectl -n ugallu-evidence exec aws-cli -- \
+      aws s3 rm s3://ugallu/ --recursive $EP >/dev/null 2>&1 || true
+    kubectl -n ugallu-evidence exec aws-cli -- \
+      aws s3api delete-bucket --bucket ugallu $EP >/dev/null
+    kubectl -n ugallu-evidence exec aws-cli -- \
+      aws s3api create-bucket --bucket ugallu --object-lock-enabled-for-bucket $EP >/dev/null
+    ok "bucket recreated with Object Lock"
+  fi
 else
   kubectl -n ugallu-evidence exec aws-cli -- \
-    aws s3api create-bucket --bucket ugallu --object-lock-enabled-for-bucket $EP
-  ok "bucket created"
+    aws s3api create-bucket --bucket ugallu --object-lock-enabled-for-bucket $EP >/dev/null
+  ok "bucket created with Object Lock"
 fi
+
+# Default retention is idempotent: PUT replaces the existing rule
+# atomically. 7 days = the design 07 W2 default for evidence blobs.
+info "Applying default retention (COMPLIANCE 7d)"
+kubectl -n ugallu-evidence exec aws-cli -- \
+  aws s3api put-object-lock-configuration --bucket ugallu $EP \
+  --object-lock-configuration '{"ObjectLockEnabled":"Enabled","Rule":{"DefaultRetention":{"Mode":"COMPLIANCE","Days":7}}}' >/dev/null
+ok "default retention applied"
 
 info "Object Lock configuration:"
 kubectl -n ugallu-evidence exec aws-cli -- \
