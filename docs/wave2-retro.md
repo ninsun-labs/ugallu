@@ -177,6 +177,28 @@ allowlist is small (1–3 in production) and the window is sub-second;
 the design accepts it because the unfreeze is idempotent — a
 duplicate `PodUnfreeze` ER is a no-op.
 
+### Snapshot ephemeral container transient `exit 1`
+
+Observed once during Wave 2 final lab validation: the
+`ugallu-forensics-snapshot` ephemeral container exited with status 1
+(Reason `Error`) on a fresh suspect Pod, triggering an
+`IncidentCaptureFailed` SE. A second incident in the same namespace
+(same Pod spec, same image) on the same lab run completed in ~22s.
+The snapshot binary's hard-fail paths are bucket / key / credential
+validation and the upload itself, so the most likely cause is a
+brief S3 PutObject hiccup during a re-frozen pod's egress
+allowlist take-effect. The pipeline correctly classified it as
+`Permanent` and emitted `IncidentCaptureFailed`.
+
+Two follow-ups for Wave 3: (a) the snapshot binary should write a
+`failure.detail` JSON line to stdout before exit so
+`ugallu-forensics` can surface a richer reason in the SE
+`signals.failure.message` (the current opaque "Error" leaks no
+diagnosis); (b) `UnfreezeReconciler` watches `IncidentCaptureCompleted`
+only — on `IncidentCaptureFailed` the pod stays frozen until
+manual ack. Auto-unfreeze should also fire on `Failed` so a
+failed capture does not strand the suspect.
+
 ### Subject mapping fallback to `External`
 
 `audit-detection` maps `objectRef.resource` to `SubjectKind` via a
