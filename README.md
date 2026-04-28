@@ -2,7 +2,7 @@
 
 Kubernetes security platform — apotropaic guardian for cluster ingress and runtime.
 
-> **Status: pre-alpha.** Designs complete; implementation in progress.
+> **Status: pre-alpha.** Wave 2 closed at tag `wave2-final` (audit-detection + forensics + monitoring); Wave 3+ in design.
 
 ## Overview
 
@@ -10,14 +10,17 @@ Kubernetes security platform — apotropaic guardian for cluster ingress and run
 
 ## Architecture at a glance
 
-| Layer | Component | Wave |
-|---|---|---|
-| Core SDK runtime | `ugallu-resolver` (DaemonSet, eBPF cgroup tracker + informer cache, gRPC subject lookup) | 1 |
-| Core SDK runtime | `ugallu-attestor` (Deployment singleton, in-toto attestation pipeline: cosign + Rekor + WORM) | 1 |
-| Core SDK runtime | `ugallu-ttl` (Deployment singleton, lifecycle GC + attestor watchdog) | 1 |
-| Detection | `audit-detection` (Sigma-style rules over K8s audit log) | 1 |
-| Response | `forensics` (IR-as-code workflow) | 1 |
-| Detection / Reason / Response | webhook-auditor, dns-detect, seccomp-gen, velero-verify, compliance, coco-kit, tenant-escape, honeypot | 2-4 |
+| Layer | Component | Wave | Status |
+|---|---|---|---|
+| Core SDK runtime | `ugallu-resolver` (DaemonSet, eBPF cgroup tracker + informer cache, gRPC subject lookup) | 1 | shipped |
+| Core SDK runtime | `ugallu-attestor` (Deployment singleton, in-toto pipeline: OpenBao transit + Rekor + WORM) | 1 | shipped |
+| Core SDK runtime | `ugallu-ttl` (Deployment singleton, lifecycle GC + attestor watchdog) | 1 | shipped |
+| Detection | [`audit-detection`](operators/audit-detection) (Sigma-style rules over K8s audit log) | 2 | shipped |
+| Response | [`forensics`](operators/forensics) (IR-as-code workflow, content-addressed WORM evidence) | 2 | shipped |
+| Telemetry | [`monitoring`](charts/ugallu/charts/monitoring) (PrometheusRule + Grafana dashboards) | 2 | shipped |
+| Detection / Reason / Response | webhook-auditor, dns-detect, seccomp-gen, velero-verify, compliance, coco-kit, tenant-escape, honeypot | 3-4 | designed |
+
+See [docs/wave2-retro.md](docs/wave2-retro.md) for what closed at Wave 2, what was deferred, and known issues.
 
 ## Repository structure
 
