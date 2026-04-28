@@ -1,0 +1,46 @@
+{{- if .Values.dnsDetectConfig.enabled }}
+apiVersion: security.ugallu.io/v1alpha1
+kind: DNSDetectConfig
+metadata:
+  name: default
+  labels:
+    {{- include "dnsdetect.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  source:
+    primary: {{ .Values.dnsDetectConfig.source.primary }}
+    {{- with .Values.dnsDetectConfig.source.fallback }}
+    fallback: {{ . }}
+    {{- end }}
+    plugin:
+      grpcEndpoint: {{ .Values.dnsDetectConfig.source.plugin.grpcEndpoint | quote }}
+      {{- with .Values.dnsDetectConfig.source.plugin.tokenSecret }}
+      tokenSecret:
+        name: {{ .name }}
+        key: {{ .key }}
+      {{- end }}
+  detectors:
+    exfiltration:
+      enabled: {{ .Values.dnsDetectConfig.detectors.exfiltration.enabled }}
+      minLabelLen: {{ .Values.dnsDetectConfig.detectors.exfiltration.minLabelLen }}
+      minEntropy: {{ .Values.dnsDetectConfig.detectors.exfiltration.minEntropy | quote }}
+      windowSize: {{ .Values.dnsDetectConfig.detectors.exfiltration.windowSize }}
+      consecutiveTriggers: {{ .Values.dnsDetectConfig.detectors.exfiltration.consecutiveTriggers }}
+    tunneling:
+      enabled: {{ .Values.dnsDetectConfig.detectors.tunneling.enabled }}
+      ratelimitPerPod: {{ .Values.dnsDetectConfig.detectors.tunneling.ratelimitPerPod | quote }}
+    blocklist:
+      enabled: {{ .Values.dnsDetectConfig.detectors.blocklist.enabled }}
+      {{- with .Values.dnsDetectConfig.detectors.blocklist.configMaps }}
+      configMaps: {{ toJson . }}
+      {{- end }}
+    youngDomain:
+      enabled: {{ .Values.dnsDetectConfig.detectors.youngDomain.enabled }}
+      thresholdDays: {{ .Values.dnsDetectConfig.detectors.youngDomain.thresholdDays }}
+      rdapEndpoint: {{ .Values.dnsDetectConfig.detectors.youngDomain.rdapEndpoint | quote }}
+      rateLimit: {{ .Values.dnsDetectConfig.detectors.youngDomain.rateLimit | quote }}
+    anomalousPort:
+      enabled: {{ .Values.dnsDetectConfig.detectors.anomalousPort.enabled }}
+{{- end }}

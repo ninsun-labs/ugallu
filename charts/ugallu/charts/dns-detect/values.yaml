@@ -7,6 +7,15 @@ clusterIdentity:
   clusterID: ""
   clusterName: ""
 
+# Default blocklist ConfigMap shipped with the chart. The dns-detect
+# operator watches this ConfigMap (and any extra ones referenced in
+# DNSDetectConfig.spec.detectors.blocklist.configMaps) for the FQDN
+# patterns. The default namespace is provisioned by the chart so the
+# operator's RBAC can be tightly scoped.
+blocklist:
+  shipDefault: true
+  namespace: ugallu-dns-blocklists
+
 # Singleton DNSDetectConfig CR shipped with the chart (design 21 §D4).
 dnsDetectConfig:
   enabled: true

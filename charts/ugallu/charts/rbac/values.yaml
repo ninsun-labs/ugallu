@@ -23,6 +23,10 @@ backpressure:
   enabled: true
 dnsDetect:
   enabled: true
+  # Namespaces where the operator can read blocklist ConfigMaps.
+  # Mirrors DNSDetectConfig.spec.detectors.blocklist.configMaps[].namespace.
+  blocklistNamespaces:
+    - ugallu-dns-blocklists
 webhookAuditor:
   enabled: true
   # Namespace allowlist where the operator can read Secret data to

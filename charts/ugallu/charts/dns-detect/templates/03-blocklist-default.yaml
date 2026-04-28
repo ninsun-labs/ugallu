@@ -1,0 +1,27 @@
+{{- if .Values.blocklist.shipDefault }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.blocklist.namespace }}
+  labels:
+    {{- include "dnsdetect.labels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: default
+  namespace: {{ .Values.blocklist.namespace }}
+  labels:
+    {{- include "dnsdetect.labels" . | nindent 4 }}
+data:
+  blocklist: |
+    # Default ugallu DNS blocklist (Wave 3 §D3.3 starter set).
+    # Format: one entry per line; "*.example.com" is suffix match.
+    # Lines starting with `#` and empty lines are ignored.
+    *.bit
+    *.onion
+    *.darknet
+    # Add cluster-specific entries via a sibling ConfigMap referenced in
+    # DNSDetectConfig.spec.detectors.blocklist.configMaps; do not edit
+    # this default in-place (chart upgrades will overwrite it).
+{{- end }}
