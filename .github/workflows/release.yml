@@ -124,11 +124,12 @@ jobs:
             ${{ env.REGISTRY }}/${{ matrix.binary }}@${{ steps.build.outputs.digest }}
 
       - name: Attach SBOM (cosign attestation)
+        # Single-quote the docker --format so bash forwards the {{ }}
+        # delimiters verbatim to docker's Go-template parser. The {{ }}
+        # without a leading dollar is literal in YAML — GHA does not
+        # evaluate it. (Comment lives at the YAML level, not in run|,
+        # so it cannot accidentally trigger expression parsing.)
         run: |
-          # Single-quote the docker --format so bash passes the {{ }}
-          # delimiters through verbatim. GHA only evaluates ${{ ... }}
-          # (with dollar); plain {{ ... }} is literal in YAML and
-          # arrives at docker's Go-template parser as written.
           cosign attest --yes \
             --predicate <(docker buildx imagetools inspect \
               ${{ env.REGISTRY }}/${{ matrix.binary }}:${{ steps.tag.outputs.tag }} \
