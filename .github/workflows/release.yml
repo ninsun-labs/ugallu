@@ -53,6 +53,8 @@ jobs:
             pkg:    ./operators/forensics/cmd/ugallu-forensics-snapshot
           - binary: webhook-auditor
             pkg:    ./operators/webhook-auditor/cmd/ugallu-webhook-auditor
+          - binary: dns-detect
+            pkg:    ./operators/dns-detect/cmd/ugallu-dns-detect
     steps:
       - uses: actions/checkout@v6
 

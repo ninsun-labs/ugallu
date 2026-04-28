@@ -1,0 +1,68 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+# Cluster identity stamped on every emitted SecurityEvent.
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# Singleton DNSDetectConfig CR shipped with the chart (design 21 §D4).
+dnsDetectConfig:
+  enabled: true
+  source:
+    primary: coredns_plugin
+    fallback: tetragon_kprobe
+    plugin:
+      grpcEndpoint: "coredns.kube-system.svc.cluster.local:8443"
+      tokenSecret:
+        name: ugallu-coredns-grpc-token
+        key: token
+  detectors:
+    exfiltration:
+      enabled: true
+      minLabelLen: 60
+      minEntropy: "4.0"
+      windowSize: 64
+      consecutiveTriggers: 3
+    tunneling:
+      enabled: true
+      ratelimitPerPod: 1m
+    blocklist:
+      enabled: true
+      configMaps:
+        - { namespace: ugallu-dns-blocklists, name: default }
+    youngDomain:
+      enabled: true
+      thresholdDays: 30
+      rdapEndpoint: "https://rdap.org/"
+      rateLimit: "100/h"
+    anomalousPort:
+      enabled: true
+
+# Placeholder until the real binary lands at
+# ghcr.io/ninsun-labs/ugallu/dns-detect:<chart-tag>.
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+command: ["/bin/sleep", "infinity"]
+args: []
+
+# DaemonSet — one replica per node; design 21 §D1.
+resources:
+  requests:
+    cpu: "50m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+metricsPort: 9090
+healthProbePort: 8081
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

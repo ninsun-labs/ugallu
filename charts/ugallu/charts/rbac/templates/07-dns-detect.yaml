@@ -1,0 +1,49 @@
+{{- if .Values.dnsDetect.enabled }}
+{{- /*
+ugallu-dns-detect RBAC.
+
+DaemonSet (one replica per node) in ugallu-system. Wave 3 Sprint 3
+ships scaffolding RBAC: SA + minimal ClusterRole for SE emit + own
+config CR. Lease + plugin Secret read + ConfigMap blocklist read
+extend in Sprint 3 commit 4 (chart real).
+*/ -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ugallu-dns-detect
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-dns-detect
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["securityevents"]
+    verbs: ["create"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["dnsdetectconfigs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["dnsdetectconfigs/status"]
+    verbs: ["update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-dns-detect
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-dns-detect
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-dns-detect
+    namespace: {{ include "rbac.ns.system" . }}
+{{- end }}

@@ -35,5 +35,8 @@ dependencies:
 - name: webhook-auditor
   repository: file://charts/webhook-auditor
   version: 0.0.1-alpha.1
-digest: sha256:d321aece58d7e7761cd7b7980155c54785090ff7f148e3d01d7ca23f1cc7f081
-generated: "2026-04-28T19:04:22.292886324+02:00"
+- name: dns-detect
+  repository: file://charts/dns-detect
+  version: 0.0.1-alpha.1
+digest: sha256:e6ffa9984bcfe4345b8e020dda88b8ebf2e21fb9ac2dccc16dd409b790b0a61a
+generated: "2026-04-28T20:48:31.537090918+02:00"

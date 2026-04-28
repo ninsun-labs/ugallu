@@ -70,3 +70,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/webhook-auditor
     condition: webhook-auditor.enabled
+  - name: dns-detect
+    version: 0.0.1-alpha.1
+    repository: file://charts/dns-detect
+    condition: dns-detect.enabled

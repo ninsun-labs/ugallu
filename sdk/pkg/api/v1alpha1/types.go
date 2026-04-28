@@ -244,6 +244,13 @@ const (
 	TypeWebhookSecretAccess        = "WebhookSecretAccess"
 	TypeWebhookConfigDeleted       = "WebhookConfigDeleted"
 
+	// Detection (dns-detect — design 21 §D3).
+	TypeDNSExfiltration      = "DNSExfiltration"
+	TypeDNSTunneling         = "DNSTunneling"
+	TypeDNSToBlocklistedFQDN = "DNSToBlocklistedFQDN"
+	TypeDNSToYoungDomain     = "DNSToYoungDomain"
+	TypeDNSAnomalousPort     = "DNSAnomalousPort"
+
 	// Forensic (forensics workflow).
 	TypeIncidentCaptureStarted   = "IncidentCaptureStarted"
 	TypeIncidentCaptureCompleted = "IncidentCaptureCompleted"
@@ -273,4 +280,9 @@ const (
 
 	// Anomaly (webhook-auditor operational — design 21 §W7).
 	TypeWebhookEvalFailed = "WebhookEvalFailed"
+
+	// Anomaly (dns-detect operational — design 21 §D6).
+	TypeDNSSourceSilent     = "DNSSourceSilent"
+	TypeDNSConfigMissing    = "DNSConfigMissing"
+	TypeDNSDetectorDegraded = "DNSDetectorDegraded"
 )

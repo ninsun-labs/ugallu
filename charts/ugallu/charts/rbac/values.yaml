@@ -21,6 +21,8 @@ gitopsResponder:
   enabled: true
 backpressure:
   enabled: true
+dnsDetect:
+  enabled: true
 webhookAuditor:
   enabled: true
   # Namespace allowlist where the operator can read Secret data to

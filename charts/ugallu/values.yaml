@@ -86,3 +86,10 @@ monitoring:
 # (busybox sleep) until the real binary lands.
 webhook-auditor:
   enabled: true
+
+# dns-detect subchart (Wave 3 §D): consumes DNS query stream from
+# coredns-ugallu plugin (primary) or Tetragon kprobe (fallback) and
+# emits SecurityEvents when one of 5 detectors fires (exfiltration,
+# tunneling, blocklist, young-domain, anomalous port).
+dns-detect:
+  enabled: true

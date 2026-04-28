@@ -1,0 +1,18 @@
+apiVersion: v2
+name: dns-detect
+description: ugallu-dns-detect operator (DNS anomaly detection — 5 detectors)
+type: application
+version: 0.0.1-alpha.1
+appVersion: "0.0.1-alpha.1"
+kubeVersion: ">=1.30.0-0"
+
+home: https://ninsun.io/ugallu
+sources:
+  - https://github.com/ninsun-labs/ugallu
+
+keywords:
+  - kubernetes
+  - security
+  - dns
+  - detection
+  - anomaly

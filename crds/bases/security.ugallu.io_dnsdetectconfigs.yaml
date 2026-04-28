@@ -1,0 +1,339 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: dnsdetectconfigs.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: DNSDetectConfig
+    listKind: DNSDetectConfigList
+    plural: dnsdetectconfigs
+    shortNames:
+    - dnsdetectcfg
+    singular: dnsdetectconfig
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.source
+      name: Source
+      type: string
+    - jsonPath: .status.inflightLookups
+      name: LookupsInFlight
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          DNSDetectConfig is the cluster-scoped singleton (name="default")
+          that governs the ugallu-dns-detect operator.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              DNSDetectConfigSpec is the runtime config the ugallu-dns-detect
+              operator reads (design 21 §D4).
+            properties:
+              detectors:
+                description: Detectors toggles + tunes the 5 anomaly detectors.
+                properties:
+                  anomalousPort:
+                    description: AnomalousPortDetectorConfig — flag DNS queries to
+                      a non-53 port.
+                    properties:
+                      enabled:
+                        default: true
+                        type: boolean
+                    required:
+                    - enabled
+                    type: object
+                  blocklist:
+                    description: BlocklistDetectorConfig — match against admin-curated
+                      FQDN list(s).
+                    properties:
+                      configMaps:
+                        description: |-
+                          ConfigMaps lists ConfigMaps to load. Each must contain a
+                          `blocklist` data key with one FQDN per line. Supports
+                          suffix wildcards (`*.example.com`).
+                        items:
+                          description: DNSBlocklistRef points at a ConfigMap holding
+                            blocklist entries.
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                          required:
+                          - name
+                          - namespace
+                          type: object
+                        type: array
+                      enabled:
+                        default: true
+                        type: boolean
+                    required:
+                    - enabled
+                    type: object
+                  exfiltration:
+                    description: |-
+                      ExfiltrationDetectorConfig — heuristics for entropy + length
+                      anomaly on TXT/A queries.
+                    properties:
+                      consecutiveTriggers:
+                        default: 3
+                        description: |-
+                          ConsecutiveTriggers is the number of recent high-entropy
+                          queries that fire the SE.
+                        format: int32
+                        type: integer
+                      enabled:
+                        default: true
+                        type: boolean
+                      minEntropy:
+                        default: "4.0"
+                        description: |-
+                          MinEntropy is the Shannon-entropy threshold on label[0].
+                          Above it, the query qualifies as "high entropy".
+                        type: string
+                      minLabelLen:
+                        default: 60
+                        description: |-
+                          MinLabelLen is the minimum length of label[0] (the leftmost
+                          dot-separated component) below which the detector skips.
+                        format: int32
+                        type: integer
+                      windowSize:
+                        default: 64
+                        description: |-
+                          WindowSize is the per-Pod ring buffer length for entropy
+                          history.
+                        format: int32
+                        type: integer
+                    required:
+                    - enabled
+                    type: object
+                  tunneling:
+                    description: TunnelingDetectorConfig — base64-in-subdomain heuristic.
+                    properties:
+                      enabled:
+                        default: true
+                        type: boolean
+                      ratelimitPerPod:
+                        default: 1m
+                        description: RatelimitPerPod limits SE emission to one per
+                          period per Pod.
+                        type: string
+                    required:
+                    - enabled
+                    type: object
+                  youngDomain:
+                    description: YoungDomainDetectorConfig — RDAP / WHOIS lookup gated
+                      by domain age.
+                    properties:
+                      enabled:
+                        default: true
+                        type: boolean
+                      rateLimit:
+                        default: 100/h
+                        description: |-
+                          RateLimit caps lookups to RDAP infrastructure. Format:
+                          "<count>/<unit>" (e.g. "100/h").
+                        type: string
+                      rdapEndpoint:
+                        default: https://rdap.org/
+                        description: RDAPEndpoint is the lookup endpoint base URL.
+                        type: string
+                      thresholdDays:
+                        default: 30
+                        description: |-
+                          ThresholdDays is the cutoff. Domains registered within the
+                          past N days are flagged on lookup.
+                        format: int32
+                        type: integer
+                    required:
+                    - enabled
+                    type: object
+                required:
+                - anomalousPort
+                - blocklist
+                - exfiltration
+                - tunneling
+                - youngDomain
+                type: object
+              source:
+                description: Source selects the DNS event source backend.
+                properties:
+                  fallback:
+                    description: |-
+                      Fallback is engaged when Primary is unreachable for >60s. Set
+                      to tetragon_kprobe to degrade gracefully (only DNSAnomalousPort
+                      remains functional). Empty = no fallback (operator stays
+                      degraded with DNSSourceSilent meta-events).
+                    enum:
+                    - coredns_plugin
+                    - tetragon_kprobe
+                    type: string
+                  plugin:
+                    description: |-
+                      Plugin is the gRPC endpoint config used when Primary or
+                      Fallback resolves to coredns_plugin.
+                    properties:
+                      grpcEndpoint:
+                        description: |-
+                          GRPCEndpoint is the host:port of the coredns-ugallu plugin.
+                          Default cluster-DNS endpoint: "coredns.kube-system.svc.cluster.local:8443".
+                        type: string
+                      tokenSecret:
+                        description: |-
+                          TokenSecret references the bearer-token Secret used during
+                          Wave 3 (mTLS lands in a follow-up).
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - grpcEndpoint
+                    type: object
+                  primary:
+                    default: coredns_plugin
+                    description: |-
+                      Primary is the default source. coredns_plugin is the Wave 3
+                      production default — full payload, mTLS gRPC stream.
+                    enum:
+                    - coredns_plugin
+                    - tetragon_kprobe
+                    type: string
+                required:
+                - primary
+                type: object
+            required:
+            - detectors
+            - source
+            type: object
+          status:
+            description: DNSDetectConfigStatus surfaces operator-side runtime state.
+            properties:
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              inflightLookups:
+                description: |-
+                  InflightLookups reports the live count of pending RDAP
+                  lookups (YoungDomain detector).
+                format: int32
+                type: integer
+              lastConfigLoadAt:
+                description: LastConfigLoadAt marks the most recent successful spec
+                  read.
+                format: date-time
+                type: string
+              source:
+                description: |-
+                  Source reports the active source backend (may differ from
+                  Spec.Source.Primary when the operator has fallen back).
+                enum:
+                - coredns_plugin
+                - tetragon_kprobe
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
