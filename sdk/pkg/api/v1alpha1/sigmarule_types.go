@@ -10,8 +10,15 @@ import (
 // SigmaRuleSpec is the predicate + emit declaration for a single
 // detection rule consumed by audit-detection (design 20 §A3-A5).
 type SigmaRuleSpec struct {
+	// Enabled gates whether the engine evaluates this rule. The
+	// kubebuilder default fills in true when the user posts a CR
+	// without the field; the omitempty tag is dropped on purpose so a
+	// Go client setting Enabled=false survives marshal (otherwise the
+	// false would be omitted and the apiserver would apply the
+	// default).
+	//
 	// +kubebuilder:default=true
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled bool `json:"enabled"`
 
 	// Description is a free-form human-readable summary.
 	// +kubebuilder:validation:MaxLength=1024

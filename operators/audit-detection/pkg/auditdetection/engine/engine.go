@@ -181,9 +181,11 @@ type RuleEntry struct {
 }
 
 // AddOrUpdate installs a freshly compiled rule in the slot named by
-// cr.Name. The previous entry's counters are dropped — re-compile
-// resets per-rule history. Pass nil compiledRule + parseErr to mark
-// the rule disabled with an error.
+// cr.Name. Lifetime counters (MatchCount, DroppedRateLimit,
+// LastMatchedAt) are preserved across re-compile so a rule edit does
+// not blow away history; the rate limiter, however, is rebuilt with
+// the new budget. Pass nil compiledRule + parseErr to mark the rule
+// disabled with an error.
 func (r *RuleSet) AddOrUpdate(name string, enabled bool, compiledRule *sigma.CompiledRule, parseErr string, burst, sustained int) {
 	if burst <= 0 {
 		burst = DefaultRuleBurst
@@ -198,6 +200,13 @@ func (r *RuleSet) AddOrUpdate(name string, enabled bool, compiledRule *sigma.Com
 		ParseError: parseErr,
 	}
 	r.mu.Lock()
+	if prev, ok := r.entries[name]; ok {
+		entry.MatchCount.Store(prev.MatchCount.Load())
+		entry.DroppedRateLimit.Store(prev.DroppedRateLimit.Load())
+		if last := prev.LastMatchedAt.Load(); last != nil {
+			entry.LastMatchedAt.Store(last)
+		}
+	}
 	r.entries[name] = entry
 	r.refreshSnapshot()
 	r.mu.Unlock()

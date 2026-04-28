@@ -127,6 +127,13 @@ spec:
                 type: object
               enabled:
                 default: true
+                description: |-
+                  Enabled gates whether the engine evaluates this rule. The
+                  kubebuilder default fills in true when the user posts a CR
+                  without the field; the omitempty tag is dropped on purpose so a
+                  Go client setting Enabled=false survives marshal (otherwise the
+                  false would be omitted and the apiserver would apply the
+                  default).
                 type: boolean
               match:
                 description: Match is the predicate evaluated against each audit-log
@@ -437,6 +444,7 @@ spec:
                 type: array
             required:
             - emit
+            - enabled
             - match
             type: object
           status:
