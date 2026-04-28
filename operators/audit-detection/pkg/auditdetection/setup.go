@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package auditdetection wires the audit-log → SecurityEvent
-// pipeline that runs as a control-plane DaemonSet.
+// pipeline that runs as a control-plane DaemonSet (file backend) or
+// Deployment (webhook backend).
 //
-// Sprint 0 (this file) lands the Options + SetupController scaffold so
-// the cmd binary can build and the helm subchart can deploy a real
-// (no-op for now) leader-elected workload. Sprint 1 layers in the
-// kubelet-file backend reader, the Sigma subset rule engine, the
-// SigmaRule CRD reconciler, and the rule → SE Type mapping (design
-// 20 §A1-A9).
+// SetupController is the small surface the cmd binary calls: it
+// validates an Options bag and registers the SigmaRuleReconciler with
+// the supplied controller-runtime manager. The Source layer
+// (FileSource / WebhookSource) and the rule Engine are constructed
+// directly by the cmd binary because they own goroutines outside the
+// manager's leader-election scope.
 package auditdetection
 
 import (
@@ -49,11 +50,14 @@ type Options struct {
 	InotifyBufferSize int
 }
 
-// SetupController wires the audit-detection reconciler into the
-// supplied controller-runtime manager. The function is intentionally
-// a stub in Sprint 0: it validates Options and registers nothing. The
-// real reconciler (kubelet file tail + Sigma evaluator + SE emitter)
-// lands in Sprint 1.
+// SetupController validates Options and is the documented entry
+// point for the cmd binary. The reconciler itself lives in the
+// engine subpackage to avoid an import cycle with sigma.
+//
+// Operator authors typically call cmd-level wiring directly
+// (engine.New + SigmaRuleReconciler.SetupWithManager); this helper
+// exists so external callers (other operators, tests) can validate
+// an Options bag without pulling in the full engine.
 func SetupController(_ ctrl.Manager, opts *Options) error {
 	if opts == nil {
 		return errors.New("auditdetection: opts is required")
@@ -70,10 +74,6 @@ func SetupController(_ ctrl.Manager, opts *Options) error {
 	if opts.Log == nil {
 		opts.Log = slog.New(slog.NewTextHandler(discardWriter{}, &slog.HandlerOptions{Level: slog.LevelError}))
 	}
-	opts.Log.Info("auditdetection: scaffold loaded; reconciler arrives in Sprint 1",
-		"auditLogPath", opts.AuditLogPath,
-		"sigmaRuleNamespace", opts.SigmaRuleNamespace,
-	)
 	return nil
 }
 
