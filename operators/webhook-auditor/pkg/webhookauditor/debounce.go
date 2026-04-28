@@ -22,22 +22,29 @@ type debouncedEntry struct {
 	lastSeen time.Time
 }
 
-// debounceCache is a tiny in-memory LRU-ish map keyed on UID. No TTL
+// DebounceCache is a tiny in-memory LRU-ish map keyed on UID. No TTL
 // expiry sweep — entries are evicted on Forget(uid) at delete time
 // and on package shutdown. A 24h-cap is enforced via Touch.
-type debounceCache struct {
+type DebounceCache struct {
 	mu sync.Mutex
 	m  map[types.UID]debouncedEntry
 }
 
-func newDebounceCache() *debounceCache {
-	return &debounceCache{m: make(map[types.UID]debouncedEntry, 64)}
+func newDebounceCache() *DebounceCache {
+	return &DebounceCache{m: make(map[types.UID]debouncedEntry, 64)}
+}
+
+// NewDebounceCacheForTest is the test-only constructor used by the
+// envtest integration suite. Production code calls newDebounceCache
+// via SetupWithManager.
+func NewDebounceCacheForTest() *DebounceCache {
+	return newDebounceCache()
 }
 
 // Decide returns (emit bool, firstObserved bool). emit is true when
 // the (score, specHash) tuple differs from the cached entry — first
 // reconcile of a UID always emits. The cache is updated atomically.
-func (c *debounceCache) Decide(uid types.UID, score int, specHash string) (emit, firstObserved bool) {
+func (c *DebounceCache) Decide(uid types.UID, score int, specHash string) (emit, firstObserved bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	prev, ok := c.m[uid]
@@ -58,7 +65,7 @@ func (c *debounceCache) Decide(uid types.UID, score int, specHash string) (emit,
 }
 
 // Forget drops the cache entry for uid. Called on MWC/VWC delete.
-func (c *debounceCache) Forget(uid types.UID) {
+func (c *DebounceCache) Forget(uid types.UID) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.m, uid)

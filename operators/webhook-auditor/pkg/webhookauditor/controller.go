@@ -32,7 +32,7 @@ type Reconciler struct {
 
 	Evaluator *Evaluator
 	Emit      EmitOptions
-	Cache     *debounceCache
+	Cache     *DebounceCache
 	Ignore    *IgnoreMatcher
 
 	// Booted flips false → true after the first list of MWCs/VWCs
