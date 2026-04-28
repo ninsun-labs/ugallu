@@ -248,6 +248,32 @@ func runMain() error {
 		return fmt.Errorf("add runnable: %w", addErr)
 	}
 
+	// Crash-recovery sweep: at boot (after the cache is hydrated)
+	// list every Pending/Running ER managed by forensics and apply
+	// the per-step recovery policy (idempotent retry where
+	// possible, mark Permanent where the step is non-recoverable).
+	// Runs once and exits — the live reconcilers take over from
+	// there.
+	recoverer, err := forensics.NewRecoverer(mgr.GetClient(), clientset, freezer, snap, evidenceUploader, stepRunner)
+	if err != nil {
+		return fmt.Errorf("recoverer: %w", err)
+	}
+	if addErr := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+		// Wait briefly for the controller-runtime cache to start.
+		// The recoverer uses client.List which goes through the
+		// cache; calling before it's synced returns empty.
+		if !mgr.GetCache().WaitForCacheSync(ctx) {
+			return fmt.Errorf("recoverer: cache sync failed")
+		}
+		if recErr := recoverer.Recover(ctx); recErr != nil {
+			ctrl.Log.WithName("recoverer").Error(recErr, "recovery sweep failed; live reconcilers continue")
+		}
+		<-ctx.Done()
+		return nil
+	})); addErr != nil {
+		return fmt.Errorf("add recoverer: %w", addErr)
+	}
+
 	log.Info("running manager")
 	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("manager exited: %w", err)

@@ -187,6 +187,16 @@ type UnfreezeReconciler struct {
 // records the resolution as a follow-up SE{Type=PodUnfrozen}. The
 // reconciler is idempotent: re-applying the unfreeze on an
 // already-unfrozen Pod is a no-op.
+//
+// Two unfreeze paths converge here:
+//  1. Manual: an authorized SA stamps
+//     `ugallu.io/incident-acknowledged=true` on the SE.
+//  2. Auto-unfreeze: when ForensicsConfig.spec.cleanup.
+//     autoUnfreezeAfter > 0, the reconciler treats
+//     `creationTimestamp + autoUnfreezeAfter` as an implicit
+//     acknowledgement deadline. Past the deadline (and absent a
+//     manual ack) the unfreeze fires with
+//     `signals.reason=auto-unfreeze-grace-elapsed`.
 func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	rlog := log.FromContext(ctx).WithName("forensics-unfreeze").WithValues("name", req.Name)
 	se := &securityv1alpha1.SecurityEvent{}
@@ -199,12 +209,29 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if se.Spec.Class != "Forensic" || se.Spec.Type != securityv1alpha1.TypeIncidentCaptureCompleted {
 		return ctrl.Result{}, nil
 	}
-	if !strings.EqualFold(se.Annotations[IncidentAcknowledgedAnnotation], "true") {
-		return ctrl.Result{}, nil
-	}
 	if strings.EqualFold(se.Annotations[unfreezeAppliedAnnotation], "true") {
 		// already processed
 		return ctrl.Result{}, nil
+	}
+
+	autoUnfreezeReason := ""
+	manualAck := strings.EqualFold(se.Annotations[IncidentAcknowledgedAnnotation], "true")
+	if !manualAck {
+		// No manual ack — check whether auto-unfreeze is configured
+		// and whether the grace window has elapsed.
+		grace, requeueAfter, err := r.autoUnfreezeStatus(ctx, se)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if grace == 0 {
+			// Auto-unfreeze disabled: wait for the manual ack.
+			return ctrl.Result{}, nil
+		}
+		if requeueAfter > 0 {
+			// Grace window not yet elapsed; come back later.
+			return ctrl.Result{RequeueAfter: requeueAfter}, nil
+		}
+		autoUnfreezeReason = "auto-unfreeze-grace-elapsed"
 	}
 
 	if se.Spec.Subject.Name == "" || se.Spec.Subject.Namespace == "" {
@@ -253,12 +280,47 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		se.Annotations = map[string]string{}
 	}
 	se.Annotations[unfreezeAppliedAnnotation] = "true"
+	if autoUnfreezeReason != "" {
+		se.Annotations["ugallu.io/incident-unfreeze-reason"] = autoUnfreezeReason
+	}
 	if err := r.Patch(ctx, se, patch); err != nil {
 		return ctrl.Result{}, err
 	}
 	pipelineStepsTotal.WithLabelValues("pod_unfreeze", "ok").Inc()
-	rlog.Info("pod unfrozen", "pod", pod.Namespace+"/"+pod.Name)
+	if autoUnfreezeReason != "" {
+		autoUnfreezeTotal.WithLabelValues("fired").Inc()
+	}
+	rlog.Info("pod unfrozen", "pod", pod.Namespace+"/"+pod.Name, "reason", autoUnfreezeReason)
 	return ctrl.Result{}, nil
+}
+
+// autoUnfreezeStatus reads the ForensicsConfig and reports the
+// auto-unfreeze grace window plus how long until it elapses for
+// the supplied SE. Returns:
+//   - grace=0 when auto-unfreeze is disabled (the operator waits
+//     for a manual ack instead).
+//   - requeueAfter>0 when auto-unfreeze IS configured but the
+//     grace window has not yet elapsed (caller requeues).
+//   - requeueAfter=0 when the window has elapsed and the caller
+//     should fire the unfreeze.
+func (r *UnfreezeReconciler) autoUnfreezeStatus(ctx context.Context, se *securityv1alpha1.SecurityEvent) (grace, requeueAfter time.Duration, err error) {
+	cfg := &securityv1alpha1.ForensicsConfig{}
+	if getErr := r.Get(ctx, client.ObjectKey{Name: DefaultForensicsConfigName}, cfg); getErr != nil {
+		if apierrors.IsNotFound(getErr) {
+			return 0, 0, nil
+		}
+		return 0, 0, getErr
+	}
+	grace = cfg.Spec.Cleanup.AutoUnfreezeAfter.Duration
+	if grace <= 0 {
+		return 0, 0, nil
+	}
+	deadline := se.CreationTimestamp.Add(grace)
+	remaining := time.Until(deadline)
+	if remaining > 0 {
+		return grace, remaining, nil
+	}
+	return grace, 0, nil
 }
 
 // SetupWithManager wires the unfreeze reconciler.

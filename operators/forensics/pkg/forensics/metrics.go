@@ -33,6 +33,16 @@ var (
 		Name: "ugallu_forensics_cni_detect_failures_total",
 		Help: "Failed CNI backend detection probes.",
 	})
+
+	recoveryTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "ugallu_forensics_recovery_total",
+		Help: "Crash-recovery sweeps over Pending/Running ERs by outcome.",
+	}, []string{"outcome"})
+
+	autoUnfreezeTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "ugallu_forensics_auto_unfreeze_total",
+		Help: "Auto-unfreeze events fired by the timer-based reconciler.",
+	}, []string{"outcome"})
 )
 
 func init() {
@@ -42,5 +52,7 @@ func init() {
 		pipelineQueueSize,
 		pipelineSkippedTotal,
 		cniDetectFailuresTotal,
+		recoveryTotal,
+		autoUnfreezeTotal,
 	)
 }
