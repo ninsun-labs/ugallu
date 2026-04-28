@@ -79,3 +79,10 @@ forensics:
 # the manifests still apply but PrometheusRule has no consumer.
 monitoring:
   enabled: true
+
+# webhook-auditor subchart (Wave 3 §W): risk-scores admission webhook
+# configurations and emits Detection-class SecurityEvents when a webhook
+# crosses the configured threshold. Scaffold ships placeholder=true
+# (busybox sleep) until the real binary lands.
+webhook-auditor:
+  enabled: true

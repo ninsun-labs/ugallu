@@ -66,3 +66,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/monitoring
     condition: monitoring.enabled
+  - name: webhook-auditor
+    version: 0.0.1-alpha.1
+    repository: file://charts/webhook-auditor
+    condition: webhook-auditor.enabled

@@ -51,6 +51,8 @@ jobs:
             pkg:    ./operators/forensics/cmd/ugallu-forensics
           - binary: forensics-snapshot
             pkg:    ./operators/forensics/cmd/ugallu-forensics-snapshot
+          - binary: webhook-auditor
+            pkg:    ./operators/webhook-auditor/cmd/ugallu-webhook-auditor
     steps:
       - uses: actions/checkout@v6
 

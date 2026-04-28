@@ -71,6 +71,7 @@ tasks:
         - "audit-detection:./operators/audit-detection/cmd/ugallu-audit-detection"
         - "forensics:./operators/forensics/cmd/ugallu-forensics"
         - "forensics-snapshot:./operators/forensics/cmd/ugallu-forensics-snapshot"
+        - "webhook-auditor:./operators/webhook-auditor/cmd/ugallu-webhook-auditor"
     cmds:
       - mkdir -p build/_artifacts
       - for:
@@ -112,6 +113,7 @@ tasks:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/audit-detection-bin ./operators/audit-detection/cmd/ugallu-audit-detection
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/forensics-bin ./operators/forensics/cmd/ugallu-forensics
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/forensics-snapshot-bin ./operators/forensics/cmd/ugallu-forensics-snapshot
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/webhook-auditor-bin ./operators/webhook-auditor/cmd/ugallu-webhook-auditor
 
   test:
     desc: Run go test (-race) on every module (envtest assets auto-fetched)

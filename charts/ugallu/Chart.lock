@@ -32,5 +32,8 @@ dependencies:
 - name: monitoring
   repository: file://charts/monitoring
   version: 0.0.1-alpha.1
-digest: sha256:22967a81a7ee6a49531eaf79fecf0be7fc7920af38e5e5bdc6540818c381fecd
-generated: "2026-04-28T13:43:41.389915303+02:00"
+- name: webhook-auditor
+  repository: file://charts/webhook-auditor
+  version: 0.0.1-alpha.1
+digest: sha256:d321aece58d7e7761cd7b7980155c54785090ff7f148e3d01d7ca23f1cc7f081
+generated: "2026-04-28T19:04:22.292886324+02:00"

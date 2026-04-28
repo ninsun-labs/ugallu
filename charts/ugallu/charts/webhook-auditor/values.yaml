@@ -1,0 +1,59 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+# Cluster identity stamped on every emitted SecurityEvent.
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# Singleton WebhookAuditorConfig CR shipped with the chart. The defaults
+# track design 21 §W3 (riskThreshold=60, ignore-list whitelists ugallu's
+# own admission policies + cert-manager + RKE2 system webhooks; trusted
+# subject DNs whitelist cert-manager / kube-aggregator CAs).
+webhookAuditorConfig:
+  enabled: true
+  riskThreshold: 60
+  ignore:
+    - apiVersionGlob: "admissionregistration.k8s.io/v1"
+      nameGlobs:
+        - "ugallu.*"
+        - "cert-manager-*"
+        - "rke2-*"
+  trustedSubjectDNs: []
+  trustedCASources:
+    - namespace: cert-manager
+    - namespace: kube-system
+
+# Placeholder until the real binary lands at
+# ghcr.io/ninsun-labs/ugallu/webhook-auditor:<chart-tag>. Override
+# `placeholder=false` + `image.*` to point at a real image.
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+# When placeholder=true the container runs sleep so the pod stays alive
+# for kubectl/Argo health checks. Replace with the real argv when the
+# binary image is published.
+command: ["/bin/sleep", "infinity"]
+args: []
+
+# Singleton with leader election. 2 replicas is the design default.
+replicas: 2
+
+resources:
+  requests:
+    cpu: "20m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+metricsPort: 9090
+healthProbePort: 8081
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

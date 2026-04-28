@@ -85,6 +85,12 @@ spec:
             path: charts/ugallu/charts/monitoring
             component: monitoring
 
+          # === Wave 3: extension detection layer (design 21) ===
+          - name: ugallu-webhook-auditor
+            wave: "4"
+            path: charts/ugallu/charts/webhook-auditor
+            component: webhook-auditor
+
           # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs
           #   wave: "0"

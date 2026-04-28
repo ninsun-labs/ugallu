@@ -236,6 +236,14 @@ const (
 	TypeLongLivedSecretToken         = "LongLivedSecretToken"
 	TypeNamespacePSAWeakened         = "NamespacePSAWeakened"
 
+	// Detection (webhook-auditor — design 21 §W5).
+	TypeMutatingWebhookHighRisk    = "MutatingWebhookHighRisk"
+	TypeValidatingWebhookHighRisk  = "ValidatingWebhookHighRisk"
+	TypeWebhookCAUntrusted         = "WebhookCAUntrusted"
+	TypeWebhookFailOpenCriticalAPI = "WebhookFailOpenCriticalAPI"
+	TypeWebhookSecretAccess        = "WebhookSecretAccess"
+	TypeWebhookConfigDeleted       = "WebhookConfigDeleted"
+
 	// Forensic (forensics workflow).
 	TypeIncidentCaptureStarted   = "IncidentCaptureStarted"
 	TypeIncidentCaptureCompleted = "IncidentCaptureCompleted"
@@ -262,4 +270,7 @@ const (
 	TypeKeyRotationEmergency      = "KeyRotationEmergency"
 	TypeImageRevocation           = "ImageRevocation"
 	TypeAttestorRecovered         = "AttestorRecovered"
+
+	// Anomaly (webhook-auditor operational — design 21 §W7).
+	TypeWebhookEvalFailed = "WebhookEvalFailed"
 )

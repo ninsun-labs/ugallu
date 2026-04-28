@@ -32,6 +32,9 @@ spec:
           'AnonymousAccess', 'ImpersonationUsed', 'PrivilegeEscalationAttempt',
           'WebhookSideEffectsUnknown', 'FailOpenWebhook', 'CRDOverwrite',
           'APIServiceInsecure', 'LongLivedSecretToken', 'NamespacePSAWeakened',
+          'MutatingWebhookHighRisk', 'ValidatingWebhookHighRisk',
+          'WebhookCAUntrusted', 'WebhookFailOpenCriticalAPI',
+          'WebhookSecretAccess', 'WebhookConfigDeleted',
           'IncidentCaptureStarted', 'IncidentCaptureCompleted',
           'IncidentCaptureFailed', 'EvidencePreserved',
           'PodFrozen', 'PodUnfrozen',
@@ -41,7 +44,8 @@ spec:
           'SourceRateLimited', 'AttestorUnavailable', 'EtcdBackpressureHigh',
           'ClockSkewDetected', 'AuditLogStreamSilent',
           'TetragonDataInconsistent', 'KeyRotationEmergency',
-          'ImageRevocation', 'AttestorRecovered'
+          'ImageRevocation', 'AttestorRecovered',
+          'WebhookEvalFailed'
         ] ||
         (has(object.metadata.labels) &&
          'ugallu.io/type-experimental' in object.metadata.labels &&
