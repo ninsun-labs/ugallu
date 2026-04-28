@@ -62,12 +62,18 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 		threshold = 60 // mirror the kubebuilder default for safety
 	}
 
+	allowedNamespaces := make([]string, 0, len(cfg.Spec.TrustedCASources))
+	for _, src := range cfg.Spec.TrustedCASources {
+		allowedNamespaces = append(allowedNamespaces, src.Namespace)
+	}
+
 	r := &Reconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		Evaluator: NewEvaluator(EvaluatorOptions{TrustedSubjectDNs: cfg.Spec.TrustedSubjectDNs}),
-		Cache:     newDebounceCache(),
-		Ignore:    NewIgnoreMatcher(cfg.Spec.Ignore),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		Evaluator:        NewEvaluator(EvaluatorOptions{TrustedSubjectDNs: cfg.Spec.TrustedSubjectDNs}),
+		Cache:            newDebounceCache(),
+		Ignore:           NewIgnoreMatcher(cfg.Spec.Ignore),
+		CABundleResolver: NewCABundleResolver(mgr.GetAPIReader(), allowedNamespaces),
 		Emit: EmitOptions{
 			Emitter:         opts.Emitter,
 			ClusterIdentity: opts.ClusterIdentity,

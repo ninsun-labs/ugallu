@@ -50,11 +50,12 @@ func newReconciler(t *testing.T, ignoreRules []securityv1alpha1.WebhookIgnoreRul
 		t.Fatalf("NewEmitter: %v", err)
 	}
 	return &webhookauditor.Reconciler{
-		Client:    envClient,
-		Scheme:    envScheme,
-		Evaluator: webhookauditor.NewEvaluator(webhookauditor.EvaluatorOptions{TrustedSubjectDNs: trustedDNs}),
-		Cache:     webhookauditor.NewDebounceCacheForTest(),
-		Ignore:    webhookauditor.NewIgnoreMatcher(ignoreRules),
+		Client:           envClient,
+		Scheme:           envScheme,
+		Evaluator:        webhookauditor.NewEvaluator(webhookauditor.EvaluatorOptions{TrustedSubjectDNs: trustedDNs}),
+		Cache:            webhookauditor.NewDebounceCacheForTest(),
+		Ignore:           webhookauditor.NewIgnoreMatcher(ignoreRules),
+		CABundleResolver: webhookauditor.NewCABundleResolver(envClient, []string{"cert-manager"}),
 		Emit: webhookauditor.EmitOptions{
 			Emitter:         em,
 			ClusterIdentity: securityv1alpha1.ClusterIdentity{ClusterID: "envtest"},

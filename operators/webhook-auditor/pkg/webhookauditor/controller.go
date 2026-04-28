@@ -30,10 +30,11 @@ type Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Evaluator *Evaluator
-	Emit      EmitOptions
-	Cache     *DebounceCache
-	Ignore    *IgnoreMatcher
+	Evaluator        *Evaluator
+	Emit             EmitOptions
+	Cache            *DebounceCache
+	Ignore           *IgnoreMatcher
+	CABundleResolver *CABundleResolver
 
 	// Booted flips false → true after the first list of MWCs/VWCs
 	// observed at startup, so we can stamp `first_observed=true` on
@@ -153,16 +154,58 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // --- internals -------------------------------------------------------
 
-func (r *Reconciler) evalMutating(_ context.Context, mwc *admissionregistrationv1.MutatingWebhookConfiguration) (RiskBreakdown, string, error) {
-	br := r.Evaluator.ScoreMutating(mwc)
-	hash, err := Hash(mwc.Webhooks)
+func (r *Reconciler) evalMutating(ctx context.Context, mwc *admissionregistrationv1.MutatingWebhookConfiguration) (RiskBreakdown, string, error) {
+	hooks := r.resolveMutatingCABundles(ctx, mwc)
+	mwcCopy := mwc.DeepCopy()
+	mwcCopy.Webhooks = hooks
+	br := r.Evaluator.ScoreMutating(mwcCopy)
+	hash, err := Hash(hooks)
 	return br, hash, err
 }
 
-func (r *Reconciler) evalValidating(_ context.Context, vwc *admissionregistrationv1.ValidatingWebhookConfiguration) (RiskBreakdown, string, error) {
-	br := r.Evaluator.ScoreValidating(vwc)
-	hash, err := Hash(vwc.Webhooks)
+func (r *Reconciler) evalValidating(ctx context.Context, vwc *admissionregistrationv1.ValidatingWebhookConfiguration) (RiskBreakdown, string, error) {
+	hooks := r.resolveValidatingCABundles(ctx, vwc)
+	vwcCopy := vwc.DeepCopy()
+	vwcCopy.Webhooks = hooks
+	br := r.Evaluator.ScoreValidating(vwcCopy)
+	hash, err := Hash(hooks)
 	return br, hash, err
+}
+
+// resolveMutatingCABundles returns a slice of webhooks where any
+// empty caBundle has been replaced by the bytes pulled from the
+// cert-manager-style indirect Secret reference (when authorized
+// via trustedCASources). The original mwc is not mutated.
+func (r *Reconciler) resolveMutatingCABundles(ctx context.Context, mwc *admissionregistrationv1.MutatingWebhookConfiguration) []admissionregistrationv1.MutatingWebhook {
+	out := make([]admissionregistrationv1.MutatingWebhook, len(mwc.Webhooks))
+	for i := range mwc.Webhooks {
+		out[i] = *mwc.Webhooks[i].DeepCopy()
+		out[i].ClientConfig.CABundle = r.CABundleResolver.ResolveOrEmpty(
+			ctx,
+			out[i].ClientConfig.CABundle,
+			mwc.Annotations,
+			func(reason string) {
+				caResolveFallbackTotal.WithLabelValues(reason).Inc()
+			},
+		)
+	}
+	return out
+}
+
+func (r *Reconciler) resolveValidatingCABundles(ctx context.Context, vwc *admissionregistrationv1.ValidatingWebhookConfiguration) []admissionregistrationv1.ValidatingWebhook {
+	out := make([]admissionregistrationv1.ValidatingWebhook, len(vwc.Webhooks))
+	for i := range vwc.Webhooks {
+		out[i] = *vwc.Webhooks[i].DeepCopy()
+		out[i].ClientConfig.CABundle = r.CABundleResolver.ResolveOrEmpty(
+			ctx,
+			out[i].ClientConfig.CABundle,
+			vwc.Annotations,
+			func(reason string) {
+				caResolveFallbackTotal.WithLabelValues(reason).Inc()
+			},
+		)
+	}
+	return out
 }
 
 func (r *Reconciler) handleDelete(ctx context.Context, name, kind string) (ctrl.Result, error) {

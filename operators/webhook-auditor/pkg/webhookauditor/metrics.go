@@ -45,6 +45,11 @@ var (
 		Name: "ugallu_webhook_eval_timeouts_total",
 		Help: "Evaluator timeouts (per-MWC budget exceeded).",
 	})
+
+	caResolveFallbackTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "ugallu_webhook_ca_resolve_fallback_total",
+		Help: "Indirect caBundle resolution fell back to empty bytes, by reason (annotation_parse_error, namespace_forbidden, resolve_error, resolver_disabled).",
+	}, []string{"reason"})
 )
 
 func init() {
@@ -56,5 +61,6 @@ func init() {
 		scoreDistribution,
 		observedCount,
 		evalTimeoutsTotal,
+		caResolveFallbackTotal,
 	)
 }
