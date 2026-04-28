@@ -55,6 +55,8 @@ jobs:
             pkg:    ./operators/webhook-auditor/cmd/ugallu-webhook-auditor
           - binary: dns-detect
             pkg:    ./operators/dns-detect/cmd/ugallu-dns-detect
+          - binary: tenant-escape
+            pkg:    ./operators/tenant-escape/cmd/ugallu-tenant-escape
     steps:
       - uses: actions/checkout@v6
 

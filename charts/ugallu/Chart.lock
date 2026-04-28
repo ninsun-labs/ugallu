@@ -38,5 +38,8 @@ dependencies:
 - name: dns-detect
   repository: file://charts/dns-detect
   version: 0.0.1-alpha.1
-digest: sha256:e6ffa9984bcfe4345b8e020dda88b8ebf2e21fb9ac2dccc16dd409b790b0a61a
-generated: "2026-04-28T20:48:31.537090918+02:00"
+- name: tenant-escape
+  repository: file://charts/tenant-escape
+  version: 0.0.1-alpha.1
+digest: sha256:0d869004cf9c1c1e1ac28ca44369708a16036c7250bdf7277f7e7b6a2b7957d2
+generated: "2026-04-28T21:46:45.282351383+02:00"

@@ -251,6 +251,12 @@ const (
 	TypeDNSToYoungDomain     = "DNSToYoungDomain"
 	TypeDNSAnomalousPort     = "DNSAnomalousPort"
 
+	// Detection (tenant-escape — design 21 §T4).
+	TypeCrossTenantSecretAccess    = "CrossTenantSecretAccess"
+	TypeCrossTenantHostPathOverlap = "CrossTenantHostPathOverlap"
+	TypeCrossTenantNetworkPolicy   = "CrossTenantNetworkPolicy"
+	TypeCrossTenantExec            = "CrossTenantExec"
+
 	// Forensic (forensics workflow).
 	TypeIncidentCaptureStarted   = "IncidentCaptureStarted"
 	TypeIncidentCaptureCompleted = "IncidentCaptureCompleted"
@@ -285,4 +291,10 @@ const (
 	TypeDNSSourceSilent     = "DNSSourceSilent"
 	TypeDNSConfigMissing    = "DNSConfigMissing"
 	TypeDNSDetectorDegraded = "DNSDetectorDegraded"
+
+	// Anomaly (tenant-escape operational — design 21 §T5).
+	TypeAuditBridgeSilent        = "AuditBridgeSilent"
+	TypeTenantBoundaryEmpty      = "TenantBoundaryEmpty"
+	TypeTenantBoundaryOverlap    = "TenantBoundaryOverlap"
+	TypeTenantEscapeSourceLagged = "TenantEscapeSourceLagged"
 )

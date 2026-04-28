@@ -93,3 +93,10 @@ webhook-auditor:
 # tunneling, blocklist, young-domain, anomalous port).
 dns-detect:
   enabled: true
+
+# tenant-escape subchart (Wave 3 §T): consumes the audit-detection
+# event bus + Tetragon network namespace events to detect
+# multi-tenancy isolation breaches (cross-tenant Secret access,
+# hostPath overlap, NetworkPolicy ingress, exec).
+tenant-escape:
+  enabled: true

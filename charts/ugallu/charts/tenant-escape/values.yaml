@@ -1,0 +1,49 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# audit-detection event bus consumer config (Wave 3 §S2). The bus
+# is enabled by setting AuditDetectionConfig.spec.eventBus.enabled=true
+# in the audit-detection subchart values. The endpoint here is the
+# in-cluster ClusterIP service the audit-detection subchart exposes
+# in commit 4 of Sprint 4.
+auditBus:
+  endpoint: "ugallu-audit-detection.ugallu-system.svc.cluster.local:8444"
+  tokenSecret:
+    name: ugallu-audit-bus-token
+    key: token
+
+# Placeholder until the real binary lands at
+# ghcr.io/ninsun-labs/ugallu/tenant-escape:<chart-tag>.
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+command: ["/bin/sleep", "infinity"]
+args: []
+
+# Singleton cluster-scoped Deployment with leader-elect (design 21 §T1).
+# Cross-tenant correlation requires a global view (a SA in one ns
+# touching a Secret in another) — DaemonSet wouldn't help.
+replicas: 2
+
+resources:
+  requests:
+    cpu: "30m"
+    memory: "128Mi"
+  limits:
+    cpu: "300m"
+    memory: "512Mi"
+
+metricsPort: 9090
+healthProbePort: 8081
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

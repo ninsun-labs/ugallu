@@ -8,6 +8,7 @@ use (
 	./operators/dns-detect
 	./operators/forensics
 	./operators/gitops-responder
+	./operators/tenant-escape
 	./operators/webhook-auditor
 	./resolver
 	./sdk

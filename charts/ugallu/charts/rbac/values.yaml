@@ -27,6 +27,8 @@ dnsDetect:
   # Mirrors DNSDetectConfig.spec.detectors.blocklist.configMaps[].namespace.
   blocklistNamespaces:
     - ugallu-dns-blocklists
+tenantEscape:
+  enabled: true
 webhookAuditor:
   enabled: true
   # Namespace allowlist where the operator can read Secret data to

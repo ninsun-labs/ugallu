@@ -94,6 +94,10 @@ spec:
             wave: "4"
             path: charts/ugallu/charts/dns-detect
             component: dns-detect
+          - name: ugallu-tenant-escape
+            wave: "4"
+            path: charts/ugallu/charts/tenant-escape
+            component: tenant-escape
 
           # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs

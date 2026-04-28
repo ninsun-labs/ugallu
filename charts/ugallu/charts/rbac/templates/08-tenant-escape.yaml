@@ -1,0 +1,50 @@
+{{- if .Values.tenantEscape.enabled }}
+{{- /*
+ugallu-tenant-escape RBAC.
+
+Singleton Deployment in ugallu-system. Wave 3 Sprint 4 ships
+scaffolding RBAC: SA + ClusterRole for SE emit + own CRD read.
+Cluster-wide read on Pods/Secrets/Namespaces/SAs and the
+NetworkPolicy/CiliumNetworkPolicy/RBAC informers extend in Sprint 4
+commit 5 (chart real).
+*/ -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ugallu-tenant-escape
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-tenant-escape
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["securityevents"]
+    verbs: ["create"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["tenantboundaries"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["tenantboundaries/status"]
+    verbs: ["update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-tenant-escape
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-tenant-escape
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-tenant-escape
+    namespace: {{ include "rbac.ns.system" . }}
+{{- end }}
