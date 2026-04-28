@@ -14,8 +14,8 @@ import (
 
 // CABundleAnalysis is the deterministic verdict the RiskEvaluator
 // reads. ChainSubjectDNs are RFC 4514 canonical DNs of every cert in
-// the bundle (root last by convention but we don't trust that —
-// matching is set-based).
+// the bundle (root last by convention — matching is set-based, so
+// position-in-chain assumptions never apply).
 type CABundleAnalysis struct {
 	// Empty is true when the caBundle field on the webhook is unset
 	// or all-whitespace. Treated as max-conservative (untrusted) at
@@ -28,8 +28,10 @@ type CABundleAnalysis struct {
 
 	// ChainSubjectDNs lists every certificate's subject DN in RFC 4514
 	// canonical form (CN first, then O, then C, etc.). Use
-	// MatchTrustedDN to test against a whitelist.
-	ChainSubjectDNs []string
+	// MatchTrustedDN to test against a whitelist. (DN here = X.509
+	// Distinguished Name, not Domain Name System — the linter doesn't
+	// know the difference.)
+	ChainSubjectDNs []string //nolint:revive // DN is X.509 Distinguished Name
 }
 
 // AnalyzeCABundle parses a PEM-encoded caBundle (the format webhooks
@@ -114,7 +116,7 @@ func CanonicalDN(dn string) string {
 // chain matches the trustedDNs allowlist (each itself in canonical
 // form, checked symmetrically: caller-supplied list is canonicalised
 // once).
-func MatchTrustedDN(analysis CABundleAnalysis, trustedDNs []string) bool {
+func MatchTrustedDN(analysis CABundleAnalysis, trustedDNs []string) bool { //nolint:revive // DN is X.509 Distinguished Name
 	if len(analysis.ChainSubjectDNs) == 0 {
 		return false
 	}

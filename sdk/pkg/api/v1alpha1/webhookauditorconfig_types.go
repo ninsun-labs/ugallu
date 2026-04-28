@@ -31,7 +31,7 @@ type WebhookAuditorConfigSpec struct {
 	// caBundle CAs. A webhook whose caBundle chain root has a subject
 	// DN in this list does NOT trigger the `WebhookCAUntrusted`
 	// sub-score. Stable across cert-manager rotations (see §W3.1).
-	TrustedSubjectDNs []string `json:"trustedSubjectDNs,omitempty"`
+	TrustedSubjectDNs []string `json:"trustedSubjectDNs,omitempty"` //nolint:revive // DN is X.509 Distinguished Name
 
 	// TrustedCASources lists namespaces where the operator is allowed
 	// to read Secret data to dereference indirect caBundle references.

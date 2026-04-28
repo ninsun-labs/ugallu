@@ -20,10 +20,10 @@ import (
 // helpers. It collapses the mutating/validating shapes to the fields
 // emit needs (no resource manipulation past this point).
 type EmitTarget struct {
-	Kind      securityv1alpha1.SubjectKind // MutatingWebhookConfiguration | ValidatingWebhookConfiguration
-	Name      string
-	UID       types.UID
-	APIGroup  string
+	Kind       securityv1alpha1.SubjectKind // MutatingWebhookConfiguration | ValidatingWebhookConfiguration
+	Name       string
+	UID        types.UID
+	APIGroup   string
 	APIVersion string
 }
 
@@ -39,8 +39,8 @@ type EmitOptions struct {
 }
 
 // FromMutating returns an EmitTarget for a MutatingWebhookConfiguration.
-func FromMutating(mwc *admissionregistrationv1.MutatingWebhookConfiguration) EmitTarget {
-	return EmitTarget{
+func FromMutating(mwc *admissionregistrationv1.MutatingWebhookConfiguration) *EmitTarget {
+	return &EmitTarget{
 		Kind:       "MutatingWebhookConfiguration",
 		Name:       mwc.Name,
 		UID:        mwc.UID,
@@ -50,8 +50,8 @@ func FromMutating(mwc *admissionregistrationv1.MutatingWebhookConfiguration) Emi
 }
 
 // FromValidating returns an EmitTarget for a ValidatingWebhookConfiguration.
-func FromValidating(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) EmitTarget {
-	return EmitTarget{
+func FromValidating(vwc *admissionregistrationv1.ValidatingWebhookConfiguration) *EmitTarget {
+	return &EmitTarget{
 		Kind:       "ValidatingWebhookConfiguration",
 		Name:       vwc.Name,
 		UID:        vwc.UID,
@@ -72,7 +72,7 @@ func FromValidating(vwc *admissionregistrationv1.ValidatingWebhookConfiguration)
 func EmitFindings(
 	ctx context.Context,
 	opts EmitOptions,
-	target EmitTarget,
+	target *EmitTarget,
 	br RiskBreakdown,
 ) error {
 	if opts.Emitter == nil {
@@ -131,7 +131,7 @@ func EmitFindings(
 
 // EmitDeleted fires on MWC/VWC removal — informational telemetry that
 // shows the deletion in the SE stream. Severity:info, no breakdown.
-func EmitDeleted(ctx context.Context, opts EmitOptions, target EmitTarget) error {
+func EmitDeleted(ctx context.Context, opts EmitOptions, target *EmitTarget) error {
 	if opts.Emitter == nil {
 		return fmt.Errorf("emit: nil Emitter")
 	}
@@ -150,7 +150,7 @@ func EmitDeleted(ctx context.Context, opts EmitOptions, target EmitTarget) error
 // EmitEvalFailed fires when the evaluator panics on a malformed
 // webhook configuration. Class=Anomaly so it reaches the operational
 // dashboard, not the security alerting path.
-func EmitEvalFailed(ctx context.Context, opts EmitOptions, target EmitTarget, errMsg string) error {
+func EmitEvalFailed(ctx context.Context, opts EmitOptions, target *EmitTarget, errMsg string) error {
 	if opts.Emitter == nil {
 		return fmt.Errorf("emit: nil Emitter")
 	}
@@ -174,7 +174,7 @@ func EmitEvalFailed(ctx context.Context, opts EmitOptions, target EmitTarget, er
 func emitSubScore(
 	ctx context.Context,
 	opts EmitOptions,
-	target EmitTarget,
+	target *EmitTarget,
 	signals map[string]string,
 	seType string,
 	severity securityv1alpha1.Severity,
@@ -197,8 +197,8 @@ func emitSubScore(
 
 func buildSignals(br RiskBreakdown, firstObserved bool) map[string]string {
 	out := map[string]string{
-		"risk_score":      strconv.Itoa(br.Total),
-		"first_observed":  strconv.FormatBool(firstObserved),
+		"risk_score":     strconv.Itoa(br.Total),
+		"first_observed": strconv.FormatBool(firstObserved),
 	}
 	for k, v := range br.Breakdown {
 		out["risk_breakdown."+k] = strconv.Itoa(v)

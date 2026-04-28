@@ -60,7 +60,6 @@ func mkMWC(t *testing.T, hooks ...tWebhook) *admissionregistrationv1.MutatingWeb
 }
 
 func TestEvaluator_FailurePolicyIgnoreOnCriticalAPI(t *testing.T) {
-	e := NewEvaluator(EvaluatorOptions{})
 	mwc := mkMWC(t, tWebhook{
 		failurePolicy: admissionregistrationv1.Ignore,
 		sideEffects:   admissionregistrationv1.SideEffectClassNone,
@@ -68,7 +67,7 @@ func TestEvaluator_FailurePolicyIgnoreOnCriticalAPI(t *testing.T) {
 		caBundle:      generateSelfSignedPEM(t, "trusted-ca"),
 	})
 	// Trust the bundle to isolate the failure-policy contribution.
-	e = NewEvaluator(EvaluatorOptions{TrustedSubjectDNs: []string{"CN=trusted-ca"}})
+	e := NewEvaluator(EvaluatorOptions{TrustedSubjectDNs: []string{"CN=trusted-ca"}})
 	br := e.ScoreMutating(mwc)
 
 	if !br.Has(SubScoreFailurePolicy) {
@@ -165,7 +164,7 @@ func TestEvaluator_TotalCappedAt100(t *testing.T) {
 		failurePolicy: admissionregistrationv1.Ignore,
 		sideEffects:   admissionregistrationv1.SideEffectClassUnknown,
 		resources:     []string{"secrets"}, // critical AND triggers no-selector + critical_api
-		caBundle:      nil,                  // ca_untrusted
+		caBundle:      nil,                 // ca_untrusted
 		reinvoc:       &rp,
 		// objectSel, namespaceSel default false → no_selector triggers
 	})

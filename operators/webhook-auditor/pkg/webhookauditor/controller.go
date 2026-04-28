@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"sync/atomic"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,11 +34,6 @@ type Reconciler struct {
 	Cache            *DebounceCache
 	Ignore           *IgnoreMatcher
 	CABundleResolver *CABundleResolver
-
-	// Booted flips false → true after the first list of MWCs/VWCs
-	// observed at startup, so we can stamp `first_observed=true` on
-	// the initial sweep.
-	booted atomic.Bool
 }
 
 // MutatingReconciler watches admissionregistration.k8s.io/v1
@@ -210,7 +204,7 @@ func (r *Reconciler) resolveValidatingCABundles(ctx context.Context, vwc *admiss
 
 func (r *Reconciler) handleDelete(ctx context.Context, name, kind string) (ctrl.Result, error) {
 	r.Cache.Forget(types.UID(name)) // not actual UID — best effort prune by name
-	target := EmitTarget{
+	target := &EmitTarget{
 		Kind: securityv1alpha1.SubjectKind(kind),
 		Name: name,
 	}

@@ -20,10 +20,10 @@ import (
 // into a MutatingWebhookConfiguration / ValidatingWebhookConfiguration
 // at create time. Format: "<namespace>/<name>".
 //
-// We follow this annotation when MWC.spec.webhooks[i].clientConfig.caBundle
-// is empty so that webhooks managed by cert-manager are scored on the
-// CA they're about to be injected with, not as untrusted.
-const AnnotationCertManagerInjectFromSecret = "cert-manager.io/inject-ca-from-secret"
+// Followed when MWC.spec.webhooks[i].clientConfig.caBundle is empty so
+// webhooks managed by cert-manager are scored on the CA they're about
+// to be injected with, not as untrusted.
+const AnnotationCertManagerInjectFromSecret = "cert-manager.io/inject-ca-from-secret" //nolint:gosec // annotation key, not a credential
 
 // CABundleResolver dereferences indirect caBundle references when the
 // webhook's clientConfig.caBundle is empty. It is the bridge between
@@ -32,8 +32,8 @@ const AnnotationCertManagerInjectFromSecret = "cert-manager.io/inject-ca-from-se
 //
 // Concurrent-safe: the underlying client.Reader is.
 type CABundleResolver struct {
-	// Reader is a non-cached reader (mgr.GetAPIReader()) so we don't
-	// pre-load every Secret in the cluster into the controller-runtime
+	// Reader is a non-cached reader (mgr.GetAPIReader()) to avoid
+	// pre-loading every Secret in the cluster into the controller-runtime
 	// cache. Each lookup is one apiserver round-trip; the operator
 	// only calls it on webhooks with empty caBundle, which is rare in
 	// healthy clusters (Wave 3 §W3.1).
@@ -113,16 +113,16 @@ func (r *CABundleResolver) Resolve(ctx context.Context, ref *IndirectRef) ([]byt
 	sec := &corev1.Secret{}
 	if err := r.Reader.Get(ctx, types.NamespacedName{Namespace: ref.Namespace, Name: ref.Name}, sec); err != nil {
 		if apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("Secret %s/%s not found", ref.Namespace, ref.Name)
+			return nil, fmt.Errorf("secret %s/%s not found", ref.Namespace, ref.Name)
 		}
-		return nil, fmt.Errorf("Secret %s/%s get: %w", ref.Namespace, ref.Name, err)
+		return nil, fmt.Errorf("secret %s/%s get: %w", ref.Namespace, ref.Name, err)
 	}
 	for _, key := range []string{"ca.crt", "tls.crt", "ca.pem"} {
 		if v, ok := sec.Data[key]; ok && len(v) > 0 {
 			return v, nil
 		}
 	}
-	return nil, fmt.Errorf("Secret %s/%s: no recognised CA key (ca.crt / tls.crt / ca.pem)", ref.Namespace, ref.Name)
+	return nil, fmt.Errorf("secret %s/%s: no recognised CA key (ca.crt / tls.crt / ca.pem)", ref.Namespace, ref.Name)
 }
 
 // ResolveOrEmpty is the helper the Evaluator uses: given a
@@ -132,7 +132,7 @@ func (r *CABundleResolver) Resolve(ctx context.Context, ref *IndirectRef) ([]byt
 // onFallback hook so the operator metrics can count
 // indirect-ref failures.
 func (r *CABundleResolver) ResolveOrEmpty(ctx context.Context, caBundleOnSpec []byte, annotations map[string]string, onFallback func(reason string)) []byte {
-	if len(strings.TrimSpace(string(caBundleOnSpec))) > 0 {
+	if strings.TrimSpace(string(caBundleOnSpec)) != "" {
 		return caBundleOnSpec // direct caBundle wins
 	}
 	ref, err := FindIndirectRef(annotations)

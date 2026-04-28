@@ -4,6 +4,7 @@
 package webhookauditor
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -81,7 +82,7 @@ func TestCABundleResolver_Resolve(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Resolve: %v", err)
 		}
-		if string(got) != string(pemBytes) {
+		if !bytes.Equal(got, pemBytes) {
 			t.Errorf("got %d bytes, want %d", len(got), len(pemBytes))
 		}
 	})
@@ -91,7 +92,7 @@ func TestCABundleResolver_Resolve(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Resolve: %v", err)
 		}
-		if string(got) != string(pemBytes) {
+		if !bytes.Equal(got, pemBytes) {
 			t.Errorf("tls.crt path failed")
 		}
 	})
@@ -135,7 +136,7 @@ func TestResolveOrEmpty(t *testing.T) {
 		got := r.ResolveOrEmpty(context.Background(), pemBytes, map[string]string{
 			AnnotationCertManagerInjectFromSecret: "cert-manager/ca-bundle",
 		}, nil)
-		if string(got) != string(pemBytes) {
+		if !bytes.Equal(got, pemBytes) {
 			t.Error("direct caBundle should win over annotation")
 		}
 	})
@@ -144,7 +145,7 @@ func TestResolveOrEmpty(t *testing.T) {
 		got := r.ResolveOrEmpty(context.Background(), nil, map[string]string{
 			AnnotationCertManagerInjectFromSecret: "cert-manager/ca-bundle",
 		}, nil)
-		if string(got) != string(pemBytes) {
+		if !bytes.Equal(got, pemBytes) {
 			t.Errorf("got %d bytes, want %d", len(got), len(pemBytes))
 		}
 	})

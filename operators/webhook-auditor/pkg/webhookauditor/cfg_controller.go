@@ -53,7 +53,7 @@ func (r *ConfigStatusReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err := r.List(ctx, vwcList); err != nil {
 		return ctrl.Result{}, err
 	}
-	total := int32(len(mwcList.Items) + len(vwcList.Items))
+	total := int32(len(mwcList.Items) + len(vwcList.Items)) //nolint:gosec // cluster MWC+VWC count cannot exceed int32 in any realistic scenario
 
 	now := metav1.Now()
 	patch := client.MergeFrom(cfg.DeepCopy())
@@ -70,9 +70,8 @@ func (r *ConfigStatusReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // SetupWithManager wires the reconciler. Watches the
-// WebhookAuditorConfig CRD only (we don't react to MWC/VWC events
-// here — that's the score reconciler's job; here the count is
-// recomputed on the 30s tick).
+// WebhookAuditorConfig CRD only — MWC/VWC events are the score
+// reconciler's domain; here the count is recomputed on the 30s tick.
 func (r *ConfigStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("webhook-auditor-cfgstatus").

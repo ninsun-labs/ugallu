@@ -16,14 +16,14 @@ import (
 // or unscoped match on these resources is the heart of the risk
 // score (design 21 §W3).
 var CriticalAPIResources = map[string]struct{}{
-	"secrets":             {},
-	"serviceaccounts":     {},
-	"tokenreviews":        {},
+	"secrets":              {},
+	"serviceaccounts":      {},
+	"tokenreviews":         {},
 	"subjectaccessreviews": {},
-	"clusterroles":        {},
-	"clusterrolebindings": {},
-	"roles":               {},
-	"rolebindings":        {},
+	"clusterroles":         {},
+	"clusterrolebindings":  {},
+	"roles":                {},
+	"rolebindings":         {},
 }
 
 // SubScoreWeights pins design 21 §W3 weights as code. The order in
@@ -31,11 +31,11 @@ var CriticalAPIResources = map[string]struct{}{
 // keys land on the SE Signals so a dashboard can show the same
 // breakdown as the design.
 const (
-	WeightFailurePolicy   = 30
-	WeightSideEffects     = 15
-	WeightCAUntrusted     = 20
-	WeightNoSelector      = 15
-	WeightCriticalAPI     = 10
+	WeightFailurePolicy        = 30
+	WeightSideEffects          = 15
+	WeightCAUntrusted          = 20
+	WeightNoSelector           = 15
+	WeightCriticalAPI          = 10
 	WeightReinvocationIfNeeded = 10
 )
 
@@ -69,7 +69,7 @@ type EvaluatorOptions struct {
 	// TrustedSubjectDNs is the canonical RFC 4514 DN allowlist for
 	// caBundle CAs. Pre-canonicalised at construction; matching is
 	// O(1) per webhook.
-	TrustedSubjectDNs []string
+	TrustedSubjectDNs []string //nolint:revive // DN is X.509 Distinguished Name
 }
 
 // Evaluator computes a deterministic RiskBreakdown for an admission

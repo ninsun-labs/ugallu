@@ -38,7 +38,7 @@ func requireEnvtest(t *testing.T) {
 	}
 }
 
-func newReconciler(t *testing.T, ignoreRules []securityv1alpha1.WebhookIgnoreRule, trustedDNs []string) *webhookauditor.Reconciler {
+func newReconciler(t *testing.T, ignoreRules []securityv1alpha1.WebhookIgnoreRule, trustedDNs []string) *webhookauditor.Reconciler { //nolint:revive // DN is X.509 Distinguished Name
 	t.Helper()
 	em, err := emitterv1alpha1.NewEmitter(&emitterv1alpha1.EmitterOpts{
 		Client:          envClient,
@@ -88,8 +88,9 @@ func TestIntegration_MWC_HighRiskEmits(t *testing.T) {
 	r := newReconciler(t, nil, nil) // empty trust list → ca_untrusted always fires
 	// Note: admissionregistration.k8s.io/v1 rejects sideEffects=Unknown
 	// at admission (legacy v1beta1). The side_effects sub-score is
-	// covered by unit tests; here we drive failure_policy + ca_untrusted
-	// + critical_api + no_selector = 30+20+10+15 = 75 (≥ 60 threshold).
+	// covered by unit tests; this scenario drives failure_policy +
+	// ca_untrusted + critical_api + no_selector = 30+20+10+15 = 75
+	// (≥ 60 threshold).
 	mwc := makeMWC("evil-mwc", admissionregistrationv1.Ignore, admissionregistrationv1.SideEffectClassNone,
 		[]string{"secrets"}, nil)
 	mustCreate(t, mwc)
