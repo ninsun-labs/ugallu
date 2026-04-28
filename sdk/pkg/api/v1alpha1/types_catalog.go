@@ -1,0 +1,66 @@
+// Copyright 2026 The ninsun-labs Authors.
+// SPDX-License-Identifier: Apache-2.0
+
+package v1alpha1
+
+// KnownTypes is the authoritative SecurityEvent.spec.type catalog.
+// The emitter package consults this set before any apiserver
+// round-trip; admission policy 5 carries the same list (kept in sync
+// by hack/ci-local.sh's type-catalog parity check).
+//
+// Adding a new Type* constant in types.go MUST also add it here so
+// emitters accept it and admission's enum updates.
+var KnownTypes = map[string]struct{}{
+	TypeAnonymousAccess:              {},
+	TypeAPIServiceInsecure:           {},
+	TypeAttestorRecovered:            {},
+	TypeAttestorUnavailable:          {},
+	TypeAuditLogStreamSilent:         {},
+	TypeBehaviorBaselineDeviation:    {},
+	TypeCapAddDangerous:              {},
+	TypeClockSkewDetected:            {},
+	TypeClusterAdminGranted:          {},
+	TypeCRDOverwrite:                 {},
+	TypeEtcdBackpressureHigh:         {},
+	TypeEvidencePreserved:            {},
+	TypeExecIntoPod:                  {},
+	TypeFailOpenWebhook:              {},
+	TypeGitOpsConflict:               {},
+	TypeHostIPCPod:                   {},
+	TypeHostNetworkPod:               {},
+	TypeHostPathMount:                {},
+	TypeHostPIDPod:                   {},
+	TypeImagePullPolicyAlways:        {},
+	TypeImageRevocation:              {},
+	TypeImpersonationUsed:            {},
+	TypeIncidentBurst:                {},
+	TypeIncidentCaptureCompleted:     {},
+	TypeIncidentCaptureFailed:        {},
+	TypeIncidentCaptureStarted:       {},
+	TypeKeyRotationEmergency:         {},
+	TypeKubernetesAPICall:            {},
+	TypeLateralMovementSuspected:     {},
+	TypeLatestImageTag:               {},
+	TypeLongLivedSecretToken:         {},
+	TypeNamespacePSAWeakened:         {},
+	TypePodFrozen:                    {},
+	TypePodUnfrozen:                  {},
+	TypePortForwardOpened:            {},
+	TypePrivilegedPodChange:          {},
+	TypePrivilegeEscalationAttempt:   {},
+	TypeProxyAccess:                  {},
+	TypeRBACEscalationChain:          {},
+	TypeRunAsRootContainer:           {},
+	TypeSecretMountedAsEnv:           {},
+	TypeServiceAccountTokenAutomount: {},
+	TypeServiceAccountTokenRequest:   {},
+	TypeSourceRateLimited:            {},
+	TypeTetragonDataInconsistent:     {},
+	TypeTTLConfigMissing:             {},
+	TypeUnsignedImage:                {},
+	TypeWatchSubscription:            {},
+	TypeWebhookSideEffectsUnknown:    {},
+	TypeWildcardRBACBinding:          {},
+	TypeWORMIntegrityViolation:       {},
+	TypeWORMQuotaExceeded:            {},
+}
