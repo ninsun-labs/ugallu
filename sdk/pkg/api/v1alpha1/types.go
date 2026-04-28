@@ -70,7 +70,7 @@ const (
 
 // ActionType is the kind of action an EventResponse takes (design 04 Q4).
 // Adding values requires a CRD bump and an admission policy update.
-// +kubebuilder:validation:Enum=PodFreeze;NetworkDeny;FilesystemSnapshot;MemorySnapshot;EvidenceUpload;GitOpsChange;RBACRevoke;NodeIsolate;ImageQuarantine;WebhookDisable;TokenRevoke;NotificationSend
+// +kubebuilder:validation:Enum=PodFreeze;PodUnfreeze;NetworkDeny;FilesystemSnapshot;MemorySnapshot;EvidenceUpload;GitOpsChange;RBACRevoke;NodeIsolate;ImageQuarantine;WebhookDisable;TokenRevoke;NotificationSend
 type ActionType string
 
 // ActionType constants.

@@ -123,6 +123,7 @@ spec:
                       Adding values requires a CRD bump and an admission policy update.
                     enum:
                     - PodFreeze
+                    - PodUnfreeze
                     - NetworkDeny
                     - FilesystemSnapshot
                     - MemorySnapshot
