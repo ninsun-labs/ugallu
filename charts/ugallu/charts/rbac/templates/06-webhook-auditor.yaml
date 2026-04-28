@@ -1,0 +1,92 @@
+{{- if .Values.webhookAuditor.enabled }}
+{{- /*
+ugallu-webhook-auditor RBAC.
+
+Singleton Deployment in ugallu-system (PSA restricted). Watches the
+admission webhook configurations (cluster-scoped) and emits SE on
+threshold cross. No Secret access in Wave 3 Phase 1 — caBundle
+indirect reference resolution lands in Phase 2 with a narrow
+namespace-scoped Role.
+*/ -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ugallu-webhook-auditor
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-webhook-auditor
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  # Watch admission webhook configurations (the workload).
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations", "validatingwebhookconfigurations"]
+    verbs: ["get", "list", "watch"]
+  # Read CRDs to map subject kinds (defense-in-depth, no write).
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+  # Emit SecurityEvent only (no read on existing CR).
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["securityevents"]
+    verbs: ["create"]
+  # Read the operator's own config CR.
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["webhookauditorconfigs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["webhookauditorconfigs/status"]
+    verbs: ["update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-webhook-auditor
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-webhook-auditor
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-webhook-auditor
+    namespace: {{ include "rbac.ns.system" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-webhook-auditor
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["ugallu-webhook-auditor-leader"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-webhook-auditor
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-webhook-auditor
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-webhook-auditor
+    namespace: {{ include "rbac.ns.system" . }}
+{{- end }}

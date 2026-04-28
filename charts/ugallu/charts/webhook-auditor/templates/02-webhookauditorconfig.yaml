@@ -1,0 +1,22 @@
+{{- if .Values.webhookAuditorConfig.enabled }}
+apiVersion: security.ugallu.io/v1alpha1
+kind: WebhookAuditorConfig
+metadata:
+  name: default
+  labels:
+    {{- include "webhookauditor.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  riskThreshold: {{ .Values.webhookAuditorConfig.riskThreshold }}
+  {{- with .Values.webhookAuditorConfig.ignore }}
+  ignore: {{ toJson . }}
+  {{- end }}
+  {{- with .Values.webhookAuditorConfig.trustedSubjectDNs }}
+  trustedSubjectDNs: {{ toJson . }}
+  {{- end }}
+  {{- with .Values.webhookAuditorConfig.trustedCASources }}
+  trustedCASources: {{ toJson . }}
+  {{- end }}
+{{- end }}
