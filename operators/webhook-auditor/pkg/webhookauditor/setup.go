@@ -80,7 +80,16 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 			Threshold:       threshold,
 		},
 	}
-	return r.SetupWithManager(mgr)
+	if err := r.SetupWithManager(mgr); err != nil {
+		return err
+	}
+
+	cs := &ConfigStatusReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ConfigName: opts.ConfigName,
+	}
+	return cs.SetupWithManager(mgr)
 }
 
 // loadConfig fetches the singleton WebhookAuditorConfig CR via the
