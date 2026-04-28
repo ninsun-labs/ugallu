@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package webhookauditor exposes the controller-runtime wiring for the
-// ugallu-webhook-auditor operator (design 21 §W). The MWC/VWC informer,
-// risk evaluator, and SE emitter ship in subsequent commits; this file
-// holds only the manager-side bootstrap so cmd/ugallu-webhook-auditor
-// can compile from day one.
+// ugallu-webhook-auditor operator (design 21 §W).
 package webhookauditor
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
@@ -34,11 +36,12 @@ type Options struct {
 	Emitter *emitterv1alpha1.Emitter
 }
 
-// SetupWithManager registers the operator's reconcilers + informers
-// against mgr. Subsequent commits add real wiring; current scaffold
-// returns nil after validating Options so the binary stays bootable
-// pre-implementation.
-func SetupWithManager(_ ctrl.Manager, opts *Options) error {
+// SetupWithManager wires the MWC + VWC reconcilers + emit pipeline.
+// Reads WebhookAuditorConfig once at startup to seed the evaluator
+// and ignore matcher; subsequent updates are picked up on the
+// 30s reconcile cadence (design 21 §W3 — config CR mutations are
+// rare in practice).
+func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 	if opts == nil {
 		return errors.New("webhookauditor.SetupWithManager: nil Options")
 	}
@@ -48,8 +51,49 @@ func SetupWithManager(_ ctrl.Manager, opts *Options) error {
 	if opts.ConfigName == "" {
 		return errors.New("webhookauditor.SetupWithManager: empty ConfigName")
 	}
-	// TODO(wave3-sprint1-commit2): wire MWC/VWC informer + RiskEvaluator + reconciler.
-	return nil
+
+	cfg, err := loadConfig(context.Background(), mgr.GetAPIReader(), opts.ConfigName)
+	if err != nil {
+		return fmt.Errorf("load WebhookAuditorConfig %q: %w", opts.ConfigName, err)
+	}
+
+	threshold := int(cfg.Spec.RiskThreshold)
+	if threshold == 0 {
+		threshold = 60 // mirror the kubebuilder default for safety
+	}
+
+	r := &Reconciler{
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		Evaluator: NewEvaluator(EvaluatorOptions{TrustedSubjectDNs: cfg.Spec.TrustedSubjectDNs}),
+		Cache:     newDebounceCache(),
+		Ignore:    NewIgnoreMatcher(cfg.Spec.Ignore),
+		Emit: EmitOptions{
+			Emitter:         opts.Emitter,
+			ClusterIdentity: opts.ClusterIdentity,
+			Threshold:       threshold,
+		},
+	}
+	return r.SetupWithManager(mgr)
+}
+
+// loadConfig fetches the singleton WebhookAuditorConfig CR via the
+// manager's APIReader (cache may not be ready at startup).
+func loadConfig(ctx context.Context, reader client.Reader, name string) (*securityv1alpha1.WebhookAuditorConfig, error) {
+	cfg := &securityv1alpha1.WebhookAuditorConfig{}
+	if err := reader.Get(ctx, types.NamespacedName{Name: name}, cfg); err != nil {
+		if apierrors.IsNotFound(err) {
+			// No CR present → defaults. Operator runs with the
+			// kubebuilder default threshold and empty trust list
+			// (everything will trigger ca_untrusted, by design — let
+			// the admin notice and create the CR).
+			return &securityv1alpha1.WebhookAuditorConfig{
+				Spec: securityv1alpha1.WebhookAuditorConfigSpec{RiskThreshold: 60},
+			}, nil
+		}
+		return nil, err
+	}
+	return cfg, nil
 }
 
 // Manager is a thin re-export so cmd/ugallu-webhook-auditor's main.go
