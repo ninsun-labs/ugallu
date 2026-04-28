@@ -226,6 +226,13 @@ func (p *Pipeline) emitForensicSE(ctx context.Context, eventType string, sev sec
 	signals["trigger.uid"] = string(incident.TriggerSE.UID)
 	signals["trigger.type"] = incident.TriggerSE.Spec.Type
 	signals["pod.uid"] = string(pod.UID)
+	// CorrelationID intentionally left empty so the emitter SDK
+	// auto-derives a per-(class,type,subjectUID,bucket) ID. Setting
+	// it to incident.UID would collide every emit on this incident
+	// onto the same deterministic SE.metadata.name (the SDK hashes
+	// the correlation into the name), masking PodFrozen behind the
+	// final completion SE. The incident.uid signal already wires
+	// every forensic SE back to its owning capture.
 	if _, err := p.opts.Emitter.Emit(ctx, &emitterv1alpha1.EmitOpts{
 		Class:            "Forensic",
 		Type:             eventType,
@@ -236,7 +243,6 @@ func (p *Pipeline) emitForensicSE(ctx context.Context, eventType string, sev sec
 		SubjectUID:       pod.UID,
 		Signals:          signals,
 		ClusterIdentity:  p.opts.ClusterIdentity,
-		CorrelationID:    incident.UID,
 	}); err != nil {
 		p.opts.Log.Warn("emit forensic SE", "type", eventType, "err", err)
 	}
@@ -271,7 +277,6 @@ func (p *Pipeline) emitCompletion(ctx context.Context, incident *Incident, pod *
 		SubjectUID:       pod.UID,
 		Signals:          signals,
 		ClusterIdentity:  p.opts.ClusterIdentity,
-		CorrelationID:    incident.UID,
 		DetectedAt:       metav1.NewTime(time.Now()),
 	})
 	return err
@@ -302,7 +307,6 @@ func (p *Pipeline) fail(ctx context.Context, incident *Incident, step string, ca
 		SubjectUID:       pod.UID,
 		Signals:          signals,
 		ClusterIdentity:  p.opts.ClusterIdentity,
-		CorrelationID:    incident.UID,
 	}); err != nil {
 		p.opts.Log.Warn("emit failure SE", "err", err)
 	}

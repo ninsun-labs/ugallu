@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -100,6 +101,13 @@ func runMain() error {
 		LeaderElection:          true,
 		LeaderElectionID:        "ugallu-forensics-leader",
 		LeaderElectionNamespace: leaderElectionNS,
+		// Disable the controller-runtime cache for Secrets — the
+		// CredentialsMirror does direct Get/Create only, and a
+		// cluster-wide Secret list/watch would require excessive
+		// RBAC + leak data through the in-memory cache.
+		Client: client.Options{
+			Cache: &client.CacheOptions{DisableFor: []client.Object{&corev1.Secret{}}},
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("manager: %w", err)

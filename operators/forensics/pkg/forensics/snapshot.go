@@ -202,13 +202,17 @@ func (s *Snapshotter) injectEphemeralContainer(ctx context.Context, pod *corev1.
 	updated := pod.DeepCopy()
 	updated.Spec.EphemeralContainers = append(updated.Spec.EphemeralContainers, corev1.EphemeralContainer{
 		EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+			// Kubelet rejects Resources on ephemeral containers
+			// (spec.ephemeralContainers[].resources: Forbidden) — the
+			// kubelet allocates them off the Pod's existing budget.
+			// Memory ceiling is enforced inside the snapshot binary
+			// via the multipart-uploader part-size budget instead.
 			Name:                     name,
 			Image:                    s.opts.Image,
 			ImagePullPolicy:          s.opts.ImagePullPolicy,
 			Command:                  []string{"/bin/ugallu-forensics-snapshot"},
 			Args:                     args,
 			Env:                      s.envFromSecret(),
-			Resources:                snapshotResources(),
 			SecurityContext:          snapshotSecurityContext(),
 			TerminationMessagePolicy: corev1.TerminationMessageReadFile,
 		},
@@ -298,22 +302,6 @@ func (s *Snapshotter) envFromSecret() []corev1.EnvVar {
 					Key:                  "secret-key",
 				},
 			},
-		},
-	}
-}
-
-// snapshotResources reflects design 20 §F5: 256 MiB RAM, 500m CPU.
-// Memory is bounded by the multipart-manager part-size budget; the
-// limit is a safety net.
-func snapshotResources() corev1.ResourceRequirements {
-	return corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("100m"),
-			corev1.ResourceMemory: resource.MustParse("64Mi"),
-		},
-		Limits: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("500m"),
-			corev1.ResourceMemory: resource.MustParse("256Mi"),
 		},
 	}
 }

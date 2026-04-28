@@ -29,21 +29,13 @@ spec:
         resources:   ["pods"]
   matchConditions:
     - name: frozen-label-changing
-      # The label is "changing" when the value differs between the
-      # request and the stored object — covers add (old missing),
-      # remove (new missing), and overwrite (both present, value
-      # differs). The CEL conjunction is verbose but explicit.
+      # K8s VAP CEL exposes object.metadata.labels as a map, default
+      # empty when absent. `?'key'` returns Optional<String>; .orValue("")
+      # collapses presence + absence + same-key-same-value into one
+      # comparison the policy can deny on.
       expression: |
-        (
-          (has(object.metadata.labels) && has(object.metadata.labels['ugallu.io/frozen']))
-          !=
-          (has(oldObject.metadata.labels) && has(oldObject.metadata.labels['ugallu.io/frozen']))
-        ) ||
-        (
-          has(object.metadata.labels) && has(object.metadata.labels['ugallu.io/frozen']) &&
-          has(oldObject.metadata.labels) && has(oldObject.metadata.labels['ugallu.io/frozen']) &&
-          object.metadata.labels['ugallu.io/frozen'] != oldObject.metadata.labels['ugallu.io/frozen']
-        )
+        object.metadata.?labels[?'ugallu.io/frozen'].orValue("") !=
+          oldObject.metadata.?labels[?'ugallu.io/frozen'].orValue("")
   validations:
     - expression: |
         request.userInfo.username in [
