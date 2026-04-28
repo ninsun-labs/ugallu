@@ -116,17 +116,17 @@ func (d *ExfiltrationDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 		Severity: string(securityv1alpha1.SeverityHigh),
 		Subject:  subjectFromEvent(ev),
 		Signals: map[string]string{
-			"qname_sample":       ev.QName,
-			"entropy_avg":        strconv.FormatFloat(entropy, 'f', 2, 64),
-			"payload_len_total":  strconv.Itoa(totalLen),
-			"consecutive_count":  strconv.Itoa(consecutive),
+			"qname_sample":      ev.QName,
+			"entropy_avg":       strconv.FormatFloat(entropy, 'f', 2, 64),
+			"payload_len_total": strconv.Itoa(totalLen),
+			"consecutive_count": strconv.Itoa(consecutive),
 		},
 	}
 }
 
 // shannonEntropy returns Shannon entropy in bits of `s`.
 func shannonEntropy(s string) float64 {
-	if len(s) == 0 {
+	if s == "" {
 		return 0
 	}
 	counts := make(map[byte]int, 64)

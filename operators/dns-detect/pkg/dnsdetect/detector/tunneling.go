@@ -29,8 +29,8 @@ type TunnelingConfig struct {
 
 // TunnelingDetector flags base64-decodable subdomain labels.
 type TunnelingDetector struct {
-	cfg     TunnelingConfig
-	mu      sync.Mutex
+	cfg      TunnelingConfig
+	mu       sync.Mutex
 	lastFire map[types.UID]time.Time
 	now      func() time.Time // injectable for tests
 }

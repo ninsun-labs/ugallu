@@ -23,7 +23,7 @@ type Finding struct {
 }
 
 // Has reports whether the finding fires.
-func (f Finding) Has() bool { return f.Type != "" }
+func (f *Finding) Has() bool { return f != nil && f.Type != "" }
 
 // Subject is the resolved attribution for the SE. Filled by the
 // reconciler before forwarding to the emitter — detectors don't

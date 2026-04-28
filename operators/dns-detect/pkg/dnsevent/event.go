@@ -25,7 +25,7 @@ type DNSEvent struct {
 	Timestamp  time.Time
 	NodeName   string
 	SrcIP      net.IP
-	SrcCgroup  uint64        // 0 when SO_PEEKCRED unavailable
+	SrcCgroup  uint64 // 0 when SO_PEEKCRED unavailable
 	DstIP      net.IP
 	DstPort    uint16
 	QName      string
@@ -45,6 +45,8 @@ type DNSEvent struct {
 // SourceKind tags the backend that produced the event.
 type SourceKind string
 
+// Source kind discriminators — match
+// DNSDetectConfig.spec.source.primary in the SDK CRD.
 const (
 	SourceCoreDNSPlugin  SourceKind = "coredns_plugin"
 	SourceTetragonKprobe SourceKind = "tetragon_kprobe"

@@ -13,11 +13,11 @@ import (
 
 // CoreDNSPluginConfig wires the gRPC stream client.
 type CoreDNSPluginConfig struct {
-	GRPCEndpoint string        // host:port
-	BearerToken  string        // shared-secret auth (Wave 3 Sprint 3); mTLS lands later
-	NodeName     string        // SubscribeRequest subscriber_id discriminator
-	MaxEventsPerSec uint32     // server-side rate limit
-	ReconnectBase time.Duration // base for exponential backoff
+	GRPCEndpoint    string        // host:port
+	BearerToken     string        // shared-secret auth (Wave 3 Sprint 3); mTLS lands later
+	NodeName        string        // SubscribeRequest subscriber_id discriminator
+	MaxEventsPerSec uint32        // server-side rate limit
+	ReconnectBase   time.Duration // base for exponential backoff
 }
 
 // CoreDNSPluginSource is the primary backend (design 21 §D2.1). Once

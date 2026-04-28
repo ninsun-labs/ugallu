@@ -65,12 +65,12 @@ func (d *Dispatcher) dispatch(ctx context.Context, ev *dnsevent.DNSEvent) {
 		if !f.Has() {
 			continue
 		}
-		d.emit(ctx, ev, f)
+		d.emit(ctx, ev, &f)
 	}
 }
 
 // emit forwards a Finding to the emitter SDK as a SecurityEvent.
-func (d *Dispatcher) emit(ctx context.Context, _ *dnsevent.DNSEvent, f detector.Finding) {
+func (d *Dispatcher) emit(ctx context.Context, _ *dnsevent.DNSEvent, f *detector.Finding) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	_, _ = d.emitter.Emit(ctx, &emitterv1alpha1.EmitOpts{

@@ -115,8 +115,8 @@ func TestBlocklistDetector_ExactAndSuffix(t *testing.T) {
 	d.SetEntries(map[string]string{
 		"evil.example":     "default",
 		"*.malicious.test": "default",
-		"# comment":         "default",
-		"":                   "default",
+		"# comment":        "default",
+		"":                 "default",
 	})
 	for _, tc := range []struct {
 		qname string
@@ -146,8 +146,8 @@ func (m mockAgeLookup) AgeDays(domain string) (int, bool) {
 
 func TestYoungDomainDetector(t *testing.T) {
 	lookup := mockAgeLookup{
-		"young.test":  5,
-		"old.test":    365,
+		"young.test":   5,
+		"old.test":     365,
 		"unknown.test": -1, // simulate "not in lookup"
 	}
 	delete(lookup, "unknown.test")

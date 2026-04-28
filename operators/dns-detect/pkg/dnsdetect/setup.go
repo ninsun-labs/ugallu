@@ -51,7 +51,7 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 		return fmt.Errorf("load DNSDetectConfig %q: %w", opts.ConfigName, err)
 	}
 
-	detectors := buildDetectors(cfg.Spec.Detectors)
+	detectors := buildDetectors(&cfg.Spec.Detectors)
 	src, srcKind, err := buildSource(cfg.Spec.Source)
 	if err != nil {
 		return fmt.Errorf("source setup: %w", err)
@@ -88,7 +88,7 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 
 // buildDetectors instantiates the 5 detectors from the config block.
 // Disabled detectors are silently skipped.
-func buildDetectors(cfg securityv1alpha1.DNSDetectorsConfig) []detector.Detector {
+func buildDetectors(cfg *securityv1alpha1.DNSDetectorsConfig) []detector.Detector {
 	out := make([]detector.Detector, 0, 5)
 	if cfg.Exfiltration.Enabled {
 		minEntropy, _ := strconv.ParseFloat(cfg.Exfiltration.MinEntropy, 64)

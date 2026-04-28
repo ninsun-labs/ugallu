@@ -1,6 +1,10 @@
 // Copyright 2026 The ninsun-labs Authors.
 // SPDX-License-Identifier: Apache-2.0
 
+// Package dnsdetect carries the dispatcher + reconciler wiring for
+// the ugallu-dns-detect operator (design 21 §D). The 5 detectors
+// live in `detector/`, the source backends in `source/`, and the
+// shared event shape in `dnsevent/`.
 package dnsdetect
 
 import (
@@ -22,8 +26,8 @@ type ConfigStatusReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	ConfigName    string
-	ActiveSource  func() securityv1alpha1.DNSDetectSourceMode
+	ConfigName      string
+	ActiveSource    func() securityv1alpha1.DNSDetectSourceMode
 	InflightLookups func() int32
 }
 

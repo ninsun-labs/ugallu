@@ -17,9 +17,9 @@ import (
 // via SetEntries. Two match flavours: exact, and suffix (entry starts
 // with "*.", matching any subdomain).
 type BlocklistDetector struct {
-	mu      sync.RWMutex
-	exact   map[string]string // qname → blocklist source name
-	suffix  map[string]string // ".example.com" → blocklist source name
+	mu     sync.RWMutex
+	exact  map[string]string // qname → blocklist source name
+	suffix map[string]string // ".example.com" → blocklist source name
 }
 
 // NewBlocklistDetector starts with an empty list.
