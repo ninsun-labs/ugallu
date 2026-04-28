@@ -29,5 +29,8 @@ dependencies:
 - name: forensics
   repository: file://charts/forensics
   version: 0.0.1-alpha.1
-digest: sha256:20d4f03a29a48e3deac5487d129a75b44f8d723f30c68324d60a6793993dee53
-generated: "2026-04-28T11:20:26.001320268+02:00"
+- name: monitoring
+  repository: file://charts/monitoring
+  version: 0.0.1-alpha.1
+digest: sha256:22967a81a7ee6a49531eaf79fecf0be7fc7920af38e5e5bdc6540818c381fecd
+generated: "2026-04-28T13:43:41.389915303+02:00"

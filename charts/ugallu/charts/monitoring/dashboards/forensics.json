@@ -1,0 +1,78 @@
+{
+  "title": "ugallu / forensics",
+  "uid": "ugallu-forensics",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "tags": ["ugallu", "wave2", "forensics"],
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Incidents in flight",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "expr": "ugallu_forensics_queue_size", "legendFormat": "queue" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Total captures (24h)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "expr": "sum(increase(ugallu_forensics_incidents_total{outcome=\"completed\"}[24h]))", "legendFormat": "completed" },
+        { "expr": "sum(increase(ugallu_forensics_incidents_total{outcome=\"failed\"}[24h]))", "legendFormat": "failed" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Incident outcomes (rate)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "sum by (outcome) (rate(ugallu_forensics_incidents_total[5m]))", "legendFormat": "{{outcome}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Per-step throughput",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "sum by (step, outcome) (rate(ugallu_forensics_steps_total[5m]))", "legendFormat": "{{step}} {{outcome}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Predicate skips (per reason)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "sum by (reason) (rate(ugallu_forensics_skipped_total[5m]))", "legendFormat": "{{reason}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Recovery + auto-unfreeze",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "sum by (outcome) (rate(ugallu_forensics_recovery_total[5m]))", "legendFormat": "recovery {{outcome}}" },
+        { "expr": "sum by (outcome) (rate(ugallu_forensics_auto_unfreeze_total[5m]))", "legendFormat": "auto-unfreeze {{outcome}}" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "CNI detect failures",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "rate(ugallu_forensics_cni_detect_failures_total[5m])", "legendFormat": "discover errs" }
+      ]
+    }
+  ]
+}

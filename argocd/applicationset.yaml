@@ -80,6 +80,10 @@ spec:
             wave: "2"
             path: charts/ugallu/charts/forensics
             component: forensics
+          - name: ugallu-monitoring
+            wave: "3"
+            path: charts/ugallu/charts/monitoring
+            component: monitoring
 
           # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs

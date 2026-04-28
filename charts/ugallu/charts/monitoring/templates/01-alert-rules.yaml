@@ -1,0 +1,202 @@
+{{- if .Values.alertRules.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ugallu-wave2-alerts
+  namespace: {{ include "monitoring.namespace" . }}
+  labels:
+    {{- include "monitoring.labels" . | nindent 4 }}
+    {{- with .Values.alertRules.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    # ===== audit-detection =====================================
+    - name: ugallu.audit-detection
+      interval: 30s
+      rules:
+        - alert: UgalluAuditWebhookAuthFailures
+          expr: |
+            rate(ugallu_audit_webhook_auth_failures_total[{{ .Values.alertRules.rateWindow }}]) > 0.1
+          for: 2m
+          labels:
+            severity: warning
+            component: audit-detection
+          annotations:
+            summary: "audit-detection webhook bearer-token failures"
+            description: |
+              Webhook source rejected >0.1 POST/s with bearer-token
+              mismatch over {{ .Values.alertRules.rateWindow }}.
+              Either the apiserver audit-webhook kubeconfig drifted
+              from ugallu-audit-webhook-token, or someone is probing.
+            runbook: "https://github.com/ninsun-labs/ugallu/blob/main/operators/audit-detection/README.md#alerts"
+
+        - alert: UgalluAuditWebhookBackpressure
+          expr: |
+            rate(ugallu_audit_webhook_backpressure_total[{{ .Values.alertRules.rateWindow }}]) > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: audit-detection
+          annotations:
+            summary: "audit-detection webhook is shedding events (503)"
+            description: |
+              Backpressure 503s for {{ .Values.alertRules.rateWindow }}+
+              mean the events channel is full faster than the engine
+              can drain. Check rule count + per-rule rate limits.
+
+        - alert: UgalluAuditFileSourceParseErrors
+          expr: |
+            rate(ugallu_audit_file_parse_errors_total[{{ .Values.alertRules.rateWindow }}])
+              / clamp_min(rate(ugallu_audit_file_lines_total[{{ .Values.alertRules.rateWindow }}]), 1) > 0.05
+          for: 10m
+          labels:
+            severity: warning
+            component: audit-detection
+          annotations:
+            summary: "audit-detection file source parse-error ratio above 5%"
+            description: |
+              >5% of tailed audit-log lines failed JSON unmarshal
+              over {{ .Values.alertRules.rateWindow }}. Could be a
+              kubelet audit policy mismatch or a corrupted log
+              rotation event.
+
+        - alert: UgalluAuditRuleEmitErrors
+          expr: |
+            sum by (rule) (rate(ugallu_audit_rule_emit_errors_total[{{ .Values.alertRules.rateWindow }}])) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: audit-detection
+          annotations:
+            summary: "audit-detection rule emit failures on {{`{{ $labels.rule }}`}}"
+            description: |
+              Per-rule SE create errors persist for 5m+ — likely an
+              admission policy block or RBAC drift. Check audit-
+              detection logs for the underlying error.
+
+        - alert: UgalluAuditRuleCompileErrors
+          expr: |
+            sum(increase(ugallu_audit_rule_compile_errors_total[{{ .Values.alertRules.rateWindow }}])) > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: audit-detection
+          annotations:
+            summary: "audit-detection sigma rule compile failures"
+            description: |
+              A SigmaRule failed compile during the last reconcile
+              window. The CR's status.parseError carries the
+              detail; the engine drops the rule from the active set
+              until it parses again.
+
+    # ===== forensics ==========================================
+    - name: ugallu.forensics
+      interval: 30s
+      rules:
+        - alert: UgalluForensicsIncidentsFailing
+          expr: |
+            rate(ugallu_forensics_incidents_total{outcome="failed"}[{{ .Values.alertRules.rateWindow }}]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            component: forensics
+          annotations:
+            summary: "forensics incident captures failing"
+            description: |
+              Pipeline failures persist for 2m+. Inspect
+              IncidentCaptureFailed SEs and the operator logs
+              (failure.step / failure.message signals).
+
+        - alert: UgalluForensicsRecoveryActive
+          expr: |
+            sum(increase(ugallu_forensics_recovery_total[{{ .Values.alertRules.rateWindow }}])) > 0
+          for: 0m
+          labels:
+            severity: info
+            component: forensics
+          annotations:
+            summary: "forensics crash-recovery sweep ran"
+            description: |
+              Recovery reclaimed/failed at least one Pending ER.
+              Expected after an operator restart; sustained
+              non-zero here means the operator is restart-looping
+              and should be investigated.
+
+        - alert: UgalluForensicsSnapshotTruncated
+          expr: |
+            sum(increase(ugallu_forensics_steps_total{step="filesystem_snapshot",outcome="error"}[{{ .Values.alertRules.rateWindow }}])) > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: forensics
+          annotations:
+            summary: "forensics filesystem-snapshot step erroring"
+            description: |
+              Snapshot step failures persist. Common causes:
+              MaxBytes ceiling hit (truncated upload), ephemeral
+              container PSA reject, kubelet timeout.
+
+        - alert: UgalluForensicsCniDetectFailures
+          expr: |
+            increase(ugallu_forensics_cni_detect_failures_total[{{ .Values.alertRules.rateWindow }}]) > 0
+          for: 15m
+          labels:
+            severity: warning
+            component: forensics
+          annotations:
+            summary: "forensics CNI-detect probe failing"
+            description: |
+              The discovery probe that picks Cilium-vs-CoreV1 keeps
+              failing. The operator falls back to the cached
+              backend, so freezes still work, but the auto-refresh
+              is dead — investigate apiserver discovery RBAC.
+
+        - alert: UgalluForensicsQueuePressure
+          expr: |
+            ugallu_forensics_queue_size > 50
+          for: 5m
+          labels:
+            severity: warning
+            component: forensics
+          annotations:
+            summary: "forensics incident queue pressure"
+            description: |
+              MaxConcurrentIncidents is full and the queue holds
+              >50 deferred trigger SEs. Either bump the cap (spec.
+              maxConcurrentIncidents) or investigate which Sigma
+              rule is firing in burst.
+
+    # ===== emitter SDK (cross-cutting) ========================
+    - name: ugallu.emitter
+      interval: 30s
+      rules:
+        - alert: UgalluEmitterDropsHigh
+          expr: |
+            sum by (reason) (rate(ugallu_emitter_dropped_total[{{ .Values.alertRules.rateWindow }}])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            component: emitter
+          annotations:
+            summary: "emitter SDK dropping events: {{`{{ $labels.reason }}`}}"
+            description: |
+              SE emit drops >0.05/s — buffer_full / permanent /
+              ratelimit_ctx_cancel each surface a distinct issue.
+              Check the originating component's logs.
+
+        - alert: UgalluEmitterBufferStuck
+          expr: |
+            ugallu_emitter_buffer_depth > 100
+          for: 10m
+          labels:
+            severity: critical
+            component: emitter
+          annotations:
+            summary: "emitter retry buffer is not draining"
+            description: |
+              Retry-buffer depth above 100 for 10m+ means the
+              emitter cannot reach the apiserver to commit pending
+              SEs. Likely admission policy block or apiserver
+              outage.
+{{- end }}

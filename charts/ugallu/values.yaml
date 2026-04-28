@@ -72,3 +72,10 @@ audit-detection:
 # elected in ugallu-system-privileged.
 forensics:
   enabled: true
+
+# monitoring subchart (Wave 2 §IV): PrometheusRule + Grafana
+# dashboards covering audit-detection / forensics / emitter SDK.
+# Disable when the cluster has no kube-prometheus-stack;
+# the manifests still apply but PrometheusRule has no consumer.
+monitoring:
+  enabled: true

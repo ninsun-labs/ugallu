@@ -1,0 +1,36 @@
+global:
+  namespaces:
+    monitoring: monitoring
+
+# PrometheusRule emission. Disable when the cluster doesn't run
+# kube-prometheus-stack (the kind has no native consumer in
+# vanilla Prometheus); the alert YAML can still be applied
+# manually.
+alertRules:
+  enabled: true
+  # The kube-prometheus-stack convention selects rules by label.
+  # Override when your operator instance uses a different selector.
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+  # Window over which counter rates are evaluated. Bumped to 5m
+  # to dampen flap on bursty workloads.
+  rateWindow: 5m
+
+# Grafana dashboards via the Grafana Operator sidecar discovery
+# pattern: ConfigMaps labelled `grafana_dashboard=1` are
+# auto-loaded. Switch the label when your Grafana uses a custom
+# discovery selector.
+dashboards:
+  enabled: true
+  labels:
+    grafana_dashboard: "1"
+  # The folder Grafana files dashboards under. Most Grafana
+  # operator setups use the "k8s_sidecar_target_directory" label
+  # to route to a custom folder; the empty default lands in
+  # "General".
+  folder: ""
+
+# Namespace where the artifacts land. Defaults to "monitoring";
+# override when your kube-prometheus-stack lives elsewhere.
+namespace: monitoring
