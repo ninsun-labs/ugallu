@@ -58,6 +58,10 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
+          # Multi-module workspace: no go.mod at repo root, only go.work.
+          # Hash every leaf go.sum so setup-go's restore-cache stops
+          # warning + actually warms across modules.
+          cache-dependency-path: '**/go.sum'
 
       - name: Compute image tag
         id: tag
@@ -121,10 +125,14 @@ jobs:
 
       - name: Attach SBOM (cosign attestation)
         run: |
+          # Single-quote the docker --format so bash passes the {{ }}
+          # delimiters through verbatim. GHA only evaluates ${{ ... }}
+          # (with dollar); plain {{ ... }} is literal in YAML and
+          # arrives at docker's Go-template parser as written.
           cosign attest --yes \
             --predicate <(docker buildx imagetools inspect \
               ${{ env.REGISTRY }}/${{ matrix.binary }}:${{ steps.tag.outputs.tag }} \
-              --format "{{ '{{' }} json .SBOM.SPDX {{ '}}' }}") \
+              --format '{{ json .SBOM.SPDX }}') \
             --type spdxjson \
             ${{ env.REGISTRY }}/${{ matrix.binary }}@${{ steps.build.outputs.digest }}
 
