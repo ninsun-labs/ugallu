@@ -14,3 +14,9 @@ ttlControllerSAName: ugallu-ttl
 # add break-glass admins if your operations need a fallback.
 frozenLabelAuthorizedSAs:
   - system:serviceaccount:ugallu-system-privileged:ugallu-forensics
+
+# SAs allowed to set the `ugallu.io/incident-acknowledged=true`
+# annotation on Forensic-class SEs (Policy 8). Empty default = no
+# one can manually ack until an admin populates the list. The
+# pattern mirrors Policy 4 + ackAuthorizedSAs.
+forensicsAckAuthorizedSAs: []

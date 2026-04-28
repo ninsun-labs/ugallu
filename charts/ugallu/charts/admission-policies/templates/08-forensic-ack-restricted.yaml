@@ -1,0 +1,73 @@
+{{- /*
+Policy 8 - The `ugallu.io/incident-acknowledged` annotation on
+Forensic SecurityEvents is reserved for the SAs listed in
+ForensicsConfig.spec.cleanup.acknowledgeAuthorizedSAs.
+
+The annotation is the human-in-the-loop signal that closes an
+incident: stamping it triggers the manual unfreeze flow. Without
+this gate, anyone with `securityevents` patch RBAC could
+silently dismiss every incident and undo the freeze.
+
+Distinct from Policy 4 (Status.Acknowledged on SE / ER):
+  - Policy 4 gates `status.acknowledged` (transition false → true).
+  - Policy 8 gates `metadata.annotations[ugallu.io/incident-acknowledged]`
+    becoming "true" on Forensic-class SEs.
+
+The SA allowlist is plumbed through the chart values
+(`forensicsAckAuthorizedSAs`) so production operators can update
+it without touching the policy itself.
+*/ -}}
+{{- $authorized := .Values.forensicsAckAuthorizedSAs | default list -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.forensic-ack-restricted
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents"]
+  matchConditions:
+    - name: forensic-class
+      # Skip when the SE isn't Forensic. Generic SEs go through
+      # Policy 4's status.acknowledged path instead.
+      expression: |
+        has(object.spec) && object.spec.class == 'Forensic'
+    - name: ack-becoming-true
+      # The annotation is "becoming true" when its value flips
+      # from absent / non-true to "true". Optional-index keeps
+      # the CEL legal even when annotations is unset on either
+      # side of the request.
+      expression: |
+        object.metadata.?annotations[?'ugallu.io/incident-acknowledged'].orValue('') == 'true' &&
+        oldObject.metadata.?annotations[?'ugallu.io/incident-acknowledged'].orValue('') != 'true'
+  validations:
+    - expression: |
+        request.userInfo.username in [
+        {{- range $i, $sa := $authorized }}{{ if $i }},{{ end }}
+          '{{ $sa }}'
+        {{- end }}
+        ]
+      message: "Setting the ugallu.io/incident-acknowledged annotation on Forensic SecurityEvents requires an SA listed in ForensicsConfig.spec.cleanup.acknowledgeAuthorizedSAs."
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.forensic-ack-restricted
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.forensic-ack-restricted
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["UPDATE"]
+        resources:   ["securityevents"]
