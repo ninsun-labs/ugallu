@@ -54,3 +54,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/backpressure
     condition: backpressure.enabled
+  - name: audit-detection
+    version: 0.0.1-alpha.1
+    repository: file://charts/audit-detection
+    condition: audit-detection.enabled

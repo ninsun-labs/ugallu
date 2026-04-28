@@ -23,5 +23,8 @@ dependencies:
 - name: backpressure
   repository: file://charts/backpressure
   version: 0.0.1-alpha.1
-digest: sha256:9d996e39fb5b5b75a8b9415b83bb681b140714d601635d371033ecb4b07c53d4
-generated: "2026-04-27T18:40:07.99180776+02:00"
+- name: audit-detection
+  repository: file://charts/audit-detection
+  version: 0.0.1-alpha.1
+digest: sha256:3fbf68c70e1d24ccc133ec2208e5027462890b3d0c2971d298c0b3ab126a2e38
+generated: "2026-04-28T09:00:44.187230734+02:00"

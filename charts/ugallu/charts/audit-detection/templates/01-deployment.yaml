@@ -1,0 +1,94 @@
+{{- if eq .Values.source.mode "webhook" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ugallu-audit-detection
+  namespace: {{ include "auditdetection.namespace" . }}
+  labels:
+    {{- include "auditdetection.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "auditdetection.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "auditdetection.labels" . | nindent 8 }}
+      annotations:
+        ugallu.io/scaffold: {{ .Values.placeholder | quote }}
+    spec:
+      serviceAccountName: ugallu-audit-detection
+      priorityClassName: system-cluster-critical
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: audit-detection
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ toJson .Values.command }}
+          args: {{ include "auditdetection.args" . }}
+          env:
+            {{- include "auditdetection.env" . | nindent 12 }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metricsPort }}
+              protocol: TCP
+            - name: webhook
+              containerPort: 8443
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.source.webhook.tlsSecretRef.secretName }}
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            {{- end }}
+            {{- if .Values.source.webhook.clientCASecretRef.secretName }}
+            - name: client-ca
+              mountPath: /client-ca
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.source.webhook.tlsSecretRef.secretName }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.source.webhook.tlsSecretRef.secretName }}
+        {{- end }}
+        {{- if .Values.source.webhook.clientCASecretRef.secretName }}
+        - name: client-ca
+          secret:
+            secretName: {{ .Values.source.webhook.clientCASecretRef.secretName }}
+        {{- end }}
+{{- end }}

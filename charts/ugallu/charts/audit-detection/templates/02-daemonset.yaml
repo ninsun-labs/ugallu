@@ -1,0 +1,77 @@
+{{- if eq .Values.source.mode "file" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ugallu-audit-detection
+  namespace: {{ include "auditdetection.namespace" . }}
+  labels:
+    {{- include "auditdetection.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "auditdetection.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "auditdetection.labels" . | nindent 8 }}
+      annotations:
+        ugallu.io/scaffold: {{ .Values.placeholder | quote }}
+    spec:
+      serviceAccountName: ugallu-audit-detection
+      priorityClassName: system-node-critical
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: audit-detection
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ toJson .Values.command }}
+          args: {{ include "auditdetection.args" . }}
+          env:
+            {{- include "auditdetection.env" . | nindent 12 }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metricsPort }}
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: audit-log
+              mountPath: /host/audit
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: audit-log
+          hostPath:
+            path: {{ .Values.source.file.hostPath }}
+            type: DirectoryOrCreate
+{{- end }}

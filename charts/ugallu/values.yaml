@@ -59,3 +59,10 @@ gitops-responder:
   enabled: true
 backpressure:
   enabled: true
+
+# audit-detection subchart (Wave 2 §A): apiserver audit log → Sigma rule
+# engine → SecurityEvent. Default mode is webhook (apiserver pushes
+# batched events over HTTPS); flip source.mode to "file" for the
+# DaemonSet that tails the kubelet/apiserver audit-log file.
+audit-detection:
+  enabled: true

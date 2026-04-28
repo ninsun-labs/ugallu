@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ugallu-audit-detection-metrics
+  namespace: {{ include "auditdetection.namespace" . }}
+  labels:
+    {{- include "auditdetection.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "auditdetection.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+{{- if eq .Values.source.mode "webhook" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ugallu-audit-detection-webhook
+  namespace: {{ include "auditdetection.namespace" . }}
+  labels:
+    {{- include "auditdetection.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "auditdetection.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: https
+      port: 443
+      targetPort: webhook
+      protocol: TCP
+{{- end }}

@@ -25,6 +25,14 @@ rules:
   - apiGroups: ["security.ugallu.io"]
     resources: ["securityevents"]
     verbs: ["create"]
+
+  # Watch SigmaRule CRDs and surface compile/match status back.
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["sigmarules"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["sigmarules/status"]
+    verbs: ["update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

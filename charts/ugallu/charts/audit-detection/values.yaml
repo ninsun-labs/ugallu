@@ -1,0 +1,71 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+# Source mode picks the audit-event backend:
+#   - webhook: HTTPS POST endpoint (apiserver audit-webhook backend, design 20 §A2 Phase 2).
+#              Renders as a singleton Deployment + Service.
+#   - file:    tail kubelet/apiserver audit-log file (design 20 §A2 Phase 1).
+#              Renders as a DaemonSet that hostPath-mounts the audit log.
+source:
+  mode: webhook
+
+  webhook:
+    listenAddr: ":8443"
+    path: "/v1/audit"
+    # Bearer token shared secret. Stored in a Secret named below; the
+    # deployment exposes it as env AUDIT_WEBHOOK_TOKEN. When sharedSecretRef
+    # is empty, the operator runs in mTLS-only mode (clientCASecretRef
+    # required).
+    sharedSecretRef:
+      secretName: ugallu-audit-webhook-token
+      key: token
+    # TLS material:
+    #   tlsSecretRef points at a tls.crt/tls.key Secret.
+    #   clientCASecretRef points at an mTLS bundle (optional).
+    tlsSecretRef:
+      secretName: ugallu-audit-webhook-tls
+    clientCASecretRef:
+      secretName: ""
+
+  file:
+    # Path inside the pod (the host audit log is bind-mounted at this path).
+    path: /host/audit/audit.log
+    # Host path that contains the audit log file. The DaemonSet mounts
+    # this read-only.
+    hostPath: /var/log/audit
+
+# Cluster identity stamped on every emitted SecurityEvent.
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# Placeholder until the real binary lands at ghcr.io/ninsun-labs/ugallu/audit-detection.
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+# When placeholder=true the container runs sleep so the pod stays alive
+# for kubectl/Argo health checks. Replace with the real argv when the
+# binary image is published.
+command: ["/bin/sleep", "infinity"]
+args: []
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: "10m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+metricsPort: 9090
+healthProbePort: 8081
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
