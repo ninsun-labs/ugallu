@@ -12,12 +12,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsdetect"
+	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
-func mkEvent(qname, qtype string, dstPort uint16) *dnsdetect.DNSEvent {
-	return &dnsdetect.DNSEvent{
-		Source:     dnsdetect.DNSSourceCoreDNSPlugin,
+func mkEvent(qname, qtype string, dstPort uint16) *dnsevent.DNSEvent {
+	return &dnsevent.DNSEvent{
+		Source:     dnsevent.SourceCoreDNSPlugin,
 		QName:      qname,
 		QType:      qtype,
 		DstIP:      net.IPv4(10, 0, 0, 53),

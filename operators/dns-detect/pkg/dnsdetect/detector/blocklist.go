@@ -9,7 +9,7 @@ import (
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 
-	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsdetect"
+	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
 // BlocklistDetector matches qname against an admin-curated FQDN list.
@@ -59,7 +59,7 @@ func (d *BlocklistDetector) Name() string { return "blocklist" }
 
 // Evaluate matches qname (case-insensitive, trailing-dot-stripped)
 // against the active blocklist.
-func (d *BlocklistDetector) Evaluate(ev *dnsdetect.DNSEvent) Finding {
+func (d *BlocklistDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if ev == nil {
 		return Finding{}
 	}
@@ -81,7 +81,7 @@ func (d *BlocklistDetector) Evaluate(ev *dnsdetect.DNSEvent) Finding {
 	return Finding{}
 }
 
-func (d *BlocklistDetector) fire(ev *dnsdetect.DNSEvent, qname, src, matchedPattern string) Finding {
+func (d *BlocklistDetector) fire(ev *dnsevent.DNSEvent, qname, src, matchedPattern string) Finding {
 	return Finding{
 		Type:     securityv1alpha1.TypeDNSToBlocklistedFQDN,
 		Severity: string(securityv1alpha1.SeverityHigh),

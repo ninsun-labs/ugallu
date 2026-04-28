@@ -14,7 +14,7 @@ import (
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 
-	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsdetect"
+	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
 // base64Pattern matches a label that looks like base64 (16+ chars,
@@ -52,7 +52,7 @@ func (d *TunnelingDetector) Name() string { return "tunneling" }
 
 // Evaluate runs the heuristic. Returns at most one Finding per
 // (Pod, ratelimitPerPod) window.
-func (d *TunnelingDetector) Evaluate(ev *dnsdetect.DNSEvent) Finding {
+func (d *TunnelingDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if ev == nil || ev.SubjectUID == "" {
 		return Finding{}
 	}

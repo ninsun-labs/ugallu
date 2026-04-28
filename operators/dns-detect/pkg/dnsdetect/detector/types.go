@@ -10,7 +10,7 @@ package detector
 import (
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsdetect"
+	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
 // Finding is the structured output of a detector hit. Empty Type
@@ -40,5 +40,5 @@ type Subject struct {
 // DNSEvent and decides if it fires.
 type Detector interface {
 	Name() string
-	Evaluate(ev *dnsdetect.DNSEvent) Finding
+	Evaluate(ev *dnsevent.DNSEvent) Finding
 }

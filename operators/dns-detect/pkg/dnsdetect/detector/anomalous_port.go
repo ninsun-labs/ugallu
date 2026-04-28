@@ -8,7 +8,7 @@ import (
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 
-	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsdetect"
+	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
 // AnomalousPortDetector flags DNS queries directed at a non-53 port.
@@ -24,7 +24,7 @@ func (d *AnomalousPortDetector) Name() string { return "anomalous_port" }
 // Evaluate fires whenever DstPort != 53. Skips events with
 // DstPort=0 (the source backend didn't populate the field — rare,
 // but Tetragon kprobe sometimes elides).
-func (d *AnomalousPortDetector) Evaluate(ev *dnsdetect.DNSEvent) Finding {
+func (d *AnomalousPortDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if ev == nil || ev.DstPort == 0 || ev.DstPort == 53 {
 		return Finding{}
 	}

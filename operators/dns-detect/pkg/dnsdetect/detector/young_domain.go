@@ -11,7 +11,7 @@ import (
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 
-	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsdetect"
+	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
 // YoungDomainConfig matches DNSDetectConfig.spec.detectors.youngDomain.
@@ -61,7 +61,7 @@ func (d *YoungDomainDetector) Name() string { return "young_domain" }
 
 // Evaluate looks up the registrable domain (TLD+1 heuristic) and
 // fires when its age is below the threshold.
-func (d *YoungDomainDetector) Evaluate(ev *dnsdetect.DNSEvent) Finding {
+func (d *YoungDomainDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if d == nil || d.lookup == nil || ev == nil {
 		return Finding{}
 	}

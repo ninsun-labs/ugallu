@@ -13,7 +13,7 @@ import (
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 
-	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsdetect"
+	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
 // ExfiltrationConfig matches DNSDetectConfig.spec.detectors.exfiltration
@@ -66,7 +66,7 @@ func (d *ExfiltrationDetector) Name() string { return "exfiltration" }
 // Evaluate runs the heuristic. State is keyed on the resolved Subject
 // UID — events from External (unresolved) sources skip the detector
 // since rarely-seen external sources don't have a meaningful "window".
-func (d *ExfiltrationDetector) Evaluate(ev *dnsdetect.DNSEvent) Finding {
+func (d *ExfiltrationDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if ev == nil || ev.SubjectUID == "" {
 		return Finding{}
 	}
@@ -152,7 +152,7 @@ func leftmostLabel(qname string) string {
 	return qname
 }
 
-func subjectFromEvent(ev *dnsdetect.DNSEvent) Subject {
+func subjectFromEvent(ev *dnsevent.DNSEvent) Subject {
 	if ev.Pod.Namespace == "" || ev.Pod.Name == "" {
 		s := Subject{Kind: "External", Unresolved: true}
 		if ev.SrcIP != nil {
