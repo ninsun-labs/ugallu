@@ -42,9 +42,11 @@ kubectl create configmap trillian-schema \
   --dry-run=client -o yaml | kubectl apply -f -
 
 info "Applying Rekor stack manifest"
-# - The createtree Job has an immutable Spec template; delete + recreate.
-# - The rekor-config ConfigMap must NOT pre-exist with an empty
-#   treeID, otherwise scaffolding/createtree skips creation.
+# The createtree Job has an immutable Spec template; delete + recreate.
+# Stale-tree recovery (rekor-config.treeID present but Trillian
+# already lost the tree) is handled AFTER trillian is up — see the
+# signer-log probe further down — because that's the only reliable
+# signal that the tree is gone.
 kubectl -n ugallu-evidence delete job createtree --ignore-not-found --wait=true >/dev/null 2>&1 || true
 if [[ -z "$(kubectl -n ugallu-evidence get cm rekor-config -o jsonpath='{.data.treeID}' 2>/dev/null)" ]]; then
   kubectl -n ugallu-evidence delete cm rekor-config --ignore-not-found --wait=true >/dev/null 2>&1 || true
@@ -59,6 +61,20 @@ kubectl -n ugallu-evidence rollout status deployment/redis --timeout=300s
 info "Waiting for Trillian log server + signer"
 kubectl -n ugallu-evidence rollout status deployment/trillian-log-server --timeout=300s
 kubectl -n ugallu-evidence rollout status deployment/trillian-log-signer --timeout=300s
+
+# Stale-tree recovery: if rekor-config.treeID points at a tree
+# Trillian no longer holds (signer reports "0 active logs"),
+# delete the CM and bounce createtree so a fresh tree is provisioned.
+existing_tree="$(kubectl -n ugallu-evidence get cm rekor-config -o jsonpath='{.data.treeID}' 2>/dev/null || true)"
+if [[ -n "$existing_tree" ]]; then
+  signer_log="$(kubectl -n ugallu-evidence logs deploy/trillian-log-signer --tail=50 2>/dev/null || true)"
+  if echo "$signer_log" | grep -q "Acting as master for 0 / 0 active logs"; then
+    info "trillian holds no active logs but rekor-config.treeID=$existing_tree is set — recreating tree"
+    kubectl -n ugallu-evidence delete cm rekor-config --ignore-not-found --wait=true >/dev/null
+    kubectl -n ugallu-evidence delete job createtree --ignore-not-found --wait=true >/dev/null
+    kubectl apply -f "${SCRIPT_DIR}/rekor.yaml" >/dev/null
+  fi
+fi
 
 info "Waiting for createtree job (writes treeID into rekor-config ConfigMap)"
 kubectl -n ugallu-evidence wait --for=condition=Complete job/createtree --timeout=300s
