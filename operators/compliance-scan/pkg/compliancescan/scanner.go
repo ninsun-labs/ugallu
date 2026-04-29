@@ -39,10 +39,16 @@ func ScannerFor(spec *securityv1alpha1.ComplianceScanRunSpec, opts *ScannerOpts)
 	case securityv1alpha1.ComplianceScanBackendKubeBench:
 		return newRealKubeBenchScanner(opts.Client, opts.JobNamespace, opts.KubeBenchImage, 0), nil
 	case securityv1alpha1.ComplianceScanBackendFalco:
-		// Falco backend stays a stub in v0.1.0 — the lab cluster has
-		// no Falco DaemonSet to query. Real integration lands once a
-		// Falco install pipeline is wired (Wave 5+).
-		return &falcoScanner{}, nil
+		if opts.FalcoHost == "" {
+			// No Falco endpoint configured → degrade to the stub so
+			// the operator surfaces an actionable finding rather
+			// than erroring the run.
+			return &falcoScanner{}, nil
+		}
+		return newRealFalcoScanner(
+			opts.FalcoHost, opts.FalcoPort,
+			opts.FalcoCertFile, opts.FalcoKeyFile, opts.FalcoCARootFile, 0,
+		), nil
 	case securityv1alpha1.ComplianceScanBackendCELCustom:
 		return &celCustomScanner{}, nil
 	default:
@@ -55,6 +61,14 @@ type ScannerOpts struct {
 	Client         client.Client
 	JobNamespace   string
 	KubeBenchImage string
+
+	// Falco backend (real path). Empty FalcoHost falls back to the
+	// stub finding so misconfigured clusters don't error the run.
+	FalcoHost       string
+	FalcoPort       uint16
+	FalcoCertFile   string
+	FalcoKeyFile    string
+	FalcoCARootFile string
 }
 
 // celCustomScanner is the v0.1.0 in-tree backend. It walks the

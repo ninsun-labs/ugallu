@@ -51,12 +51,26 @@ func runMain() error {
 		leaderElectionNS string
 		clusterID        string
 		clusterName      string
+		jobNamespace     string
+		kubeBenchImage   string
+		falcoHost        string
+		falcoPort        uint
+		falcoCertFile    string
+		falcoKeyFile     string
+		falcoCARootFile  string
 	)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "Prometheus metrics bind address")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "Health probe bind address")
 	flag.StringVar(&leaderElectionNS, "leader-election-namespace", "ugallu-system", "Leader election Lease namespace")
 	flag.StringVar(&clusterID, "cluster-id", "", "ClusterIdentity.ClusterID stamped on emitted SecurityEvents")
 	flag.StringVar(&clusterName, "cluster-name", "", "ClusterIdentity.ClusterName stamped on emitted SecurityEvents")
+	flag.StringVar(&jobNamespace, "job-namespace", "ugallu-system-privileged", "Namespace where the kube-bench backend templates its privileged Job")
+	flag.StringVar(&kubeBenchImage, "kube-bench-image", "", "Override the kube-bench image (empty = chart default)")
+	flag.StringVar(&falcoHost, "falco-host", "", "Falco gRPC hostname (empty = degrade to stub for the falco backend)")
+	flag.UintVar(&falcoPort, "falco-port", 5060, "Falco gRPC port")
+	flag.StringVar(&falcoCertFile, "falco-cert-file", "/etc/falco-client-certs/client.crt", "Path to the client certificate for the Falco mTLS handshake")
+	flag.StringVar(&falcoKeyFile, "falco-key-file", "/etc/falco-client-certs/client.key", "Path to the client key for the Falco mTLS handshake")
+	flag.StringVar(&falcoCARootFile, "falco-ca-root-file", "/etc/falco-client-certs/ca.crt", "Path to the CA root cert chain that issued the Falco server cert")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
@@ -95,7 +109,14 @@ func runMain() error {
 			ClusterID:   clusterID,
 			ClusterName: clusterName,
 		},
-		Emitter: emitter,
+		Emitter:         emitter,
+		JobNamespace:    jobNamespace,
+		KubeBenchImage:  kubeBenchImage,
+		FalcoHost:       falcoHost,
+		FalcoPort:       uint16(falcoPort), //nolint:gosec // CLI flag is bounded; uint16 cast is safe.
+		FalcoCertFile:   falcoCertFile,
+		FalcoKeyFile:    falcoKeyFile,
+		FalcoCARootFile: falcoCARootFile,
 	}); err != nil {
 		return fmt.Errorf("compliance-scan reconcilers setup: %w", err)
 	}

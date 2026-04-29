@@ -59,6 +59,16 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            {{- if and .Values.falco.enabled .Values.falco.certsSecret }}
+            - name: falco-client-certs
+              mountPath: /etc/falco-client-certs
+              readOnly: true
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}
+        {{- if and .Values.falco.enabled .Values.falco.certsSecret }}
+        - name: falco-client-certs
+          secret:
+            secretName: {{ .Values.falco.certsSecret }}
+        {{- end }}

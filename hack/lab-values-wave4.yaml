@@ -108,6 +108,13 @@ compliance-scan:
     - --leader-election-namespace=ugallu-system
     - --cluster-id=rke2-lab
     - --cluster-name=rke2-lab
+    - --falco-host=falco-grpc.falco.svc
+    - --falco-port=5060
+  falco:
+    enabled: true
+    host: falco-grpc.falco.svc
+    port: 5060
+    certsSecret: falco-client-certs
 
 confidential-attestation:
   enabled: true

@@ -30,6 +30,14 @@ type Options struct {
 	// KubeBenchImage overrides the upstream image; useful for
 	// air-gapped clusters that mirror the image.
 	KubeBenchImage string
+
+	// Falco gRPC endpoint + mTLS material. Empty FalcoHost falls
+	// back to the stub finding for the falco backend.
+	FalcoHost       string
+	FalcoPort       uint16
+	FalcoCertFile   string
+	FalcoKeyFile    string
+	FalcoCARootFile string
 }
 
 // SetupWithManager registers the ComplianceScanRun reconciler.
@@ -47,6 +55,11 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 		ClusterIdentity: opts.ClusterIdentity,
 		JobNamespace:    opts.JobNamespace,
 		KubeBenchImage:  opts.KubeBenchImage,
+		FalcoHost:       opts.FalcoHost,
+		FalcoPort:       opts.FalcoPort,
+		FalcoCertFile:   opts.FalcoCertFile,
+		FalcoKeyFile:    opts.FalcoKeyFile,
+		FalcoCARootFile: opts.FalcoCARootFile,
 	}
 	if err := r.SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("compliance-scan reconciler: %w", err)

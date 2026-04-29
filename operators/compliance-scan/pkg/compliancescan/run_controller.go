@@ -32,6 +32,14 @@ type RunReconciler struct {
 	// KubeBenchImage overrides the upstream kube-bench image the
 	// Job runs.
 	KubeBenchImage string
+
+	// Falco gRPC endpoint + mTLS material. Empty FalcoHost
+	// degrades the falco backend to a stub finding.
+	FalcoHost       string
+	FalcoPort       uint16
+	FalcoCertFile   string
+	FalcoKeyFile    string
+	FalcoCARootFile string
 }
 
 // SetupWithManager wires the reconciler.
@@ -71,9 +79,14 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 // execute dispatches to the backend scanner and writes the result.
 func (r *RunReconciler) execute(ctx context.Context, run *securityv1alpha1.ComplianceScanRun) (ctrl.Result, error) {
 	scanner, err := ScannerFor(&run.Spec, &ScannerOpts{
-		Client:         r.Client,
-		JobNamespace:   r.JobNamespace,
-		KubeBenchImage: r.KubeBenchImage,
+		Client:          r.Client,
+		JobNamespace:    r.JobNamespace,
+		KubeBenchImage:  r.KubeBenchImage,
+		FalcoHost:       r.FalcoHost,
+		FalcoPort:       r.FalcoPort,
+		FalcoCertFile:   r.FalcoCertFile,
+		FalcoKeyFile:    r.FalcoKeyFile,
+		FalcoCARootFile: r.FalcoCARootFile,
 	})
 	if err != nil {
 		return r.fail(ctx, run, err.Error())

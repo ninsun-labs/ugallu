@@ -15,6 +15,22 @@ image:
 command: ["/bin/sleep", "infinity"]
 args: []
 
+# Falco backend (optional). When falco.enabled=true the operator
+# dials Falco's gRPC outputs.Get RPC over mTLS. The client cert
+# must be issued by the same CA Falco was configured with.
+falco:
+  enabled: false
+  host: ""
+  port: 5060
+  # Secret carrying client.crt + client.key + ca.crt — mounted
+  # read-only at /etc/falco-client-certs.
+  certsSecret: ""
+
+# kube-bench backend Job knobs.
+kubeBench:
+  jobNamespace: ugallu-system-privileged
+  image: ""
+
 metricsPort: 9090
 healthProbePort: 8081
 

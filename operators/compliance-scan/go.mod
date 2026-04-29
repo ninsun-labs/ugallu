@@ -3,6 +3,7 @@ module github.com/ninsun-labs/ugallu/operators/compliance-scan
 go 1.26.2
 
 require (
+	github.com/falcosecurity/client-go v0.6.1
 	github.com/ninsun-labs/ugallu/sdk v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.35.0
 	k8s.io/apimachinery v0.35.0
@@ -23,6 +24,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
