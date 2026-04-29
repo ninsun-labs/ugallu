@@ -321,4 +321,9 @@ const (
 	TypeComplianceScanStarted   = "ComplianceScanStarted"
 	TypeComplianceScanCompleted = "ComplianceScanCompleted"
 	TypeComplianceScanFailed    = "ComplianceScanFailed"
+
+	// Compliance + Detection (confidential-attestation — Wave 4 §S6).
+	TypeAttestationStarted  = "AttestationStarted"
+	TypeAttestationVerified = "AttestationVerified"
+	TypeAttestationFailed   = "AttestationFailed"
 )

@@ -13,6 +13,9 @@ package v1alpha1
 var KnownTypes = map[string]struct{}{
 	TypeAnonymousAccess:              {},
 	TypeAPIServiceInsecure:           {},
+	TypeAttestationFailed:            {},
+	TypeAttestationStarted:           {},
+	TypeAttestationVerified:          {},
 	TypeAttestorRecovered:            {},
 	TypeAuditBridgeSilent:            {},
 	TypeBackupVerifyCompleted:        {},

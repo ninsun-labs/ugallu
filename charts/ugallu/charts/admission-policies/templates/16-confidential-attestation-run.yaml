@@ -1,0 +1,54 @@
+{{- /*
+Policy 16 - ConfidentialAttestationRun spec invariants (Wave 4 §S6).
+
+Anti-replay is the headline guarantee: every run must carry a fresh
+non-empty nonce that the attester binds into the quote. Backend +
+node + timeout are pinned to safe enums and bounds.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.confidential-attestation-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["confidentialattestationruns"]
+  validations:
+    - expression: |
+        has(object.spec.backend) && object.spec.backend in ['tpm', 'sev-snp', 'tdx']
+      message: "ConfidentialAttestationRun.spec.backend must be one of tpm, sev-snp, tdx."
+      reason: Invalid
+    - expression: |
+        has(object.spec.targetNodeName) && object.spec.targetNodeName != ''
+      message: "ConfidentialAttestationRun.spec.targetNodeName is required."
+      reason: Invalid
+    - expression: |
+        has(object.spec.nonce) && size(object.spec.nonce) >= 16
+      message: "ConfidentialAttestationRun.spec.nonce is required and must be >= 16 chars."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.timeout) || object.spec.timeout <= duration('5m')
+      message: "ConfidentialAttestationRun.spec.timeout must be <= 5m."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.confidential-attestation-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.confidential-attestation-run
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["confidentialattestationruns"]
