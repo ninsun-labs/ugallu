@@ -67,7 +67,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 // execute runs the backend verifier and writes the result.
 func (r *RunReconciler) execute(ctx context.Context, run *securityv1alpha1.BackupVerifyRun) (ctrl.Result, error) {
-	verifier, err := VerifierFor(&run.Spec, r.EtcdSnapshotDir)
+	verifier, err := VerifierFor(&run.Spec, r.EtcdSnapshotDir, r.Client)
 	if err != nil {
 		return r.fail(ctx, run, err.Error())
 	}

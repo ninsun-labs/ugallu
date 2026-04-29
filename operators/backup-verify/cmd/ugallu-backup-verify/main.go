@@ -23,6 +23,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 	emitterv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/emitter/v1alpha1"
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/sign"
@@ -37,6 +39,7 @@ var scheme = runtime.NewScheme()
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(securityv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(velerov1.AddToScheme(scheme))
 }
 
 func main() {

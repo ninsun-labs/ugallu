@@ -50,10 +50,11 @@ func AttesterFor(spec *securityv1alpha1.ConfidentialAttestationRunSpec, tpmDev, 
 	}
 }
 
-// tpmAttester targets a TPM 2.0 character device. v0.1.0 reports an
-// indeterminate verdict when the device is missing (typical on
-// virtualised lab clusters) so heterogeneous fleets stay observable
-// without enforcement.
+// tpmAttester targets a TPM 2.0 character device. Issues a real
+// TPM2_Quote over PCRs 0-7 bound to the run's nonce via go-tpm-tools.
+// Falls back to an indeterminate verdict when the device is missing
+// (typical on virtualised lab clusters) so heterogeneous fleets stay
+// observable without enforcement.
 type tpmAttester struct {
 	device string
 }
@@ -62,17 +63,17 @@ func (a *tpmAttester) Attest(spec *securityv1alpha1.ConfidentialAttestationRunSp
 	if a.device == "" {
 		return nil, errors.New("tpm attester: empty device path")
 	}
-	if _, err := os.Stat(a.device); err != nil {
-		return &AttestOutcome{
-			Verdict:       securityv1alpha1.ConfidentialAttestationVerdictIndeterminate,
-			VerifierNotes: fmt.Sprintf("TPM device %s missing on this node (%v); v0.1.0 falls back to indeterminate", a.device, err),
-		}, nil
+	out, err := realTPMQuote(a.device, spec.Nonce)
+	if err != nil {
+		if isTPMUnavailable(err) {
+			return &AttestOutcome{
+				Verdict:       securityv1alpha1.ConfidentialAttestationVerdictIndeterminate,
+				VerifierNotes: fmt.Sprintf("TPM device %s missing on this node; falling back to indeterminate (%v)", a.device, err),
+			}, nil
+		}
+		return nil, err
 	}
-	// Real device present. v0.1.0 does not yet shell out to go-tpm
-	// to issue the actual TPM2_Quote — instead it emits a
-	// deterministic measurement bundle bound to the spec nonce so
-	// downstream consumers can exercise the pipeline.
-	return stubOutcome(spec, "tpm", []string{"0", "1", "2", "3", "4", "5", "6", "7"}), nil
+	return out, nil
 }
 
 // sevSnpAttester wraps the AMD SEV-SNP /dev/sev-guest interface.

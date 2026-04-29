@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 )
 
@@ -25,16 +27,18 @@ type VerifyOutcome struct {
 }
 
 // Verifier is the backend-agnostic interface every supported backend
-// implements. v0.1.0 ships veleroVerifier + etcdSnapshotVerifier.
+// implements. v0.1.0 ships realVeleroVerifier + etcdSnapshotVerifier.
 type Verifier interface {
 	Verify(spec *securityv1alpha1.BackupVerifyRunSpec) (*VerifyOutcome, error)
 }
 
-// VerifierFor returns the right backend for the given spec.
-func VerifierFor(spec *securityv1alpha1.BackupVerifyRunSpec, etcdDir string) (Verifier, error) {
+// VerifierFor returns the right backend for the given spec. The
+// Kubernetes client is required for backends that read CRDs from the
+// apiserver (Velero); pass nil for the etcd-snapshot path.
+func VerifierFor(spec *securityv1alpha1.BackupVerifyRunSpec, etcdDir string, c client.Client) (Verifier, error) {
 	switch spec.Backend {
 	case securityv1alpha1.BackupVerifyBackendVelero:
-		return &veleroVerifier{}, nil
+		return &realVeleroVerifier{client: c}, nil
 	case securityv1alpha1.BackupVerifyBackendEtcdSnapshot:
 		return &etcdSnapshotVerifier{snapshotDir: etcdDir}, nil
 	default:
@@ -85,29 +89,6 @@ func (v *etcdSnapshotVerifier) Verify(spec *securityv1alpha1.BackupVerifyRunSpec
 	return out, nil
 }
 
-// veleroVerifier handles the Velero backend. v0.1.0 looks up the
-// Velero Backup CR via the apiserver (no direct S3 fetch) and
-// reports the BackupStorageLocation + the manifest's stored
-// checksum when present. The reconciler injects the Kubernetes
-// client at construction time (kept off the struct here so the
-// verifier compiles standalone — the reconciler wraps it with a
-// client-aware adapter).
-type veleroVerifier struct{}
-
-func (v *veleroVerifier) Verify(spec *securityv1alpha1.BackupVerifyRunSpec) (*VerifyOutcome, error) {
-	// v0.1.0 stub: no direct Velero SDK dependency yet (the SDK pulls
-	// in a heavy transitive dep tree). The verifier reports a single
-	// info-severity finding so the result is non-empty + actionable
-	// for ops review. Real Velero introspection lands in a follow-up.
-	return &VerifyOutcome{
-		Findings: []securityv1alpha1.BackupVerifyFinding{
-			{
-				Code:     "velero-backend-stub",
-				Severity: securityv1alpha1.SeverityInfo,
-				Detail: fmt.Sprintf(
-					"v0.1.0 Velero verifier records spec only (backup=%s/%s, location=%q); deep verification requires the Velero SDK and lands in a follow-up",
-					spec.BackupRef.Namespace, spec.BackupRef.Name, spec.BackupRef.StorageLocation),
-			},
-		},
-	}, nil
-}
+// (Velero backend implementation lives in velero.go — uses the
+// controller-runtime client to look up the Backup + BSL CRs and
+// surface their state as findings.)

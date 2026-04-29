@@ -22,6 +22,16 @@ rules:
   - apiGroups: ["security.ugallu.io"]
     resources: ["securityevents"]
     verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # Velero backend reads Backup + BackupStorageLocation CRs to
+  # surface phase / errors / BSL availability as findings. Watch is
+  # not strictly needed (single-shot Get per run) but stays in line
+  # with the controller-runtime client cache convention.
+  - apiGroups: ["velero.io"]
+    resources: ["backups", "backupstoragelocations"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

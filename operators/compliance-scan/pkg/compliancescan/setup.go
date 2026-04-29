@@ -21,6 +21,15 @@ import (
 type Options struct {
 	ClusterIdentity securityv1alpha1.ClusterIdentity
 	Emitter         *emitterv1alpha1.Emitter
+
+	// JobNamespace is where the kube-bench backend templates its
+	// privileged Job (must be PSA-privileged so the hostPath mounts
+	// pass admission). Defaults to ugallu-system-privileged.
+	JobNamespace string
+
+	// KubeBenchImage overrides the upstream image; useful for
+	// air-gapped clusters that mirror the image.
+	KubeBenchImage string
 }
 
 // SetupWithManager registers the ComplianceScanRun reconciler.
@@ -36,6 +45,8 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 		Scheme:          mgr.GetScheme(),
 		Emitter:         opts.Emitter,
 		ClusterIdentity: opts.ClusterIdentity,
+		JobNamespace:    opts.JobNamespace,
+		KubeBenchImage:  opts.KubeBenchImage,
 	}
 	if err := r.SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("compliance-scan reconciler: %w", err)

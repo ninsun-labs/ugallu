@@ -27,18 +27,34 @@ type Scanner interface {
 	Scan(ctx context.Context, c client.Client, spec *securityv1alpha1.ComplianceScanRunSpec) (*ScanOutcome, error)
 }
 
-// ScannerFor returns the right backend.
-func ScannerFor(spec *securityv1alpha1.ComplianceScanRunSpec) (Scanner, error) {
+// ScannerFor returns the right backend. opts carries the runtime
+// dependencies the live backends need (kube-bench Job runner needs
+// the controller-runtime client; CEL-custom takes its own from the
+// Scan call).
+func ScannerFor(spec *securityv1alpha1.ComplianceScanRunSpec, opts *ScannerOpts) (Scanner, error) {
+	if opts == nil {
+		opts = &ScannerOpts{}
+	}
 	switch spec.Backend {
 	case securityv1alpha1.ComplianceScanBackendKubeBench:
-		return &kubeBenchScanner{}, nil
+		return newRealKubeBenchScanner(opts.Client, opts.JobNamespace, opts.KubeBenchImage, 0), nil
 	case securityv1alpha1.ComplianceScanBackendFalco:
+		// Falco backend stays a stub in v0.1.0 — the lab cluster has
+		// no Falco DaemonSet to query. Real integration lands once a
+		// Falco install pipeline is wired (Wave 5+).
 		return &falcoScanner{}, nil
 	case securityv1alpha1.ComplianceScanBackendCELCustom:
 		return &celCustomScanner{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported backend %q", spec.Backend)
 	}
+}
+
+// ScannerOpts carries the runtime deps that backend scanners need.
+type ScannerOpts struct {
+	Client         client.Client
+	JobNamespace   string
+	KubeBenchImage string
 }
 
 // celCustomScanner is the v0.1.0 in-tree backend. It walks the
@@ -117,29 +133,8 @@ func (s *celCustomScanner) Scan(ctx context.Context, c client.Client, _ *securit
 	return out, nil
 }
 
-// kubeBenchScanner shells out to the upstream kube-bench binary.
-// v0.1.0 ships a stub: kube-bench needs a privileged Pod with
-// hostPath access to /etc/kubernetes — the operator deployment runs
-// non-privileged. Real integration uses a Job that the operator
-// templates per scan.
-type kubeBenchScanner struct{}
-
-func (s *kubeBenchScanner) Scan(_ context.Context, _ client.Client, spec *securityv1alpha1.ComplianceScanRunSpec) (*ScanOutcome, error) {
-	return &ScanOutcome{
-		Summary: map[string]int{"skip": 1},
-		Checks: []securityv1alpha1.ComplianceCheckResult{
-			{
-				CheckID:  "ugallu.kube-bench.runner-stub",
-				Title:    "kube-bench backend (v0.1.0 stub).",
-				Outcome:  "skip",
-				Severity: securityv1alpha1.SeverityInfo,
-				Detail: fmt.Sprintf(
-					"v0.1.0 stub: real kube-bench integration uses a privileged Job templated per scan; profile=%q recorded for follow-up",
-					spec.Profile),
-			},
-		},
-	}, nil
-}
+// (kubeBenchScanner real implementation — Job runner — lives in
+// kubebench.go.)
 
 // falcoScanner queries a running Falco DaemonSet's gRPC output for
 // matching events in the scan window. v0.1.0 stub: Falco isn't

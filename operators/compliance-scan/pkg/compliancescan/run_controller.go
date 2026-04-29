@@ -23,6 +23,15 @@ type RunReconciler struct {
 	Scheme          *runtime.Scheme
 	Emitter         *emitterv1alpha1.Emitter
 	ClusterIdentity securityv1alpha1.ClusterIdentity
+
+	// JobNamespace is where the kube-bench backend templates its
+	// privileged Job. Defaults to ugallu-system-privileged when
+	// unset.
+	JobNamespace string
+
+	// KubeBenchImage overrides the upstream kube-bench image the
+	// Job runs.
+	KubeBenchImage string
 }
 
 // SetupWithManager wires the reconciler.
@@ -61,7 +70,11 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 // execute dispatches to the backend scanner and writes the result.
 func (r *RunReconciler) execute(ctx context.Context, run *securityv1alpha1.ComplianceScanRun) (ctrl.Result, error) {
-	scanner, err := ScannerFor(&run.Spec)
+	scanner, err := ScannerFor(&run.Spec, &ScannerOpts{
+		Client:         r.Client,
+		JobNamespace:   r.JobNamespace,
+		KubeBenchImage: r.KubeBenchImage,
+	})
 	if err != nil {
 		return r.fail(ctx, run, err.Error())
 	}

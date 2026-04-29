@@ -4,8 +4,6 @@
 package confidentialattestation
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
@@ -27,32 +25,13 @@ func TestTPMAttester_DeviceMissing(t *testing.T) {
 	}
 }
 
-// TestTPMAttester_DevicePresent_StubProducesNonceBoundEvidence covers
-// the path where the device exists (simulated via tempfile).
-func TestTPMAttester_DevicePresent_StubProducesNonceBoundEvidence(t *testing.T) {
-	dir := t.TempDir()
-	dev := filepath.Join(dir, "tpm0")
-	if err := os.WriteFile(dev, []byte{}, 0o600); err != nil {
-		t.Fatalf("WriteFile: %v", err)
-	}
-	a := &tpmAttester{device: dev}
-	out, err := a.Attest(&securityv1alpha1.ConfidentialAttestationRunSpec{
-		Backend: securityv1alpha1.ConfidentialAttestationBackendTPM,
-		Nonce:   "nonce-1234567890abcdef",
-	})
-	if err != nil {
-		t.Fatalf("Attest: %v", err)
-	}
-	if len(out.Measurements) != 8 {
-		t.Errorf("expected 8 PCR slots, got %d", len(out.Measurements))
-	}
-	if out.Verdict != securityv1alpha1.ConfidentialAttestationVerdictIndeterminate {
-		t.Errorf("Verdict = %q (no PolicyRef → indeterminate expected)", out.Verdict)
-	}
-	if len(out.Quote) == 0 || len(out.Signature) != 64 {
-		t.Errorf("Quote/Signature shape: quoteLen=%d sigLen=%d", len(out.Quote), len(out.Signature))
-	}
-}
+// (A "device-present-but-not-a-real-TPM" test would be ideal here
+// but go-tpm's OpenTPM is permissive on regular files — the real
+// failure surfaces only later, on the first TPM2_Quote command,
+// which requires actual TPM IO. That path is exercised by the
+// reconciler converting the err into a Phase=Failed run; the
+// inverse "missing device → indeterminate" path is covered
+// explicitly above.)
 
 // TestStubOutcome_DifferentNoncesDifferentDigests confirms anti-
 // replay: re-running with a fresh nonce changes every digest.

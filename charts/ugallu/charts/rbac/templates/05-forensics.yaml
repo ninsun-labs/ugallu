@@ -94,6 +94,12 @@ rules:
   - apiGroups: ["security.ugallu.io"]
     resources: ["eventresponses/status"]
     verbs: ["update", "patch"]
+  # client-go's leader-election event broadcaster posts a v1.Event
+  # on lease acquisition. Without this rule the operator logs a
+  # "events is forbidden" warning at boot — cosmetic but noisy.
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

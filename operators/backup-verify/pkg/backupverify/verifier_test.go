@@ -81,11 +81,11 @@ func TestEtcdSnapshotVerify_PathEscapeRejected(t *testing.T) {
 func TestVerifierFor_VeleroBackend(t *testing.T) {
 	v, err := VerifierFor(&securityv1alpha1.BackupVerifyRunSpec{
 		Backend: securityv1alpha1.BackupVerifyBackendVelero,
-	}, "/var/snapshot")
+	}, "/var/snapshot", nil)
 	if err != nil || v == nil {
 		t.Fatalf("VerifierFor velero: v=%v err=%v", v, err)
 	}
-	if _, ok := v.(*veleroVerifier); !ok {
-		t.Errorf("expected *veleroVerifier, got %T", v)
+	if _, ok := v.(*realVeleroVerifier); !ok {
+		t.Errorf("expected *realVeleroVerifier, got %T", v)
 	}
 }
