@@ -142,3 +142,12 @@ backup-verify:
 # kube-bench + Falco; the CRD surface is stable for the release.
 compliance-scan:
   enabled: true
+
+# confidential-attestation subchart (Wave 4 §S6): hardware-backed
+# node attestation. Multi-backend from v1: TPM 2.0 (PCR 0-7), AMD
+# SEV-SNP attestation report, Intel TDX guest quote. Default
+# devices.{tpm,sevSnp,tdx}.enabled=false so the chart applies on
+# lab clusters without confidential-computing hardware — the
+# operator emits indeterminate verdicts in that case.
+confidential-attestation:
+  enabled: true

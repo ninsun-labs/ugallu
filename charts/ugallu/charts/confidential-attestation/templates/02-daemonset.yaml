@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ugallu-confidential-attestation
+  namespace: {{ include "confidentialattestation.namespace" . }}
+  labels:
+    {{- include "confidentialattestation.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "confidentialattestation.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "confidentialattestation.labels" . | nindent 8 }}
+      annotations:
+        ugallu.io/scaffold: {{ .Values.placeholder | quote }}
+    spec:
+      serviceAccountName: {{ include "confidentialattestation.serviceAccount" . }}
+      priorityClassName: system-node-critical
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: confidential-attestation
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ toJson .Values.command }}
+          args: {{ toJson .Values.args }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metricsPort }}
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.devices.tpm.enabled }}
+            - name: tpm-device
+              mountPath: {{ .Values.devices.tpm.hostPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.devices.sevSnp.enabled }}
+            - name: sev-snp-device
+              mountPath: {{ .Values.devices.sevSnp.hostPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.devices.tdx.enabled }}
+            - name: tdx-device
+              mountPath: {{ .Values.devices.tdx.hostPath }}
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        # Each backend mounts as hostPath (read-only) only when
+        # enabled in values. Type=CharDevice fails the pod cleanly on
+        # nodes without the device — the operator's indeterminate
+        # verdict path covers the un-attested-node story.
+        {{- if .Values.devices.tpm.enabled }}
+        - name: tpm-device
+          hostPath:
+            path: {{ .Values.devices.tpm.hostPath }}
+            type: CharDevice
+        {{- end }}
+        {{- if .Values.devices.sevSnp.enabled }}
+        - name: sev-snp-device
+          hostPath:
+            path: {{ .Values.devices.sevSnp.hostPath }}
+            type: CharDevice
+        {{- end }}
+        {{- if .Values.devices.tdx.enabled }}
+        - name: tdx-device
+          hostPath:
+            path: {{ .Values.devices.tdx.hostPath }}
+            type: CharDevice
+        {{- end }}

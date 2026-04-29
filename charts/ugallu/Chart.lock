@@ -56,5 +56,8 @@ dependencies:
 - name: compliance-scan
   repository: file://charts/compliance-scan
   version: 0.0.1-alpha.1
-digest: sha256:563fe675d21dc374799aebeaaa766299339743abe1d168e2adde08fdf2d05320
-generated: "2026-04-29T13:44:16.311512332+02:00"
+- name: confidential-attestation
+  repository: file://charts/confidential-attestation
+  version: 0.0.1-alpha.1
+digest: sha256:03a08db7e585e874484a6ca68ecc9cdbec8c8982b6e1e5358ce38e9cd78b666b
+generated: "2026-04-29T14:03:01.894763654+02:00"

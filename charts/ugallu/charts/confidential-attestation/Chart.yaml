@@ -1,0 +1,19 @@
+apiVersion: v2
+name: confidential-attestation
+description: ugallu-confidential-attestation operator (TPM + SEV-SNP + TDX node attestation)
+type: application
+version: 0.0.1-alpha.1
+appVersion: "0.0.1-alpha.1"
+kubeVersion: ">=1.30.0-0"
+
+home: https://ninsun.io/ugallu
+sources:
+  - https://github.com/ninsun-labs/ugallu
+keywords:
+  - kubernetes
+  - security
+  - attestation
+  - tpm
+  - sev-snp
+  - tdx
+  - confidential-computing

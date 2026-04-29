@@ -1,0 +1,53 @@
+global:
+  namespaces:
+    privileged: ugallu-system-privileged
+
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# Per-backend device knobs. Each backend can be:
+#   enabled: false → operator runs with a non-existent device path,
+#                    every Run on this node returns the indeterminate
+#                    verdict. Right default for lab clusters without
+#                    confidential-computing hardware.
+#   enabled: true  → DaemonSet mounts the host device at hostPath.
+#                    The pod fails to schedule on nodes without the
+#                    device (CharDevice type), so flip enabled=true
+#                    only when a nodeSelector / taint isolates the
+#                    right node pool.
+devices:
+  tpm:
+    enabled: false
+    hostPath: /dev/tpm0
+  sevSnp:
+    enabled: false
+    hostPath: /dev/sev-guest
+  tdx:
+    enabled: false
+    hostPath: /dev/tdx-guest
+
+# Placeholder image until the real binary is published.
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+command: ["/bin/sleep", "infinity"]
+args: []
+
+metricsPort: 9090
+healthProbePort: 8081
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

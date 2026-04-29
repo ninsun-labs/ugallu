@@ -98,3 +98,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/compliance-scan
     condition: compliance-scan.enabled
+  - name: confidential-attestation
+    version: 0.0.1-alpha.1
+    repository: file://charts/confidential-attestation
+    condition: confidential-attestation.enabled
