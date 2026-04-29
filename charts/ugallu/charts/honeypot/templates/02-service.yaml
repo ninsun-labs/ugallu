@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ugallu-honeypot-metrics
+  namespace: {{ include "honeypot.namespace" . }}
+  labels:
+    {{- include "honeypot.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "honeypot.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.metricsPort }}
+      targetPort: metrics
+      protocol: TCP

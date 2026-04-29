@@ -57,6 +57,8 @@ jobs:
             pkg:    ./operators/dns-detect/cmd/ugallu-dns-detect
           - binary: tenant-escape
             pkg:    ./operators/tenant-escape/cmd/ugallu-tenant-escape
+          - binary: honeypot
+            pkg:    ./operators/honeypot/cmd/ugallu-honeypot
     steps:
       - uses: actions/checkout@v6
 

@@ -1,0 +1,48 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# audit-detection event bus consumer config (Wave 3 §S2). The bus is
+# enabled by setting AuditDetectionConfig.spec.eventBus.enabled=true
+# in the audit-detection subchart values; the endpoint here matches
+# the audit-detection bus Service.
+auditBus:
+  endpoint: "ugallu-audit-detection-bus.ugallu-system.svc.cluster.local:8444"
+  consumerName: "honeypot"
+  tokenSecret:
+    name: ugallu-audit-bus-token
+    key: token
+
+# When true the chart ships a sleep-forever placeholder so the pod
+# stays Ready before the real binary is published. Flip to false in
+# environment overlays once
+# ghcr.io/ninsun-labs/ugallu/honeypot:<chart-tag> exists.
+placeholder: true
+image:
+  repository: ghcr.io/ninsun-labs/ugallu/honeypot
+  tag: "v0.0.1-alpha.1"
+  pullPolicy: IfNotPresent
+
+# Singleton cluster-scoped Deployment with leader-elect. The
+# deployer must be a single writer to avoid two replicas creating
+# duplicate decoys.
+replicas: 2
+
+resources:
+  requests:
+    cpu: "20m"
+    memory: "96Mi"
+  limits:
+    cpu: "200m"
+    memory: "384Mi"
+
+metricsPort: 9090
+healthProbePort: 8081
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

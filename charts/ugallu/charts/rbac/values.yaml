@@ -29,6 +29,8 @@ dnsDetect:
     - ugallu-dns-blocklists
 tenantEscape:
   enabled: true
+honeypot:
+  enabled: true
 webhookAuditor:
   enabled: true
   # Namespace allowlist where the operator can read Secret data to

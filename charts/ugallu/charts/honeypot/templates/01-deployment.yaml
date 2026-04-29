@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ugallu-honeypot
+  namespace: {{ include "honeypot.namespace" . }}
+  labels:
+    {{- include "honeypot.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "honeypot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "honeypot.labels" . | nindent 8 }}
+      annotations:
+        ugallu.io/scaffold: {{ .Values.placeholder | quote }}
+    spec:
+      serviceAccountName: ugallu-honeypot
+      priorityClassName: system-cluster-critical
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: honeypot
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.placeholder }}
+          command: ["/bin/sleep", "infinity"]
+          {{- else }}
+          command: ["/ugallu-honeypot"]
+          args:
+            - --metrics-bind-address=:{{ .Values.metricsPort }}
+            - --health-probe-bind-address=:{{ .Values.healthProbePort }}
+            - --leader-election-namespace={{ include "honeypot.namespace" . }}
+            - --cluster-id={{ .Values.clusterIdentity.clusterID | default "" }}
+            - --cluster-name={{ .Values.clusterIdentity.clusterName | default "" }}
+            - --audit-bus-endpoint={{ .Values.auditBus.endpoint }}
+          {{- end }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metricsPort }}
+              protocol: TCP
+            - name: health
+              containerPort: {{ .Values.healthProbePort }}
+              protocol: TCP
+          env:
+            - name: AUDIT_BUS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auditBus.tokenSecret.name }}
+                  key: {{ .Values.auditBus.tokenSecret.key }}
+                  optional: true
+          {{- if not .Values.placeholder }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

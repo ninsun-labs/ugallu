@@ -78,3 +78,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/tenant-escape
     condition: tenant-escape.enabled
+  - name: honeypot
+    version: 0.0.1-alpha.1
+    repository: file://charts/honeypot
+    condition: honeypot.enabled

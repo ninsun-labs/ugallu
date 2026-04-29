@@ -52,6 +52,7 @@ tasks:
       - go build -o bin/ugallu-audit-detection ./operators/audit-detection/cmd/ugallu-audit-detection
       - go build -o bin/ugallu-forensics ./operators/forensics/cmd/ugallu-forensics
       - go build -o bin/ugallu-forensics-snapshot ./operators/forensics/cmd/ugallu-forensics-snapshot
+      - go build -o bin/ugallu-honeypot ./operators/honeypot/cmd/ugallu-honeypot
 
   build:images:
     desc: |
@@ -74,6 +75,7 @@ tasks:
         - "webhook-auditor:./operators/webhook-auditor/cmd/ugallu-webhook-auditor"
         - "dns-detect:./operators/dns-detect/cmd/ugallu-dns-detect"
         - "tenant-escape:./operators/tenant-escape/cmd/ugallu-tenant-escape"
+        - "honeypot:./operators/honeypot/cmd/ugallu-honeypot"
     cmds:
       - mkdir -p build/_artifacts
       - for:
@@ -118,6 +120,7 @@ tasks:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/webhook-auditor-bin ./operators/webhook-auditor/cmd/ugallu-webhook-auditor
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/dns-detect-bin ./operators/dns-detect/cmd/ugallu-dns-detect
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/tenant-escape-bin ./operators/tenant-escape/cmd/ugallu-tenant-escape
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/honeypot-bin ./operators/honeypot/cmd/ugallu-honeypot
 
   test:
     desc: Run go test (-race) on every module (envtest assets auto-fetched)

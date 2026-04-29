@@ -41,5 +41,8 @@ dependencies:
 - name: tenant-escape
   repository: file://charts/tenant-escape
   version: 0.0.1-alpha.1
-digest: sha256:0d869004cf9c1c1e1ac28ca44369708a16036c7250bdf7277f7e7b6a2b7957d2
-generated: "2026-04-28T21:46:45.282351383+02:00"
+- name: honeypot
+  repository: file://charts/honeypot
+  version: 0.0.1-alpha.1
+digest: sha256:0236f484ddc95a4f489ea51f7201ad10ddc8a47048ae86c9182f419897344af8
+generated: "2026-04-29T07:09:15.152240082+02:00"

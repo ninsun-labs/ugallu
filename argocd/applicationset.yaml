@@ -98,6 +98,10 @@ spec:
             wave: "4"
             path: charts/ugallu/charts/tenant-escape
             component: tenant-escape
+          - name: ugallu-honeypot
+            wave: "4"
+            path: charts/ugallu/charts/honeypot
+            component: honeypot
 
           # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs

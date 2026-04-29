@@ -100,3 +100,12 @@ dns-detect:
 # hostPath overlap, NetworkPolicy ingress, exec).
 tenant-escape:
   enabled: true
+
+# honeypot subchart (Wave 3 §H): materialises declared decoy K8s
+# resources (Secret/ServiceAccount, ConfigMap/Namespace post-Wave-4)
+# from HoneypotConfig CRs and consumes the audit-detection event
+# bus to fire HoneypotTriggered SEs the moment any actor touches
+# one of those decoys. Tripwire model — there is no legitimate
+# reason to read a decoy.
+honeypot:
+  enabled: true
