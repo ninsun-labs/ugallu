@@ -6,6 +6,7 @@ package backupverify
 import (
 	"context"
 	"fmt"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,6 +68,14 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 // execute runs the backend verifier and writes the result.
 func (r *RunReconciler) execute(ctx context.Context, run *securityv1alpha1.BackupVerifyRun) (ctrl.Result, error) {
+	// Velero + full-restore is asynchronous: each tick advances the
+	// Restore CR pipeline by at most one step. While the pipeline is
+	// still in flight the run stays at Phase=Running + requeues.
+	if run.Spec.Backend == securityv1alpha1.BackupVerifyBackendVelero &&
+		run.Spec.Mode == securityv1alpha1.BackupVerifyModeFullRestore {
+		return r.executeFullRestore(ctx, run)
+	}
+
 	verifier, err := VerifierFor(&run.Spec, r.EtcdSnapshotDir, r.Client)
 	if err != nil {
 		return r.fail(ctx, run, err.Error())
@@ -91,9 +100,17 @@ func (r *RunReconciler) execute(ctx context.Context, run *securityv1alpha1.Backu
 		},
 	}
 	worst := worstSeverity(outcome.Findings)
-	result.Status.WorstSeverity = worst
 	if err := r.Client.Create(ctx, result); err != nil && !apierrors.IsAlreadyExists(err) {
 		return r.fail(ctx, run, fmt.Sprintf("create result: %v", err))
+	}
+	// Status must be set via the subresource (Create only persists
+	// Spec). Re-Get to grab the post-Create resourceVersion.
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: result.Namespace, Name: result.Name}, result); err != nil {
+		return ctrl.Result{}, err
+	}
+	result.Status.WorstSeverity = worst
+	if err := r.Client.Status().Update(ctx, result); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	// If any finding has a "high" or "critical" severity, surface a
@@ -170,6 +187,71 @@ func (r *RunReconciler) emitSE(ctx context.Context, run *securityv1alpha1.Backup
 		Signals:          signals,
 		ClusterIdentity:  r.ClusterIdentity,
 	})
+}
+
+// executeFullRestore drives one tick of the Velero full-restore
+// pipeline. The Restore CR + sandbox cleanup is idempotent across
+// reconciler restarts; in-flight Restores requeue with a tight
+// cadence, and only the terminal phase writes the BackupVerifyResult.
+func (r *RunReconciler) executeFullRestore(ctx context.Context, run *securityv1alpha1.BackupVerifyRun) (ctrl.Result, error) {
+	outcome, err := runFullRestoreCycle(ctx, r.Client, run)
+	if err != nil {
+		return r.fail(ctx, run, err.Error())
+	}
+	if !outcome.Done {
+		// Still in flight — keep the run at Phase=Running and
+		// requeue. The pipeline tick is cheap (one or two GETs).
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	// Terminal: cleanup sandbox + Restore CR (best-effort), fold the
+	// cleanup findings in, then write the result + close the run.
+	cleanup := cleanupFullRestore(ctx, r.Client, run)
+	allFindings := append([]securityv1alpha1.BackupVerifyFinding{}, outcome.Findings...)
+	allFindings = append(allFindings, cleanup...)
+
+	worst := worstSeverity(allFindings)
+	result := &securityv1alpha1.BackupVerifyResult{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      run.Name + "-result",
+			Namespace: run.Namespace,
+		},
+		Spec: securityv1alpha1.BackupVerifyResultSpec{
+			DerivedFromRun:      securityv1alpha1.LocalProfileRef{Name: run.Name},
+			Backend:             run.Spec.Backend,
+			Mode:                run.Spec.Mode,
+			RestoredObjectCount: outcome.RestoredObjectCount,
+			Findings:            allFindings,
+		},
+	}
+	if err := r.Client.Create(ctx, result); err != nil && !apierrors.IsAlreadyExists(err) {
+		return r.fail(ctx, run, fmt.Sprintf("create full-restore result: %v", err))
+	}
+	// Status must be set via the dedicated subresource — Create only
+	// persists Spec. Re-Get to grab the post-Create resourceVersion
+	// before patching status.
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: result.Namespace, Name: result.Name}, result); err != nil {
+		return ctrl.Result{}, err
+	}
+	result.Status.WorstSeverity = worst
+	if err := r.Client.Status().Update(ctx, result); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	now := metav1.Now()
+	run.Status.Phase = "Succeeded"
+	run.Status.CompletionTime = &now
+	run.Status.ResultRef = &securityv1alpha1.LocalProfileRef{Name: result.Name}
+	if err := r.Client.Status().Update(ctx, run); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if worst == securityv1alpha1.SeverityHigh || worst == securityv1alpha1.SeverityCritical {
+		r.emitSE(ctx, run, securityv1alpha1.TypeBackupVerifyMismatch, worst, allFindings)
+	} else {
+		r.emitSE(ctx, run, securityv1alpha1.TypeBackupVerifyCompleted, securityv1alpha1.SeverityInfo, allFindings)
+	}
+	return ctrl.Result{}, nil
 }
 
 // worstSeverity returns the highest severity in findings (or "" if

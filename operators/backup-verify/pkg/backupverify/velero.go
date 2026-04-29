@@ -100,17 +100,8 @@ func (v *realVeleroVerifier) Verify(spec *securityv1alpha1.BackupVerifyRunSpec) 
 		}
 	}
 
-	// Full-restore mode requires creating a Restore CR + waiting for
-	// it to settle in a sandbox namespace. That path needs the
-	// sandbox to exist + RBAC to drive Restore CRs; v0.2.0 wires it.
-	// For now record the gap as a low-severity finding so ops know
-	// what they're getting.
-	if spec.Mode == securityv1alpha1.BackupVerifyModeFullRestore {
-		out.Findings = append(out.Findings, securityv1alpha1.BackupVerifyFinding{
-			Code:     "velero-full-restore-not-implemented",
-			Severity: securityv1alpha1.SeverityLow,
-			Detail:   "v0.1.0 verifies the Velero Backup + BSL state; sandbox-restore lands in v0.2.0",
-		})
-	}
+	// Full-restore mode is driven by the reconciler via runFullRestoreCycle;
+	// see velero_fullrestore.go. The verifier's checksum-only path
+	// stops here and the controller takes over the async pipeline.
 	return out, nil
 }

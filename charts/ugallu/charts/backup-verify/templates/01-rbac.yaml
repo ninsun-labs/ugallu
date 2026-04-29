@@ -32,6 +32,21 @@ rules:
   - apiGroups: ["velero.io"]
     resources: ["backups", "backupstoragelocations"]
     verbs: ["get", "list", "watch"]
+  # Full-restore mode creates a Restore CR per BackupVerifyRun and
+  # tears it down once the run reaches a terminal phase.
+  - apiGroups: ["velero.io"]
+    resources: ["restores"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  # The sandbox diff enumerates Pod/CM/Secret/SA inside the run's
+  # SandboxNamespace; cluster-wide read is acceptable because the
+  # diff is read-only and helpful when ops grep across runs.
+  - apiGroups: [""]
+    resources: ["pods", "configmaps", "secrets", "serviceaccounts"]
+    verbs: ["get", "list", "watch"]
+  # Sandbox cleanup deletes the namespace at the end of the run.
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "delete"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

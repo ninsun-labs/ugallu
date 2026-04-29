@@ -86,15 +86,15 @@ done
 [ -n "$se_found" ] || fail "S3: BackupVerifyFailed SE never appeared"
 pass "S3: BackupVerifyFailed SE emitted"
 
-# --- Scenario 4: velero stub → Succeeded ---------------------------
-info "S4: velero checksum-only → Succeeded"
+# --- Scenario 4: velero checksum-only → Succeeded ------------------
+info "S4: velero checksum-only → Succeeded (backup-not-found finding is acceptable)"
 cat <<EOF | kubectl apply -f - >/dev/null
 apiVersion: security.ugallu.io/v1alpha1
 kind: BackupVerifyRun
 metadata: { name: velero-good, namespace: $NS }
 spec:
   backend: velero
-  backupRef: { name: dummy, namespace: velero }
+  backupRef: { name: smoke-not-real, namespace: velero }
   mode: checksum-only
   timeout: 30s
 EOF
@@ -117,12 +117,68 @@ pass "S4: BackupVerifyResult created ($result)"
 deadline=$(( $(date +%s) + 30 ))
 se_found=""
 while [ "$(date +%s)" -lt "$deadline" ]; do
-  se_found=$(kubectl -n "$NS" get securityevents -o jsonpath='{.items[?(@.spec.type=="BackupVerifyCompleted")].metadata.name}' 2>/dev/null || echo "")
+  # The verifier surfaces a velero-backup-not-found finding
+  # (severity=high) → SE class flips from Compliance to Detection
+  # (BackupVerifyMismatch). Either is a valid "verifier closed the
+  # run" signal for the smoke.
+  for t in BackupVerifyCompleted BackupVerifyMismatch; do
+    n=$(kubectl -n "$NS" get securityevents -o jsonpath="{.items[?(@.spec.type==\"$t\")].metadata.name}" 2>/dev/null || echo "")
+    if [ -n "$n" ]; then se_found="$t/$n"; break; fi
+  done
   [ -n "$se_found" ] && break
   sleep 1
 done
-[ -n "$se_found" ] || fail "S4: BackupVerifyCompleted SE never appeared"
-pass "S4: BackupVerifyCompleted SE emitted"
+[ -n "$se_found" ] || fail "S4: no BackupVerify Completed/Mismatch SE appeared"
+pass "S4: SE emitted ($se_found)"
+
+# --- Scenario 5: velero full-restore → Succeeded with diff findings -
+info "S5: velero full-restore E2E (skip if Velero is not installed)"
+if ! kubectl get crd backups.velero.io >/dev/null 2>&1; then
+  echo "${YELLOW}SKIP${NC} S5: Velero CRDs not installed in this cluster"
+else
+  SANDBOX_NS="bv-${RUN_ID}-bvsandbox"
+  cat <<EOF | kubectl apply -f - >/dev/null
+apiVersion: security.ugallu.io/v1alpha1
+kind: BackupVerifyRun
+metadata: { name: velero-fullrestore, namespace: $NS }
+spec:
+  backend: velero
+  backupRef: { name: smoke-not-real, namespace: velero }
+  mode: full-restore
+  sandboxNamespace: $SANDBOX_NS
+  timeout: 3m
+EOF
+  # Watch the async pipeline up to 3m. The Restore CR will fail with
+  # backup-not-found (the smoke doesn't seed a real Velero Backup —
+  # that's S6 territory). We assert the pipeline completes + the
+  # cleanup tears the sandbox + Restore CR down.
+  deadline=$(( $(date +%s) + 180 ))
+  phase=""
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    phase=$(kubectl -n "$NS" get backupverifyrun velero-fullrestore -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+    [ "$phase" = "Succeeded" ] && break
+    [ "$phase" = "Failed" ] && fail "S5: phase=Failed; conditions=$(kubectl -n $NS get backupverifyrun velero-fullrestore -o jsonpath='{.status.conditions}')"
+    sleep 5
+  done
+  [ "$phase" = "Succeeded" ] || fail "S5: phase=$phase, want Succeeded"
+  pass "S5: full-restore run reached Succeeded"
+
+  # Result must carry at least one finding.
+  results=$(kubectl -n "$NS" get backupverifyresults -o name 2>/dev/null | grep velero-fullrestore || true)
+  [ -n "$results" ] || fail "S5: no BackupVerifyResult"
+  worst=$(kubectl -n "$NS" get backupverifyresult velero-fullrestore-result -o jsonpath='{.status.worstSeverity}' 2>/dev/null)
+  [ -n "$worst" ] || fail "S5: status.worstSeverity not populated"
+  pass "S5: result has worstSeverity=$worst"
+
+  # Cleanup invariants — sandbox NS gone, Restore CR gone.
+  if kubectl get ns "$SANDBOX_NS" >/dev/null 2>&1; then
+    fail "S5: sandbox namespace $SANDBOX_NS not cleaned up"
+  fi
+  if kubectl -n velero get restore velero-fullrestore-restore >/dev/null 2>&1; then
+    fail "S5: Velero Restore CR not cleaned up"
+  fi
+  pass "S5: sandbox + Restore CR cleaned up"
+fi
 
 echo
-pass "backup-verify smoke: 4/4 scenarios green"
+pass "backup-verify smoke: 5/5 scenarios green (S5 may skip)"
