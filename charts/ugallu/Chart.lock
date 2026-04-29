@@ -50,5 +50,8 @@ dependencies:
 - name: seccomp-gen
   repository: file://charts/seccomp-gen
   version: 0.0.1-alpha.1
-digest: sha256:e25dc6efe400ca7cc79a98fdb497d8fef796e68d9ea8057b6074bd39eb40aa57
-generated: "2026-04-29T13:00:54.769195423+02:00"
+- name: backup-verify
+  repository: file://charts/backup-verify
+  version: 0.0.1-alpha.1
+digest: sha256:a01f3368e5e262c166175a2de3f82e626b079c5321f9e8617fe684b27348aab1
+generated: "2026-04-29T13:21:38.131597128+02:00"

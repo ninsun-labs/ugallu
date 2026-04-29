@@ -128,3 +128,10 @@ tetragon-bridge:
 # in the security.ugallu.io/v1alpha1 group.
 seccomp-gen:
   enabled: true
+
+# backup-verify subchart (Wave 4 §S4): verifies Velero / etcd-snapshot
+# backups via checksum + (optional) sandbox restore. Out of scope:
+# Restic and S3-raw — verifying raw blobs doesn't compose with K8s
+# object semantics.
+backup-verify:
+  enabled: true

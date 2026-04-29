@@ -90,3 +90,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/seccomp-gen
     condition: seccomp-gen.enabled
+  - name: backup-verify
+    version: 0.0.1-alpha.1
+    repository: file://charts/backup-verify
+    condition: backup-verify.enabled

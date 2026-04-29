@@ -1,0 +1,38 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# etcd-snapshot backend: hostPath where the operator looks up
+# snapshot files. Must match the path the cluster's etcd backup
+# pipeline uses (k3s/RKE2 default below).
+etcdSnapshot:
+  hostPath: /var/lib/rancher/rke2/server/db/snapshots
+
+# Placeholder image until the real binary is published.
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+command: ["/bin/sleep", "infinity"]
+args: []
+
+metricsPort: 9090
+healthProbePort: 8081
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
