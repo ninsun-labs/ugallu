@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "tetragonbridge.serviceAccount" . }}
+  namespace: {{ include "tetragonbridge.namespace" . }}
+  labels:
+    {{- include "tetragonbridge.labels" . | nindent 4 }}

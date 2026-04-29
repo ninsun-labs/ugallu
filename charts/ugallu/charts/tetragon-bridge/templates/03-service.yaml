@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ugallu-tetragon-bridge
+  namespace: {{ include "tetragonbridge.namespace" . }}
+  labels:
+    {{- include "tetragonbridge.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "tetragonbridge.selectorLabels" . | nindent 4 }}
+  type: ClusterIP
+  ports:
+    - name: grpc
+      port: {{ .Values.ports.grpc }}
+      targetPort: grpc
+      protocol: TCP
+    - name: probe
+      port: {{ .Values.ports.probe }}
+      targetPort: probe
+      protocol: TCP

@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ugallu-tetragon-bridge
+  namespace: {{ include "tetragonbridge.namespace" . }}
+  labels:
+    {{- include "tetragonbridge.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "tetragonbridge.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "tetragonbridge.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "tetragonbridge.serviceAccount" . }}
+      priorityClassName: system-node-critical
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: tetragon-bridge
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: {{ include "tetragonbridge.args" . }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.ports.grpc }}
+              protocol: TCP
+            - name: probe
+              containerPort: {{ .Values.ports.probe }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: probe
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: probe
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if eq (include "tetragonbridge.useUDS" .) "true" }}
+            - name: tetragon-uds
+              mountPath: {{ .Values.source.tetragon.hostSocketDir }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.bearerToken.secretName }}
+            - name: bridge-token
+              mountPath: /etc/ugallu/bridge-token
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if eq (include "tetragonbridge.useUDS" .) "true" }}
+        - name: tetragon-uds
+          hostPath:
+            path: {{ .Values.source.tetragon.hostSocketDir }}
+            type: DirectoryOrCreate
+        {{- end }}
+        {{- if .Values.bearerToken.secretName }}
+        - name: bridge-token
+          secret:
+            secretName: {{ .Values.bearerToken.secretName }}
+        {{- end }}

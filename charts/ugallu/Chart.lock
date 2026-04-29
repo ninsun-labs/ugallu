@@ -44,5 +44,8 @@ dependencies:
 - name: honeypot
   repository: file://charts/honeypot
   version: 0.0.1-alpha.1
-digest: sha256:0236f484ddc95a4f489ea51f7201ad10ddc8a47048ae86c9182f419897344af8
-generated: "2026-04-29T07:09:15.152240082+02:00"
+- name: tetragon-bridge
+  repository: file://charts/tetragon-bridge
+  version: 0.0.1-alpha.1
+digest: sha256:4b211a19a328442651bb5ccc5c36ba2c9a3c8dd9ebbdff0a2f52f6a028564038
+generated: "2026-04-29T12:15:34.289591303+02:00"

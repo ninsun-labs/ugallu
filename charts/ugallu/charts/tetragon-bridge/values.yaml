@@ -1,0 +1,61 @@
+global:
+  namespaces:
+    privileged: ugallu-system-privileged
+
+# Image — defaults to the upstream OCI release. Override for forks /
+# air-gapped registries.
+image:
+  repository: ghcr.io/ninsun-labs/tetragon-bridge
+  tag: "v0.1.0"
+  pullPolicy: IfNotPresent
+
+# Source toggles whether the bridge talks to a real Tetragon
+# DaemonSet (production default) or boots its synthetic event loop
+# (lab + dev clusters that don't have Tetragon installed yet).
+source:
+  # Either "tetragon" or "synthetic".
+  mode: tetragon
+
+  tetragon:
+    # Endpoint can be UDS (unix:///path) or TCP (host:port).
+    endpoint: "unix:///var/run/tetragon/tetragon.sock"
+    # hostPath of the Tetragon UDS dir — mounted into the bridge pod
+    # when endpoint starts with unix://.
+    hostSocketDir: /var/run/tetragon
+
+  synthetic:
+    # Heartbeat cadence for the synthetic source (0 disables).
+    loopInterval: 5s
+
+# Bearer-token auth (optional). Subscribers must present
+# `authorization: Bearer <token>` to subscribe. Empty disables auth —
+# fine for in-cluster lab clusters with NetworkPolicy isolation.
+bearerToken:
+  # When secretName is non-empty, the bridge mounts the secret at
+  # /etc/ugallu/bridge-token/token and runs with --bearer-token-file.
+  secretName: ""
+  key: token
+
+# Per-subscriber backpressure policy.
+buffer:
+  # Ring depth before drop-oldest-first.
+  perSubscriberSize: 10000
+  # Default per-subscriber egress cap when the client doesn't ask
+  # for one.
+  defaultEventsPerSec: 700
+
+ports:
+  grpc: 50051
+  probe: 8080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

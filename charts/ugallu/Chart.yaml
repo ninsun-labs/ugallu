@@ -82,3 +82,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/honeypot
     condition: honeypot.enabled
+  - name: tetragon-bridge
+    version: 0.0.1-alpha.1
+    repository: file://charts/tetragon-bridge
+    condition: tetragon-bridge.enabled

@@ -109,3 +109,15 @@ tenant-escape:
 # reason to read a decoy.
 honeypot:
   enabled: true
+
+# tetragon-bridge subchart (Wave 4 §S2): typed gRPC fan-out from
+# Tetragon FineGuidanceSensors GetEvents. Operators (dns-detect
+# Tetragon-fallback, tenant-escape exec source, seccomp-gen training
+# capture) subscribe to this single bridge instead of dialling
+# Tetragon directly. Default source.mode=synthetic so the chart
+# applies cleanly on lab clusters without Tetragon installed; flip
+# to "tetragon" once a Tetragon DaemonSet is reachable.
+tetragon-bridge:
+  enabled: true
+  source:
+    mode: synthetic
