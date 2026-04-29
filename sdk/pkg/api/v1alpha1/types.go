@@ -257,6 +257,10 @@ const (
 	TypeCrossTenantNetworkPolicy   = "CrossTenantNetworkPolicy"
 	TypeCrossTenantExec            = "CrossTenantExec"
 
+	// Detection (honeypot — design 21 §H4).
+	TypeHoneypotTriggered = "HoneypotTriggered"
+	TypeHoneypotMisplaced = "HoneypotMisplaced"
+
 	// Forensic (forensics workflow).
 	TypeIncidentCaptureStarted   = "IncidentCaptureStarted"
 	TypeIncidentCaptureCompleted = "IncidentCaptureCompleted"
@@ -297,4 +301,8 @@ const (
 	TypeTenantBoundaryEmpty      = "TenantBoundaryEmpty"
 	TypeTenantBoundaryOverlap    = "TenantBoundaryOverlap"
 	TypeTenantEscapeSourceLagged = "TenantEscapeSourceLagged"
+
+	// Anomaly (honeypot operational — design 21 §H5).
+	TypeHoneypotConfigInvalid = "HoneypotConfigInvalid"
+	TypeHoneypotDecoyMissing  = "HoneypotDecoyMissing"
 )

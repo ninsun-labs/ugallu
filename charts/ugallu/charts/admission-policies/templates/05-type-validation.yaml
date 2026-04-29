@@ -42,6 +42,8 @@ spec:
           'CrossTenantNetworkPolicy', 'CrossTenantExec',
           'AuditBridgeSilent', 'TenantBoundaryEmpty',
           'TenantBoundaryOverlap', 'TenantEscapeSourceLagged',
+          'HoneypotTriggered', 'HoneypotMisplaced',
+          'HoneypotConfigInvalid', 'HoneypotDecoyMissing',
           'IncidentCaptureStarted', 'IncidentCaptureCompleted',
           'IncidentCaptureFailed', 'EvidencePreserved',
           'PodFrozen', 'PodUnfrozen',

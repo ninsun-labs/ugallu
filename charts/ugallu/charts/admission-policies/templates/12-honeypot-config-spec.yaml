@@ -1,0 +1,69 @@
+{{- /*
+Policy 12 - HoneypotConfig spec invariants (design 21 §H2).
+
+Honeypots only work if every decoy lives in the cluster as a
+plausible target — empty Decoys list = no traps, defeating the
+operator's purpose. The policy enforces three spec invariants on
+CREATE/UPDATE:
+  - spec.decoys must be set with at least one entry.
+  - decoy[*].kind must match the runtime-supported set
+    (Secret, ServiceAccount). ConfigMap/Namespace land in Wave 4.
+  - decoy[*].name and decoy[*].namespace must be non-empty.
+  - allowlistedActors[*] entries must follow
+    "system:serviceaccount:<ns>:<name>".
+
+Cross-CR namespace+name uniqueness (two CRs declaring the same
+decoy) is necessarily a runtime check — VAP CEL has no list-other-
+resources primitive. The operator surfaces collisions via the
+HoneypotConfigInvalid meta-event.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.honeypot-config-spec
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["honeypotconfigs"]
+  validations:
+    - expression: |
+        has(object.spec.decoys) && size(object.spec.decoys) > 0
+      message: "HoneypotConfig.spec.decoys must declare at least one decoy."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.decoys) ||
+        object.spec.decoys.all(d, d.kind in ['Secret', 'ServiceAccount'])
+      message: "HoneypotConfig.spec.decoys[*].kind must be one of Secret or ServiceAccount in v1alpha1."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.decoys) ||
+        object.spec.decoys.all(d, has(d.name) && d.name != '' && has(d.namespace) && d.namespace != '')
+      message: "HoneypotConfig.spec.decoys[*] must set both name and namespace."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.allowlistedActors) ||
+        object.spec.allowlistedActors.all(u, u.startsWith('system:serviceaccount:'))
+      message: "HoneypotConfig.spec.allowlistedActors entries must be of the form 'system:serviceaccount:<ns>:<name>'."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.honeypot-config-spec
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.honeypot-config-spec
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["honeypotconfigs"]
