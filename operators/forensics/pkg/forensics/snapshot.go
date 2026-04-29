@@ -329,7 +329,11 @@ func snapshotSecurityContext() *corev1.SecurityContext {
 }
 
 // parseSnapshotResult finds the JSON object in logs (last non-empty
-// line) and decodes it into Result.
+// line) and decodes it into Result. When the binary aborted with
+// EncodeFailure (the wrapper key `failure`), parseSnapshotResult
+// returns a SnapshotFailureError that carries the (step, error,
+// detail) tuple so the orchestrator can copy it into the
+// IncidentCaptureFailed SE signals.
 func parseSnapshotResult(logs string) (*SnapshotResult, error) {
 	last := ""
 	for _, line := range strings.Split(logs, "\n") {
@@ -340,11 +344,35 @@ func parseSnapshotResult(logs string) (*SnapshotResult, error) {
 	if last == "" {
 		return nil, errors.New("snapshotter: empty container logs")
 	}
+
+	// Failure path first — discriminator is the `failure` top-level
+	// key; the success path's Result has `url` etc.
+	var fw struct {
+		Failure *snapshot.Failure `json:"failure,omitempty"`
+	}
+	if err := json.Unmarshal([]byte(last), &fw); err == nil && fw.Failure != nil {
+		return nil, &SnapshotFailureError{Failure: *fw.Failure}
+	}
+
 	var res SnapshotResult
 	if err := json.Unmarshal([]byte(last), &res); err != nil {
 		return nil, fmt.Errorf("decode result %q: %w", last, err)
 	}
 	return &res, nil
+}
+
+// SnapshotFailureError wraps a snapshot.Failure so the orchestrator
+// can surface (step, error, detail) on the IncidentCaptureFailed
+// SE. Use errors.As to extract.
+type SnapshotFailureError struct {
+	Failure snapshot.Failure
+}
+
+func (e *SnapshotFailureError) Error() string {
+	if e.Failure.Detail != "" {
+		return fmt.Sprintf("snapshot exit 1 (step=%s): %s", e.Failure.Step, e.Failure.Detail)
+	}
+	return fmt.Sprintf("snapshot exit 1 (step=%s): %s", e.Failure.Step, e.Failure.Error)
 }
 
 // buildSnapshotKey assembles the S3 object key. Layout

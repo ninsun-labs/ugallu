@@ -349,6 +349,19 @@ func (p *Pipeline) fail(ctx context.Context, incident *Incident, step string, ca
 		"failure.step":    step,
 		"failure.message": cause.Error(),
 	}
+	// When the snapshot binary aborted with a structured Failure
+	// record, copy the (snapshot.step, snapshot.error,
+	// snapshot.detail) tuple into the SE signals so post-mortem
+	// debugging does not require kubectl logs (which the cleanup
+	// trap may already have wiped).
+	var sf *SnapshotFailureError
+	if errors.As(cause, &sf) {
+		signals["failure.snapshot.step"] = sf.Failure.Step
+		signals["failure.snapshot.error"] = sf.Failure.Error
+		if sf.Failure.Detail != "" {
+			signals["failure.detail"] = sf.Failure.Detail
+		}
+	}
 	pod := incident.Pod()
 	if _, err := p.opts.Emitter.Emit(ctx, &emitterv1alpha1.EmitOpts{
 		Class:            "Forensic",

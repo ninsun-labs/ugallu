@@ -107,6 +107,33 @@ type Result struct {
 	MediaType  string `json:"mediaType"`
 }
 
+// Failure is the JSON-serialisable error report written to stdout
+// when the snapshot pipeline aborts. The operator parses it from
+// the ephemeral container's logs to populate
+// SecurityEvent.signals[failure.detail] on the
+// IncidentCaptureFailed SE — which is otherwise opaque (the
+// kubelet only surfaces Reason=Error). Step is one of: `config`,
+// `creds`, `uploader`, `tar`, `s3`, `run`.
+type Failure struct {
+	Step   string `json:"step"`
+	Error  string `json:"error"`
+	Detail string `json:"detail,omitempty"`
+}
+
+// StepError annotates an error with the pipeline step that produced
+// it. main wraps StepError in EncodeFailure so the JSON failure
+// record carries the right step name.
+type StepError struct {
+	Step string
+	Err  error
+}
+
+func (e *StepError) Error() string { return e.Step + ": " + e.Err.Error() }
+func (e *StepError) Unwrap() error { return e.Err }
+
+// stepErr is a tiny helper for runner.Run.
+func stepErr(step string, err error) error { return &StepError{Step: step, Err: err} }
+
 // Runner executes one snapshot end-to-end.
 type Runner struct {
 	opts Options
@@ -154,7 +181,7 @@ func (r *Runner) Run(ctx context.Context) (*Result, error) {
 
 	uploader, err := r.newUploader(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("uploader: %w", err)
+		return nil, stepErr("uploader", err)
 	}
 
 	pr, pw := io.Pipe()
@@ -197,9 +224,9 @@ func (r *Runner) Run(ctx context.Context) (*Result, error) {
 		// upload was cleanly aborted by the manager when the body
 		// reader returned the cap error; nothing else to clean up.
 	case upErr != nil:
-		return nil, fmt.Errorf("s3 upload: %w", upErr)
+		return nil, stepErr("s3", upErr)
 	case tarErr != nil:
-		return nil, fmt.Errorf("tar stream: %w", tarErr)
+		return nil, stepErr("tar", tarErr)
 	}
 
 	dur := r.opts.Now().Sub(start)
@@ -384,4 +411,28 @@ func EncodeResult(w io.Writer, r *Result) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "")
 	return enc.Encode(r)
+}
+
+// EncodeFailure writes f as a single JSON object terminated by '\n'
+// to the supplied writer. The operator parses it from the ephemeral
+// container's logs and copies the (step, error, detail) tuple into
+// SecurityEvent.signals[failure.*] on the IncidentCaptureFailed SE.
+// The wrapper key `failure` discriminates the line from a successful
+// Result (whose top-level is `url`).
+func EncodeFailure(w io.Writer, f *Failure) error {
+	return json.NewEncoder(w).Encode(map[string]*Failure{"failure": f})
+}
+
+// FailureFromError builds a Failure from a possibly-StepError-wrapped
+// error and an optional default step. When err is wrapped in a
+// StepError, the wrapped Step wins; otherwise defaultStep is used.
+func FailureFromError(err error, defaultStep string) *Failure {
+	if err == nil {
+		return nil
+	}
+	var se *StepError
+	if errors.As(err, &se) {
+		return &Failure{Step: se.Step, Error: se.Err.Error(), Detail: err.Error()}
+	}
+	return &Failure{Step: defaultStep, Error: err.Error()}
 }

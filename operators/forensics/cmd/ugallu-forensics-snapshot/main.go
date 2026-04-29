@@ -31,13 +31,26 @@ import (
 const exitFailure = 1
 
 func main() {
-	if err := runMain(); err != nil {
-		fmt.Fprintln(os.Stderr, "ugallu-forensics-snapshot:", err)
-		os.Exit(exitFailure)
+	step, err := runMain()
+	if err == nil {
+		return
 	}
+	// Emit a JSON failure record on stdout so the operator can
+	// parse it from the ephemeral container's logs and surface
+	// the (step, error) tuple on the IncidentCaptureFailed SE.
+	// Stderr keeps the human-friendly prefix for kubectl log
+	// readers; stdout is the machine-parsed channel.
+	if encErr := snapshot.EncodeFailure(os.Stdout, snapshot.FailureFromError(err, step)); encErr != nil {
+		fmt.Fprintln(os.Stderr, "ugallu-forensics-snapshot: emit failure:", encErr)
+	}
+	fmt.Fprintln(os.Stderr, "ugallu-forensics-snapshot:", err)
+	os.Exit(exitFailure)
 }
 
-func runMain() error {
+// runMain returns (defaultStep, err). The defaultStep is used when
+// err is not already wrapped in a snapshot.StepError — it labels
+// the early validation phase that produced the failure.
+func runMain() (string, error) {
 	var (
 		targetPID    int
 		paths        stringSlice
@@ -75,10 +88,10 @@ func runMain() error {
 	flag.Parse()
 
 	if bucket == "" {
-		return fmt.Errorf("--worm-bucket is required")
+		return "config", fmt.Errorf("--worm-bucket is required")
 	}
 	if key == "" {
-		return fmt.Errorf("--worm-key is required")
+		return "config", fmt.Errorf("--worm-key is required")
 	}
 	if len(paths) == 0 {
 		paths = stringSlice{"/proc/" + strconv.Itoa(targetPID) + "/root"}
@@ -87,7 +100,7 @@ func runMain() error {
 	accessKey := strings.TrimSpace(os.Getenv(accessKeyEnv))
 	secretKey := strings.TrimSpace(os.Getenv(secretKeyEnv))
 	if accessKey == "" || secretKey == "" {
-		return fmt.Errorf("WORM credentials missing: env %s and %s must both be set", accessKeyEnv, secretKeyEnv)
+		return "creds", fmt.Errorf("WORM credentials missing: env %s and %s must both be set", accessKeyEnv, secretKeyEnv)
 	}
 
 	runner, err := snapshot.New(&snapshot.Options{
@@ -108,7 +121,7 @@ func runMain() error {
 		Concurrency:  concurrency,
 	})
 	if err != nil {
-		return err
+		return "config", err
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -116,9 +129,15 @@ func runMain() error {
 
 	res, err := runner.Run(ctx)
 	if err != nil {
-		return err
+		// runner.Run wraps every error in StepError; FailureFromError
+		// pulls out the right step. The "run" default below is a
+		// safety net for any future error path that forgets to wrap.
+		return "run", err
 	}
-	return snapshot.EncodeResult(os.Stdout, res)
+	if encErr := snapshot.EncodeResult(os.Stdout, res); encErr != nil {
+		return "encode", encErr
+	}
+	return "", nil
 }
 
 // stringSlice implements flag.Value so multi-arg --paths /

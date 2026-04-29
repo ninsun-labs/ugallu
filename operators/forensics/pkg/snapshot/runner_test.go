@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -352,3 +353,52 @@ func TestEncodeResult(t *testing.T) {
 		t.Errorf("roundtrip mismatch: got=%+v want=%+v", got, r)
 	}
 }
+
+// TestEncodeFailure verifies the failure-path wire format used by
+// main.go on os.Exit(1). The operator distinguishes failure from
+// success by the top-level `failure` key.
+func TestEncodeFailure(t *testing.T) {
+	var buf bytes.Buffer
+	f := &snapshot.Failure{
+		Step:   "creds",
+		Error:  "WORM credentials missing: env WORM_ACCESS_KEY and WORM_SECRET_KEY must both be set",
+		Detail: "creds: WORM credentials missing: env WORM_ACCESS_KEY and WORM_SECRET_KEY must both be set",
+	}
+	if err := snapshot.EncodeFailure(&buf, f); err != nil {
+		t.Fatalf("EncodeFailure: %v", err)
+	}
+	out := strings.TrimSpace(buf.String())
+	var wrapper struct {
+		Failure *snapshot.Failure `json:"failure"`
+	}
+	if err := json.Unmarshal([]byte(out), &wrapper); err != nil {
+		t.Fatalf("Unmarshal: %v\nwire: %s", err, out)
+	}
+	if wrapper.Failure == nil || wrapper.Failure.Step != "creds" {
+		t.Errorf("roundtrip mismatch: got=%+v", wrapper)
+	}
+}
+
+// TestFailureFromError_Wrapped extracts the step from a
+// StepError-wrapped error.
+func TestFailureFromError_Wrapped(t *testing.T) {
+	wrapped := &snapshot.StepError{Step: "s3", Err: errSentinel}
+	f := snapshot.FailureFromError(wrapped, "fallback")
+	if f.Step != "s3" {
+		t.Errorf("Step = %q, want s3", f.Step)
+	}
+	if f.Error != "boom" {
+		t.Errorf("Error = %q, want boom", f.Error)
+	}
+}
+
+// TestFailureFromError_Plain falls back to the default step when
+// the error is not a StepError.
+func TestFailureFromError_Plain(t *testing.T) {
+	f := snapshot.FailureFromError(errSentinel, "config")
+	if f.Step != "config" {
+		t.Errorf("Step = %q, want config", f.Step)
+	}
+}
+
+var errSentinel = errors.New("boom")
