@@ -32,7 +32,7 @@ jobs:
         with:
           version: ${{ env.HELM_VERSION }}
 
-      - uses: helm/kind-action@v1
+      - uses: helm/kind-action@v1.14.0
         with:
           cluster_name: ugallu-ci
           node_image: ${{ env.KIND_NODE_IMAGE }}
