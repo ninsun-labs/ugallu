@@ -62,6 +62,26 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Mint an installation token for the ugallu-bot GitHub App so
+      # `go build` can resolve the private satellite Go modules
+      # (coredns-ugallu, future tetragon-bridge). The App must be
+      # installed on every satellite repo with Contents: Read.
+      - name: Mint ugallu-bot installation token
+        id: bot-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          owner: ninsun-labs
+
+      - name: Configure git to auth via ugallu-bot token
+        env:
+          BOT_TOKEN: ${{ steps.bot-token.outputs.token }}
+        run: |
+          git config --global \
+            "url.https://x-access-token:${BOT_TOKEN}@github.com/.insteadOf" \
+            "https://github.com/"
+
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
