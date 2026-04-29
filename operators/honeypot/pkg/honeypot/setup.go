@@ -4,7 +4,7 @@
 // Package honeypot wires the controller-runtime spine for the
 // ugallu-honeypot operator (design 21 §H). It owns:
 //   - the HoneypotConfig reconciler (materialises declared decoys
-//     + maintains the in-memory decoy index);
+//   - maintains the in-memory decoy index);
 //   - the audit-bus source backend that drives detector evaluation
 //     against the live audit stream;
 //   - the dispatcher that fans events through the detectors and
