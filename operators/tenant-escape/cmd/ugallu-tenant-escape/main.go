@@ -55,6 +55,8 @@ func runMain() error {
 		auditBusEndpoint     string
 		auditBusToken        string
 		auditBusConsumerName string
+		bridgeEndpoint       string
+		bridgeToken          string
 	)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "Prometheus metrics bind address")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "Health probe bind address")
@@ -67,6 +69,10 @@ func runMain() error {
 		"bearer token for the audit bus (default reads $AUDIT_BUS_TOKEN)")
 	flag.StringVar(&auditBusConsumerName, "audit-bus-consumer-name", "tenant-escape",
 		"audit-bus consumer name; must match an entry in AuditDetectionConfig.spec.consumers")
+	flag.StringVar(&bridgeEndpoint, "bridge-endpoint", "",
+		"tetragon-bridge gRPC endpoint (empty disables CrossTenantExec — operator runs audit-bus detectors only)")
+	flag.StringVar(&bridgeToken, "bridge-token", os.Getenv("BRIDGE_TOKEN"),
+		"bearer token for the tetragon-bridge (default reads $BRIDGE_TOKEN)")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
@@ -109,6 +115,8 @@ func runMain() error {
 		AuditBusEndpoint:     auditBusEndpoint,
 		AuditBusToken:        auditBusToken,
 		AuditBusConsumerName: auditBusConsumerName,
+		BridgeEndpoint:       bridgeEndpoint,
+		BridgeToken:          bridgeToken,
 	}); err != nil {
 		return fmt.Errorf("tenantescape reconcilers setup: %w", err)
 	}

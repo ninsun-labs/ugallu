@@ -48,6 +48,16 @@ type Options struct {
 	// ("tenant-escape"); must match an entry in
 	// AuditDetectionConfig.spec.consumers.
 	AuditBusConsumerName string
+
+	// BridgeEndpoint is the tetragon-bridge gRPC address (typically
+	// "ugallu-tetragon-bridge.ugallu-system-privileged.svc:50051").
+	// Empty disables the Tetragon-driven detector and the operator
+	// runs the audit-bus detectors only.
+	BridgeEndpoint string
+
+	// BridgeToken authenticates against the bridge when its auth
+	// interceptor is configured server-side.
+	BridgeToken string
 }
 
 // SetupWithManager registers the TenantBoundary reconciler + adds the
@@ -92,7 +102,22 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 	if err != nil {
 		return fmt.Errorf("audit-bus source: %w", err)
 	}
-	execSrc := source.NewTetragonStubSource()
+	var execSrc source.ExecSource
+	if opts.BridgeEndpoint != "" {
+		bridgeSrc, bridgeErr := source.NewTetragonBridgeSource(&source.TetragonBridgeConfig{
+			Endpoint:    opts.BridgeEndpoint,
+			BearerToken: opts.BridgeToken,
+		})
+		if bridgeErr != nil {
+			return fmt.Errorf("tetragon-bridge source: %w", bridgeErr)
+		}
+		execSrc = bridgeSrc
+	} else {
+		// No bridge endpoint configured — keep the stub so the
+		// dispatcher exits cleanly. CrossTenantExec is dormant in
+		// this mode (audit-bus detectors still run).
+		execSrc = source.NewTetragonStubSource()
+	}
 
 	if err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 		ch, runErr := auditSrc.Run(ctx)

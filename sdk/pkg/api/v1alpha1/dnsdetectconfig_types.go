@@ -58,6 +58,12 @@ type DNSSourceConfig struct {
 	// Fallback resolves to coredns_plugin.
 	// +optional
 	Plugin *DNSPluginEndpoint `json:"plugin,omitempty"`
+
+	// Bridge is the tetragon-bridge gRPC endpoint config used when
+	// Primary or Fallback resolves to tetragon_kprobe. Required for
+	// the kprobe path; ignored otherwise.
+	// +optional
+	Bridge *DNSBridgeEndpoint `json:"bridge,omitempty"`
 }
 
 // DNSPluginEndpoint pins the CoreDNS gRPC stream coordinates.
@@ -68,6 +74,18 @@ type DNSPluginEndpoint struct {
 
 	// TokenSecret references the bearer-token Secret used during
 	// Wave 3 (mTLS lands in a follow-up).
+	// +optional
+	TokenSecret *corev1.SecretKeySelector `json:"tokenSecret,omitempty"`
+}
+
+// DNSBridgeEndpoint pins the tetragon-bridge gRPC stream coordinates.
+type DNSBridgeEndpoint struct {
+	// GRPCEndpoint is the host:port of the tetragon-bridge service.
+	// Default in-cluster: "ugallu-tetragon-bridge.ugallu-system-privileged.svc:50051".
+	GRPCEndpoint string `json:"grpcEndpoint"`
+
+	// TokenSecret references the bearer-token Secret the bridge
+	// enforces when its auth interceptor is configured.
 	// +optional
 	TokenSecret *corev1.SecretKeySelector `json:"tokenSecret,omitempty"`
 }

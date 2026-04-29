@@ -185,6 +185,46 @@ spec:
               source:
                 description: Source selects the DNS event source backend.
                 properties:
+                  bridge:
+                    description: |-
+                      Bridge is the tetragon-bridge gRPC endpoint config used when
+                      Primary or Fallback resolves to tetragon_kprobe. Required for
+                      the kprobe path; ignored otherwise.
+                    properties:
+                      grpcEndpoint:
+                        description: |-
+                          GRPCEndpoint is the host:port of the tetragon-bridge service.
+                          Default in-cluster: "ugallu-tetragon-bridge.ugallu-system-privileged.svc:50051".
+                        type: string
+                      tokenSecret:
+                        description: |-
+                          TokenSecret references the bearer-token Secret the bridge
+                          enforces when its auth interceptor is configured.
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - grpcEndpoint
+                    type: object
                   fallback:
                     description: |-
                       Fallback is engaged when Primary is unreachable for >60s. Set

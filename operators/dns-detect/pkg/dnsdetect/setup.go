@@ -161,7 +161,21 @@ func buildSource(cfg securityv1alpha1.DNSSourceConfig, resolver source.Resolver)
 		}
 		return s, securityv1alpha1.DNSDetectSourceCoreDNSPlugin, nil
 	case securityv1alpha1.DNSDetectSourceTetragonKprobe:
-		return source.NewTetragonKprobeSource(), securityv1alpha1.DNSDetectSourceTetragonKprobe, nil
+		endpoint := ""
+		if cfg.Bridge != nil {
+			endpoint = cfg.Bridge.GRPCEndpoint
+		}
+		if endpoint == "" {
+			return nil, "", errors.New("source.primary=tetragon_kprobe requires source.bridge.grpcEndpoint")
+		}
+		s, err := source.NewTetragonKprobeSource(&source.TetragonKprobeConfig{
+			Endpoint:     endpoint,
+			SubscriberID: "dns-detect-" + os.Getenv("HOSTNAME"),
+		})
+		if err != nil {
+			return nil, "", err
+		}
+		return s, securityv1alpha1.DNSDetectSourceTetragonKprobe, nil
 	default:
 		return nil, "", fmt.Errorf("unsupported source.primary %q", cfg.Primary)
 	}
