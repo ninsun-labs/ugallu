@@ -121,3 +121,10 @@ tetragon-bridge:
   enabled: true
   source:
     mode: synthetic
+
+# seccomp-gen subchart (Wave 4 §S3): consumes the tetragon-bridge
+# StreamFileOpen and produces a seccomp.json from the captured
+# syscall surface. SeccompTrainingRun + SeccompTrainingProfile CRDs
+# in the security.ugallu.io/v1alpha1 group.
+seccomp-gen:
+  enabled: true

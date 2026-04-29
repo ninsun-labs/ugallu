@@ -86,3 +86,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/tetragon-bridge
     condition: tetragon-bridge.enabled
+  - name: seccomp-gen
+    version: 0.0.1-alpha.1
+    repository: file://charts/seccomp-gen
+    condition: seccomp-gen.enabled

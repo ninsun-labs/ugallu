@@ -1,0 +1,42 @@
+global:
+  namespaces:
+    system: ugallu-system
+    privileged: ugallu-system-privileged
+
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# Bridge endpoint the operator dials to subscribe to FileOpen events.
+bridge:
+  endpoint: "ugallu-tetragon-bridge.ugallu-system-privileged.svc:50051"
+  tokenSecret:
+    secretName: ""
+    key: token
+
+# Placeholder image until the real binary is published. The operator
+# binary ships in the multi-binary runtime image alongside the Wave 3
+# operators (sprint 7 close-gate wires that path).
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+command: ["/bin/sleep", "infinity"]
+args: []
+
+metricsPort: 9090
+healthProbePort: 8081
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

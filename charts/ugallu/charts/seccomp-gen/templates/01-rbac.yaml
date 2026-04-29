@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "seccompgen.serviceAccount" . }}
+  namespace: {{ include "seccompgen.namespace" . }}
+  labels:
+    {{- include "seccompgen.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-seccomp-gen
+  labels:
+    {{- include "seccompgen.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["seccomptrainingruns", "seccomptrainingruns/status"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["seccomptrainingprofiles", "seccomptrainingprofiles/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["securityevents"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-seccomp-gen
+  labels:
+    {{- include "seccompgen.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-seccomp-gen
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "seccompgen.serviceAccount" . }}
+    namespace: {{ include "seccompgen.namespace" . }}

@@ -47,5 +47,8 @@ dependencies:
 - name: tetragon-bridge
   repository: file://charts/tetragon-bridge
   version: 0.0.1-alpha.1
-digest: sha256:4b211a19a328442651bb5ccc5c36ba2c9a3c8dd9ebbdff0a2f52f6a028564038
-generated: "2026-04-29T12:15:34.289591303+02:00"
+- name: seccomp-gen
+  repository: file://charts/seccomp-gen
+  version: 0.0.1-alpha.1
+digest: sha256:e25dc6efe400ca7cc79a98fdb497d8fef796e68d9ea8057b6074bd39eb40aa57
+generated: "2026-04-29T13:00:54.769195423+02:00"
