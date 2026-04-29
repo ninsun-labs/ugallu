@@ -6,6 +6,7 @@ use (
 	./cmd/ugallu
 	./operators/audit-detection
 	./operators/backup-verify
+	./operators/compliance-scan
 	./operators/dns-detect
 	./operators/forensics
 	./operators/gitops-responder
