@@ -33,7 +33,7 @@ spec:
       message: "ConfidentialAttestationRun.spec.nonce is required and must be >= 16 chars."
       reason: Invalid
     - expression: |
-        !has(object.spec.timeout) || object.spec.timeout <= duration('5m')
+        !has(object.spec.timeout) || duration(object.spec.timeout) <= duration('5m')
       message: "ConfidentialAttestationRun.spec.timeout must be <= 5m."
       reason: Invalid
 ---

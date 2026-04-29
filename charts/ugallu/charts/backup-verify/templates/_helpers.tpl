@@ -1,5 +1,5 @@
 {{- define "backupverify.namespace" -}}
-{{ .Values.global.namespaces.system | default "ugallu-system" }}
+{{ .Values.global.namespaces.privileged | default "ugallu-system-privileged" }}
 {{- end -}}
 
 {{- define "backupverify.labels" -}}

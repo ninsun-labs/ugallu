@@ -1,0 +1,133 @@
+# Wave 4 lab override values — applied on top of the current
+# release with `helm upgrade --reuse-values -f`. Bumps every Wave 3
+# subchart to wave4-rc1 and switches the four new operators +
+# tetragon-bridge from placeholder=true to the real binaries shipped
+# in the multi-binary lab image.
+
+attestor:
+  image: { tag: wave4-rc1 }
+
+audit-detection:
+  image: { tag: wave4-rc1 }
+
+backpressure:
+  image: { tag: wave4-rc1 }
+
+dns-detect:
+  image: { tag: wave4-rc1 }
+  # Wire the SDK resolver against the in-cluster ClusterIP. The
+  # resolver chart exposes plain gRPC on :9000 (no TLS yet — SPIRE-
+  # issued cert path lands post-Wave-4), so the dns-detect operator
+  # must run with --resolver-insecure to skip the TLS handshake.
+  args:
+    - --metrics-bind-address=:9090
+    - --health-probe-bind-address=:8081
+    - --resolver-insecure=true
+
+forensics:
+  image: { tag: wave4-rc1 }
+
+gitops-responder:
+  image: { tag: wave4-rc1 }
+
+honeypot:
+  image: { tag: wave4-rc1 }
+
+resolver:
+  image: { tag: wave4-rc1 }
+
+tenant-escape:
+  image: { tag: wave4-rc1 }
+
+ttl:
+  image: { tag: wave4-rc1 }
+
+webhook-auditor:
+  image: { tag: wave4-rc1 }
+
+# Wave 4 — new operators promoted from placeholder to real binary.
+
+tetragon-bridge:
+  enabled: true
+  source:
+    mode: synthetic
+    synthetic:
+      loopInterval: 10s
+  image:
+    repository: localhost/ugallu-runtime
+    tag: wave4-rc1
+    pullPolicy: Never
+  command:
+    - /bin/tetragon-bridge
+
+seccomp-gen:
+  enabled: true
+  placeholder: false
+  image:
+    repository: localhost/ugallu-runtime
+    tag: wave4-rc1
+    pullPolicy: Never
+  command:
+    - /bin/ugallu-seccomp-gen
+  args:
+    - --metrics-bind-address=:9090
+    - --health-probe-bind-address=:8081
+    - --leader-election-namespace=ugallu-system
+    - --cluster-id=rke2-lab
+    - --cluster-name=rke2-lab
+    - --bridge-endpoint=ugallu-tetragon-bridge.ugallu-system-privileged.svc:50051
+
+backup-verify:
+  enabled: true
+  placeholder: false
+  image:
+    repository: localhost/ugallu-runtime
+    tag: wave4-rc1
+    pullPolicy: Never
+  command:
+    - /bin/ugallu-backup-verify
+  args:
+    - --metrics-bind-address=:9090
+    - --health-probe-bind-address=:8081
+    - --leader-election-namespace=ugallu-system
+    - --cluster-id=rke2-lab
+    - --cluster-name=rke2-lab
+
+compliance-scan:
+  enabled: true
+  placeholder: false
+  image:
+    repository: localhost/ugallu-runtime
+    tag: wave4-rc1
+    pullPolicy: Never
+  command:
+    - /bin/ugallu-compliance-scan
+  args:
+    - --metrics-bind-address=:9090
+    - --health-probe-bind-address=:8081
+    - --leader-election-namespace=ugallu-system
+    - --cluster-id=rke2-lab
+    - --cluster-name=rke2-lab
+
+confidential-attestation:
+  enabled: true
+  placeholder: false
+  image:
+    repository: localhost/ugallu-runtime
+    tag: wave4-rc1
+    pullPolicy: Never
+  command:
+    - /bin/ugallu-confidential-attestation
+  args:
+    - --metrics-bind-address=:9090
+    - --health-probe-bind-address=:8081
+    - --leader-election-namespace=ugallu-system
+    - --cluster-id=rke2-lab
+    - --cluster-name=rke2-lab
+  # Lab cluster has no TPM/SEV-SNP/TDX hardware passthrough — keep
+  # all backends device-disabled. The operator emits indeterminate
+  # verdicts in that case (designed-for behaviour).
+  devices:
+    tpm: { enabled: false }
+    sevSnp: { enabled: false }
+    tdx: { enabled: false }

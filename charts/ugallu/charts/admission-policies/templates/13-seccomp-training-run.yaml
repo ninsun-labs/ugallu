@@ -35,7 +35,7 @@ spec:
       message: "SeccompTrainingRun.spec.targetNamespace is required."
       reason: Invalid
     - expression: |
-        has(object.spec.duration) && object.spec.duration <= duration('24h')
+        has(object.spec.duration) && duration(object.spec.duration) <= duration('24h')
       message: "SeccompTrainingRun.spec.duration must be set and <= 24h."
       reason: Invalid
     - expression: |

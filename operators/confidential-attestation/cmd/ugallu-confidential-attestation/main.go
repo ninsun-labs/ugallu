@@ -72,13 +72,17 @@ func runMain() error {
 	log.Info("starting", "version", version, "node", nodeName)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                  scheme,
-		Metrics:                 metricsserver.Options{BindAddress: metricsAddr},
-		HealthProbeBindAddress:  probeAddr,
-		LeaderElection:          true,
-		LeaderElectionID:        "ugallu-confidential-attestation-leader",
-		LeaderElectionNamespace: leaderElectionNS,
+		// LeaderElection is intentionally OFF: this operator is a
+		// per-node DaemonSet and every pod must reconcile the runs
+		// that target its own node. A cluster-wide lease would
+		// funnel every CR through one attester and break the
+		// per-node TargetNodeName dispatch.
+		Scheme:                 scheme,
+		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
+		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         false,
 	})
+	_ = leaderElectionNS
 	if err != nil {
 		return fmt.Errorf("manager creation: %w", err)
 	}

@@ -98,13 +98,13 @@ wait_for_se() {
 
 # --- Test 2: AnomalousPort -------------------------------------------
 info "Test 2: DNS query to non-53 port → DNSAnomalousPort"
-# We can't easily make a Pod query a non-53 port without a custom
-# resolver; the scenario is best exercised by the envtest suite.
-# This lab smoke validates the plumbing: any synthetic event the
-# operator sees with port != 53 should fire. For the lab, a
-# DaemonSet config inspection is sufficient if the cluster's CoreDNS
-# does not route to non-53 (test placeholder).
-skip "Test 2: requires plugin v0.1.0 in lab CoreDNS; covered by envtest"
+# The CoreDNS plugin only sees queries that hit CoreDNS (port 53),
+# so this lab cluster cannot emit a non-53 DNSEvent without a custom-
+# bound DNS client. The detector logic is fully covered by envtest
+# (TestIntegration_AnomalousPort_EmitsSE). Plumbing of plugin →
+# dns-detect is validated end-to-end by Test 3 (DNSToBlocklistedFQDN
+# — same gRPC stream, real query path).
+skip "Test 2: structurally not lab-testable via DNS lookup (envtest coverage)"
 
 # --- Test 3: blocklist ----------------------------------------------
 info "Test 3: pod queries *.bit (default blocklist) → DNSToBlocklistedFQDN"

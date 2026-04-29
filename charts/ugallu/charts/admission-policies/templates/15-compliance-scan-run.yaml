@@ -30,7 +30,7 @@ spec:
       message: "ComplianceScanRun.spec.profile is required."
       reason: Invalid
     - expression: |
-        !has(object.spec.timeout) || object.spec.timeout <= duration('30m')
+        !has(object.spec.timeout) || duration(object.spec.timeout) <= duration('30m')
       message: "ComplianceScanRun.spec.timeout must be <= 30m."
       reason: Invalid
     - expression: |

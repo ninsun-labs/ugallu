@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rdap-mock
+  namespace: ugallu-evidence
+  labels: { app.kubernetes.io/name: rdap-mock, app.kubernetes.io/part-of: ugallu }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: rdap-mock } }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: rdap-mock }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: rdap-mock
+          image: localhost/rdap-mock:dev
+          imagePullPolicy: Never
+          env:
+            - { name: LISTEN_ADDR, value: ":8080" }
+            - { name: YOUNG_DOMAIN_PATTERN, value: "^young-" }
+          ports:
+            - { name: http, containerPort: 8080, protocol: TCP }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+            seccompProfile: { type: RuntimeDefault }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits:   { cpu: 100m, memory: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rdap-mock
+  namespace: ugallu-evidence
+  labels: { app.kubernetes.io/name: rdap-mock, app.kubernetes.io/part-of: ugallu }
+spec:
+  selector: { app.kubernetes.io/name: rdap-mock }
+  type: ClusterIP
+  ports:
+    - { name: http, port: 80, targetPort: http, protocol: TCP }

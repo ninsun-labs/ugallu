@@ -74,7 +74,7 @@ func runMain() error {
 	flag.StringVar(&resolverUDS, "resolver-uds", resolverv1.DefaultUnixSocket, "Resolver UDS path (UDS-fast path)")
 	flag.StringVar(&resolverEndpoint, "resolver-endpoint", resolverv1.DefaultClusterEndpoint, "Resolver TCP fallback endpoint")
 	flag.BoolVar(&resolverInsecure, "resolver-insecure", false, "Skip TLS on the resolver TCP endpoint (lab/dev only)")
-	flag.DurationVar(&resolverDialBoot, "resolver-dial-boot-timeout", 2*time.Second, "Bound on the boot-time resolver dial")
+	flag.DurationVar(&resolverDialBoot, "resolver-dial-boot-timeout", 5*time.Second, "Bound on the boot-time resolver dial (UDS + TCP fallback both inside this budget)")
 	flag.BoolVar(&resolverDisable, "resolver-disable", false, "Disable resolver enrichment — detectors fall back to SrcIP synthetic key")
 	flag.Parse()
 

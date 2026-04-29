@@ -13,6 +13,11 @@
 #   dns-detect-bin
 #   tenant-escape-bin
 #   honeypot-bin
+#   seccomp-gen-bin
+#   backup-verify-bin
+#   compliance-scan-bin
+#   confidential-attestation-bin
+#   tetragon-bridge-bin
 #
 # Cross-compile each binary with:
 #   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w'
@@ -38,5 +43,10 @@ COPY webhook-auditor-bin /bin/ugallu-webhook-auditor
 COPY dns-detect-bin /bin/ugallu-dns-detect
 COPY tenant-escape-bin /bin/ugallu-tenant-escape
 COPY honeypot-bin /bin/ugallu-honeypot
+COPY seccomp-gen-bin /bin/ugallu-seccomp-gen
+COPY backup-verify-bin /bin/ugallu-backup-verify
+COPY compliance-scan-bin /bin/ugallu-compliance-scan
+COPY confidential-attestation-bin /bin/ugallu-confidential-attestation
+COPY tetragon-bridge-bin /bin/tetragon-bridge
 USER 65532:65532
 ENTRYPOINT ["/bin/ugallu-attestor"]

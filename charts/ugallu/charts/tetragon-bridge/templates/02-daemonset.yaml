@@ -41,6 +41,9 @@ spec:
         - name: tetragon-bridge
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command: {{ toJson . }}
+          {{- end }}
           args: {{ include "tetragonbridge.args" . }}
           env:
             - name: NODE_NAME

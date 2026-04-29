@@ -44,7 +44,7 @@ spec:
       message: "BackupVerifyRun.spec.sandboxNamespace is required when mode=full-restore and must end with '-bvsandbox'."
       reason: Invalid
     - expression: |
-        !has(object.spec.timeout) || object.spec.timeout <= duration('1h')
+        !has(object.spec.timeout) || duration(object.spec.timeout) <= duration('1h')
       message: "BackupVerifyRun.spec.timeout must be <= 1h."
       reason: Invalid
 ---

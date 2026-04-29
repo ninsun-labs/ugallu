@@ -37,8 +37,24 @@ CA_BUNDLE_NS=cert-manager
 CA_BUNDLE_SECRET=ugallu-smoke-ca-${RUN_ID}
 
 cleanup() {
-  kubectl delete mutatingwebhookconfiguration "$HIGH_MWC" "$IGNORED_MWC" "$CA_DEREF_MWC" "$CA_MISSING_MWC" --ignore-not-found >/dev/null 2>&1 || true
-  kubectl delete validatingwebhookconfiguration "$CLEAN_VWC" --ignore-not-found >/dev/null 2>&1 || true
+  # Delete one-at-a-time so a single failure (e.g. dotted name parse
+  # quirk) doesn't abort the rest. Leftover MutatingWebhookConfigs
+  # with failurePolicy=Fail block Pod creation cluster-wide and break
+  # every other smoke that runs after this one.
+  for mwc in "$HIGH_MWC" "$IGNORED_MWC" "$CA_DEREF_MWC" "$CA_MISSING_MWC"; do
+    kubectl delete mutatingwebhookconfiguration "$mwc" --ignore-not-found >/dev/null 2>&1 || true
+  done
+  for vwc in "$CLEAN_VWC"; do
+    kubectl delete validatingwebhookconfiguration "$vwc" --ignore-not-found >/dev/null 2>&1 || true
+  done
+  # Belt-and-braces sweep on the run-id substring — catches any name
+  # variable that might have been clobbered before the trap fires.
+  for w in $(kubectl get mutatingwebhookconfigurations -o name 2>/dev/null | grep -E "${RUN_ID}\$" || true); do
+    kubectl delete "$w" --ignore-not-found >/dev/null 2>&1 || true
+  done
+  for w in $(kubectl get validatingwebhookconfigurations -o name 2>/dev/null | grep -E "${RUN_ID}\$" || true); do
+    kubectl delete "$w" --ignore-not-found >/dev/null 2>&1 || true
+  done
   kubectl -n "$CA_BUNDLE_NS" delete secret "$CA_BUNDLE_SECRET" --ignore-not-found >/dev/null 2>&1 || true
   kubectl get securityevent --no-headers 2>/dev/null \
     | awk -v rid="$RUN_ID" '$0 ~ rid {print $1}' \
@@ -191,7 +207,10 @@ ca_pem=$(openssl req -x509 -nodes -newkey ec:<(openssl ecparam -name prime256v1)
 # Fallback: openssl varies; produce CA via kubectl-friendly path using a Secret literal we know works.
 # Create minimal valid cert via env-shipped tool path.
 tmp_dir=$(mktemp -d)
-trap 'rm -rf "$tmp_dir"' EXIT INT
+# Compose with the cleanup trap installed at the top of the script —
+# a bare `trap '...' EXIT` here would replace that one and leak the
+# webhook configurations, blocking every subsequent smoke test.
+trap '_rc=$?; rm -rf "$tmp_dir"; cleanup; exit $_rc' EXIT INT
 openssl req -x509 -nodes -newkey ec:<(openssl ecparam -name prime256v1) \
   -days 1 -subj "/CN=ugallu-smoke-ca-${RUN_ID}" \
   -keyout "$tmp_dir/key.pem" -out "$tmp_dir/ca.crt" 2>/dev/null \

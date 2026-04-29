@@ -24,7 +24,9 @@ const DefaultUnixSocket = "/var/run/ugallu/resolver.sock"
 // DefaultClusterEndpoint is the in-cluster ClusterIP service backing
 // the resolver — used as TCP fallback when the local UDS isn't
 // available (e.g. a non-DaemonSet workload that still needs lookups).
-const DefaultClusterEndpoint = "ugallu-resolver.ugallu-system-privileged.svc:443"
+// Port matches the resolver chart's grpcPort (plain HTTP/2; TLS lands
+// in a follow-up SPIRE-issued cert path post-Wave-4).
+const DefaultClusterEndpoint = "ugallu-resolver.ugallu-system-privileged.svc:9000"
 
 // DialerOpts configures Dialer. Defaults match the Wave-2 design 20
 // §S2 numbers (50ms UDS connect, 200ms TCP connect).
@@ -79,7 +81,11 @@ func NewDialer(opts *DialerOpts) *Dialer {
 		opts.UDSConnectTimeout = 50 * time.Millisecond
 	}
 	if opts.TCPConnectTimeout <= 0 {
-		opts.TCPConnectTimeout = 200 * time.Millisecond
+		// 2s leaves room for the first HTTP/2 handshake (DNS lookup
+		// + TCP connect + grpc state transitions). Sub-second budgets
+		// make the boot-time dial flap on ClusterIP services that
+		// haven't been freshly hit.
+		opts.TCPConnectTimeout = 2 * time.Second
 	}
 	return &Dialer{opts: *opts}
 }
@@ -176,7 +182,14 @@ func (d *Dialer) dialUDS(ctx context.Context) (*grpc.ClientConn, error) {
 // connection to the system root CA pool; callers that need a custom
 // trust anchor (SPIRE-issued, project CA, …) plug it in via
 // ExtraDialOpts.
-func (d *Dialer) dialTCP(ctx context.Context) (*grpc.ClientConn, error) {
+//
+// Unlike the UDS path, the TCP dial does NOT block on Ready: a fresh
+// ClusterIP backend may take longer than the boot-time budget to
+// finish its first HTTP/2 handshake (DNS lookup + endpoint slice
+// programming + grpc state transitions), and the boot-fast pattern
+// shouldn't wedge the operator startup. The CachedClient + per-method
+// circuit breaker handle reachability at first-RPC time instead.
+func (d *Dialer) dialTCP(_ context.Context) (*grpc.ClientConn, error) {
 	dialOpts := append([]grpc.DialOption{}, d.opts.ExtraDialOpts...)
 	if d.opts.Insecure {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -188,10 +201,6 @@ func (d *Dialer) dialTCP(ctx context.Context) (*grpc.ClientConn, error) {
 		return nil, fmt.Errorf("tcp dial %s: %w", d.opts.ClusterEndpoint, err)
 	}
 	conn.Connect()
-	if err := waitForReady(ctx, conn); err != nil {
-		_ = conn.Close()
-		return nil, err
-	}
 	return conn, nil
 }
 

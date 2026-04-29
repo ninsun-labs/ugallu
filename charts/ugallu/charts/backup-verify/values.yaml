@@ -1,6 +1,6 @@
 global:
   namespaces:
-    system: ugallu-system
+    privileged: ugallu-system-privileged
 
 clusterIdentity:
   clusterID: ""
