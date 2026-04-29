@@ -2,13 +2,13 @@
 {{- /*
 ugallu-honeypot RBAC.
 
-Singleton Deployment in ugallu-system with leader-elect.
-Cluster-wide reads back the detector's audit-bus event evaluation
-plus write rights to materialise decoy resources via the deployer.
-Wave 3 Sprint 5 ships scaffolding RBAC: SA + ClusterRole for SE
-emit + own CRD read+status. Real wiring (cluster-wide CRUD on
-Secret/ServiceAccount + cluster-wide read on the rest) extends in
-Sprint 5 commit 5 (chart real).
+Singleton Deployment in ugallu-system with leader-elect — the
+deployer must be a single writer to avoid two replicas creating
+duplicate decoys. Cluster-wide CRUD on Secret + ServiceAccount
+backs the deployer; cluster-wide read on the other resource kinds
+(Pods, ConfigMaps, Namespaces) lets the detector enrich audit
+events when needed. Wave 4 §H widens the kind enum to ConfigMap +
+Namespace; the RBAC is forward-compatible.
 */ -}}
 apiVersion: v1
 kind: ServiceAccount
@@ -34,6 +34,12 @@ rules:
   - apiGroups: ["security.ugallu.io"]
     resources: ["honeypotconfigs/status"]
     verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["secrets", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "configmaps"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -45,6 +51,38 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: ugallu-honeypot
+subjects:
+  - kind: ServiceAccount
+    name: ugallu-honeypot
+    namespace: {{ include "rbac.ns.system" . }}
+---
+# Leader-election lease (2 replicas).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ugallu-honeypot-leader-election
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ugallu-honeypot-leader-election
+  namespace: {{ include "rbac.ns.system" . }}
+  labels:
+    {{- include "rbac.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ugallu-honeypot-leader-election
 subjects:
   - kind: ServiceAccount
     name: ugallu-honeypot

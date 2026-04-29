@@ -85,6 +85,14 @@ eventBus:
         objectRefHasNamespace: true
         verbAllowlist: ["get", "list", "watch", "create", "update", "patch"]
       maxEventsPerSec: 1000
+    # honeypot consumer (design 21 §H). EmptyResource filter so
+    # cluster-scoped Secret reads via list-without-namespace still
+    # reach the detector; verb allowlist matches the tripwire
+    # surface (any verb on a decoy is interesting).
+    - name: honeypot
+      filter:
+        verbAllowlist: ["get", "list", "watch", "create", "update", "patch", "delete"]
+      maxEventsPerSec: 500
 
 # Bearer token Secret for the bus (subscribers carry it as
 # "Authorization: Bearer ..."). Empty secretName disables auth
