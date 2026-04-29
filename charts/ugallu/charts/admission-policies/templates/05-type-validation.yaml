@@ -56,7 +56,9 @@ spec:
           'ImageRevocation', 'AttestorRecovered',
           'WebhookEvalFailed',
           'SeccompTrainingStarted', 'SeccompTrainingCompleted',
-          'SeccompTrainingFailed'
+          'SeccompTrainingFailed',
+          'BackupVerifyStarted', 'BackupVerifyCompleted',
+          'BackupVerifyMismatch', 'BackupVerifyFailed'
         ] ||
         (has(object.metadata.labels) &&
          'ugallu.io/type-experimental' in object.metadata.labels &&

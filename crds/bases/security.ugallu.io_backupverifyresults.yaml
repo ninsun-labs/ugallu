@@ -1,0 +1,166 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: backupverifyresults.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: BackupVerifyResult
+    listKind: BackupVerifyResultList
+    plural: backupverifyresults
+    shortNames:
+    - bvres
+    singular: backupverifyresult
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.backend
+      name: Backend
+      type: string
+    - jsonPath: .status.worstSeverity
+      name: Worst
+      type: string
+    - jsonPath: .spec.derivedFromRun.name
+      name: Run
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          BackupVerifyResult is one run's per-finding report. Retained for
+          30d per design (W4-D7) by the ugallu-ttl operator.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: BackupVerifyResultSpec is the output of a run.
+            properties:
+              backend:
+                description: |-
+                  Backend mirrors the run's backend (kept for downstream
+                  consumers that only look at the result).
+                enum:
+                - velero
+                - etcd-snapshot
+                type: string
+              checksum:
+                description: |-
+                  Checksum is the SHA-256 of the backup payload (lowercase hex).
+                  Empty when the backend doesn't expose a single payload artifact.
+                type: string
+              derivedFromRun:
+                description: |-
+                  DerivedFromRun is the BackupVerifyRun that produced this
+                  result. Same namespace.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              findings:
+                description: Findings lists every issue surfaced during the run. Empty
+                  list
+                items:
+                  description: |-
+                    BackupVerifyFinding is one individual issue the verifier surfaced
+                    during the run.
+                  properties:
+                    code:
+                      description: |-
+                        Code is a short machine-readable identifier (e.g.
+                        "checksum-mismatch", "object-count-drift", "manifest-corrupt").
+                      type: string
+                    detail:
+                      description: Detail is a human-readable explanation.
+                      type: string
+                    severity:
+                      allOf:
+                      - enum:
+                        - critical
+                        - high
+                        - medium
+                        - low
+                        - info
+                      - enum:
+                        - critical
+                        - high
+                        - medium
+                        - low
+                        - info
+                      description: Severity uses the canonical 5-grade scale.
+                      type: string
+                  required:
+                  - code
+                  - detail
+                  - severity
+                  type: object
+                type: array
+              mode:
+                description: Mode mirrors the run's mode.
+                enum:
+                - checksum-only
+                - full-restore
+                type: string
+              restoredObjectCount:
+                description: |-
+                  RestoredObjectCount counts how many K8s objects came back from
+                  a full-restore run. Zero for checksum-only.
+                type: integer
+            required:
+            - backend
+            - derivedFromRun
+            - mode
+            type: object
+          status:
+            description: |-
+              BackupVerifyResultStatus carries the worst observed severity for
+              quick filtering.
+            properties:
+              worstSeverity:
+                allOf:
+                - enum:
+                  - critical
+                  - high
+                  - medium
+                  - low
+                  - info
+                - enum:
+                  - critical
+                  - high
+                  - medium
+                  - low
+                  - info
+                description: |-
+                  WorstSeverity is the highest severity in Findings; empty when
+                  the run produced no findings.
+                type: string
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

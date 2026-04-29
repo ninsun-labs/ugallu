@@ -310,4 +310,10 @@ const (
 	TypeSeccompTrainingStarted   = "SeccompTrainingStarted"
 	TypeSeccompTrainingCompleted = "SeccompTrainingCompleted"
 	TypeSeccompTrainingFailed    = "SeccompTrainingFailed"
+
+	// Compliance + Detection (backup-verify — design 21 §B / Wave 4 §S4).
+	TypeBackupVerifyStarted   = "BackupVerifyStarted"
+	TypeBackupVerifyCompleted = "BackupVerifyCompleted"
+	TypeBackupVerifyMismatch  = "BackupVerifyMismatch"
+	TypeBackupVerifyFailed    = "BackupVerifyFailed"
 )

@@ -1,0 +1,65 @@
+{{- /*
+Policy 14 - BackupVerifyRun spec invariants (Wave 4 §S4).
+
+Verifying a backup in full-restore mode replays the backup into a
+sandbox namespace. Two safety bounds matter:
+  - sandboxNamespace must end with "-bvsandbox" so a typo can't
+    point the verifier at a production namespace and overwrite live
+    objects with stale ones.
+  - timeout <= 1h: verification cycles run on a CronJob cadence;
+    a stuck run shouldn't pin operator workers forever.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.backup-verify-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["backupverifyruns"]
+  validations:
+    - expression: |
+        has(object.spec.backend) && object.spec.backend in ['velero', 'etcd-snapshot']
+      message: "BackupVerifyRun.spec.backend must be one of velero, etcd-snapshot."
+      reason: Invalid
+    - expression: |
+        has(object.spec.backupRef) &&
+        has(object.spec.backupRef.name) && object.spec.backupRef.name != ''
+      message: "BackupVerifyRun.spec.backupRef.name is required."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.mode) || object.spec.mode in ['checksum-only', 'full-restore']
+      message: "BackupVerifyRun.spec.mode must be one of checksum-only, full-restore."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.mode) ||
+        object.spec.mode != 'full-restore' ||
+        (has(object.spec.sandboxNamespace) && object.spec.sandboxNamespace.endsWith('-bvsandbox'))
+      message: "BackupVerifyRun.spec.sandboxNamespace is required when mode=full-restore and must end with '-bvsandbox'."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.timeout) || object.spec.timeout <= duration('1h')
+      message: "BackupVerifyRun.spec.timeout must be <= 1h."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.backup-verify-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.backup-verify-run
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["backupverifyruns"]
