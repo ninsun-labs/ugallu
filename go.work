@@ -5,6 +5,7 @@ use (
 	./backpressure
 	./cmd/ugallu
 	./operators/audit-detection
+	./operators/backup-verify
 	./operators/dns-detect
 	./operators/forensics
 	./operators/gitops-responder
