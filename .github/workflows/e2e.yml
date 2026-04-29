@@ -41,6 +41,18 @@ jobs:
       - name: Apply CRDs
         run: kubectl apply --server-side -f crds/bases/
 
+      - name: Pre-create cluster prerequisite namespaces
+        # The umbrella renders ConfigMaps + PrometheusRule into
+        # `monitoring` (Grafana dashboards + Wave 2 alerts) and a
+        # cabundle ConfigMap into `cert-manager` (webhook-auditor
+        # cert-manager.io/inject-ca-from-secret indirection
+        # consumer). Both are external prerequisites in real
+        # deploys; for a kind smoke we pre-create them so the
+        # apply lands clean.
+        run: |
+          kubectl create namespace monitoring   --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Render and apply chart
         run: |
           set -euo pipefail

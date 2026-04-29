@@ -1,0 +1,30 @@
+name: 'ugallu-bot git auth'
+description: 'Mint an installation token for the ugallu-bot GitHub App and configure git insteadOf so go build / go mod tidy can resolve private satellite Go modules (coredns-ugallu, future tetragon-bridge).'
+
+inputs:
+  app-id:
+    description: 'BOT_APP_ID secret value'
+    required: true
+  private-key:
+    description: 'BOT_APP_PRIVATE_KEY secret value (PEM)'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Mint ugallu-bot installation token
+      id: bot-token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: ninsun-labs
+
+    - name: Configure git to auth via ugallu-bot token
+      shell: bash
+      env:
+        BOT_TOKEN: ${{ steps.bot-token.outputs.token }}
+      run: |
+        git config --global \
+          "url.https://x-access-token:${BOT_TOKEN}@github.com/.insteadOf" \
+          "https://github.com/"
