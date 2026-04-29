@@ -9,6 +9,7 @@ use (
 	./operators/forensics
 	./operators/gitops-responder
 	./operators/honeypot
+	./operators/seccomp-gen
 	./operators/tenant-escape
 	./operators/webhook-auditor
 	./resolver
