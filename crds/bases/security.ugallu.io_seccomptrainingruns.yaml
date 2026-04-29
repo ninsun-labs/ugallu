@@ -1,0 +1,266 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: seccomptrainingruns.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: SeccompTrainingRun
+    listKind: SeccompTrainingRunList
+    plural: seccomptrainingruns
+    shortNames:
+    - str
+    singular: seccomptrainingrun
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.selectedReplicas
+      name: Selected
+      type: integer
+    - jsonPath: .status.observedSyscallCount
+      name: Syscalls
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          SeccompTrainingRun is one training session. Cluster admin creates
+          it; the operator drives it to completion and writes the produced
+          SeccompTrainingProfile in the same namespace.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              SeccompTrainingRunSpec is the runtime config the ugallu-seccomp-gen
+              operator reads to drive a seccomp-profile training session
+              (design 21 §G — Wave 4 §S3).
+            properties:
+              bridgeEndpoint:
+                description: |-
+                  BridgeEndpoint overrides the in-cluster tetragon-bridge service
+                  address. Empty falls back to
+                  "ugallu-tetragon-bridge.ugallu-system-privileged.svc:50051".
+                type: string
+              defaultAction:
+                default: SCMP_ACT_ERRNO
+                description: |-
+                  DefaultAction stamped on the produced seccomp.json for every
+                  syscall not observed during training.
+                enum:
+                - SCMP_ACT_ERRNO
+                - SCMP_ACT_KILL
+                - SCMP_ACT_LOG
+                - SCMP_ACT_TRACE
+                type: string
+              duration:
+                default: 30m
+                description: |-
+                  Duration is how long the operator records before finalising
+                  the profile. Bounded server-side at 24h (admission policy 13)
+                  to cap the privileged Tetragon TracingPolicy lifetime.
+                type: string
+              replicaRatio:
+                default: 50
+                description: |-
+                  ReplicaRatio is the fraction of matching Pods that participate
+                  in the training (0.0..1.0, expressed as percentage 0..100).
+                  Production-friendly default is 50% — half the replicas continue
+                  serving traffic with the existing profile while the other half
+                  run the training. Admission policy 13 rejects ratios > 100 OR
+                  configurations that would leave fewer than 1 untrained Pod
+                  when matched-replicas >= 2.
+                maximum: 100
+                minimum: 1
+                type: integer
+              targetNamespace:
+                description: TargetNamespace scopes the selector. Required.
+                type: string
+              targetSelector:
+                description: |-
+                  TargetSelector picks the Pods whose syscall surface is recorded
+                  during the training window. Empty selector matches every Pod
+                  in the target namespace — discouraged.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+            required:
+            - defaultAction
+            - duration
+            - replicaRatio
+            - targetNamespace
+            - targetSelector
+            type: object
+          status:
+            description: SeccompTrainingRunStatus tracks the per-run lifecycle.
+            properties:
+              completionTime:
+                description: CompletionTime is when the training window closed.
+                format: date-time
+                type: string
+              conditions:
+                description: |-
+                  Conditions surface human-readable status (e.g. why a run
+                  failed). Standard k8s convention; Type values are
+                  "Ready", "Degraded", "Failed".
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedSyscallCount:
+                description: |-
+                  ObservedSyscallCount is the number of distinct syscalls
+                  recorded during the run. Useful as an at-a-glance "did the
+                  training capture anything" signal.
+                type: integer
+              phase:
+                description: Phase is the canonical lifecycle state.
+                enum:
+                - Pending
+                - Running
+                - Succeeded
+                - Failed
+                type: string
+              profileRef:
+                description: |-
+                  ProfileRef is the SeccompTrainingProfile the run produced.
+                  Empty until Phase=Succeeded.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              selectedReplicas:
+                description: |-
+                  SelectedReplicas reports how many Pods the engine
+                  actually attached to (after ReplicaRatio sampling).
+                type: integer
+              startTime:
+                description: StartTime is when the operator opened the bridge subscription.
+                format: date-time
+                type: string
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

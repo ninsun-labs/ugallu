@@ -305,4 +305,9 @@ const (
 	// Anomaly (honeypot operational — design 21 §H5).
 	TypeHoneypotConfigInvalid = "HoneypotConfigInvalid"
 	TypeHoneypotDecoyMissing  = "HoneypotDecoyMissing"
+
+	// PolicyViolation (seccomp-gen — design 21 §G / Wave 4 §S3).
+	TypeSeccompTrainingStarted   = "SeccompTrainingStarted"
+	TypeSeccompTrainingCompleted = "SeccompTrainingCompleted"
+	TypeSeccompTrainingFailed    = "SeccompTrainingFailed"
 )

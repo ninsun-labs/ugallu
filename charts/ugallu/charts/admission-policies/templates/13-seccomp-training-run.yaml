@@ -1,0 +1,67 @@
+{{- /*
+Policy 13 - SeccompTrainingRun spec invariants (Wave 4 §S3).
+
+Training a seccomp profile attaches a privileged Tetragon TracingPolicy
+to a subset of production Pods for the configured duration. Two limits
+matter:
+  - duration must not exceed 24h — the TracingPolicy keeps a kprobe
+    attached to every syscall, which is expensive; ops policy bounds
+    the lifetime so a forgotten run doesn't burn cluster CPU forever.
+  - replicaRatio must leave at least one Pod *untrained* when the
+    selector matches >=2 Pods. Training every replica simultaneously
+    would mean the new (incomplete) profile applies cluster-wide as
+    soon as the run finishes, with no surviving control group to roll
+    back to. CEL can't count selected Pods, so the gate enforces the
+    weaker invariant that ratio < 100 keeps room for at least one
+    untrained replica when the workload has multiple replicas.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.seccomp-training-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["seccomptrainingruns"]
+  validations:
+    - expression: |
+        has(object.spec.targetNamespace) && object.spec.targetNamespace != ''
+      message: "SeccompTrainingRun.spec.targetNamespace is required."
+      reason: Invalid
+    - expression: |
+        has(object.spec.duration) && object.spec.duration <= duration('24h')
+      message: "SeccompTrainingRun.spec.duration must be set and <= 24h."
+      reason: Invalid
+    - expression: |
+        has(object.spec.replicaRatio) &&
+        object.spec.replicaRatio >= 1 &&
+        object.spec.replicaRatio <= 100
+      message: "SeccompTrainingRun.spec.replicaRatio must be in [1,100]."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.defaultAction) ||
+        object.spec.defaultAction in ['SCMP_ACT_ERRNO','SCMP_ACT_KILL','SCMP_ACT_LOG','SCMP_ACT_TRACE']
+      message: "SeccompTrainingRun.spec.defaultAction must be a runtime-supported action."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.seccomp-training-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.seccomp-training-run
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["seccomptrainingruns"]

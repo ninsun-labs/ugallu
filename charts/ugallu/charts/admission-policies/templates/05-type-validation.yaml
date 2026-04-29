@@ -54,7 +54,9 @@ spec:
           'ClockSkewDetected', 'AuditLogStreamSilent',
           'TetragonDataInconsistent', 'KeyRotationEmergency',
           'ImageRevocation', 'AttestorRecovered',
-          'WebhookEvalFailed'
+          'WebhookEvalFailed',
+          'SeccompTrainingStarted', 'SeccompTrainingCompleted',
+          'SeccompTrainingFailed'
         ] ||
         (has(object.metadata.labels) &&
          'ugallu.io/type-experimental' in object.metadata.labels &&
