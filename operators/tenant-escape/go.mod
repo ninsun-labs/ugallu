@@ -9,6 +9,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.23.3
 )
 
+require github.com/ninsun-labs/tetragon-bridge v0.1.0 // indirect
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -71,5 +73,3 @@ require (
 )
 
 replace github.com/ninsun-labs/ugallu/sdk => ../../sdk
-
-replace github.com/ninsun-labs/tetragon-bridge => ../../../tetragon-bridge

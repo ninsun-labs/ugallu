@@ -3,7 +3,6 @@ module github.com/ninsun-labs/ugallu/operators/seccomp-gen
 go 1.26.2
 
 require (
-	github.com/ninsun-labs/tetragon-bridge v0.0.0-00010101000000-000000000000
 	github.com/ninsun-labs/ugallu/sdk v0.0.0-00010101000000-000000000000
 	google.golang.org/grpc v1.80.0
 	k8s.io/api v0.35.0
@@ -36,6 +35,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/ninsun-labs/tetragon-bridge v0.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
@@ -72,5 +72,3 @@ require (
 )
 
 replace github.com/ninsun-labs/ugallu/sdk => ../../sdk
-
-replace github.com/ninsun-labs/tetragon-bridge => ../../../tetragon-bridge

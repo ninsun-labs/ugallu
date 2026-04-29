@@ -79,6 +79,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/ninsun-labs/coredns-ugallu v0.1.0 h1:L8LlPv+o0+L0NDQ0iPZAq0L2IzNNq0yX5mNVp+djlHg=
 github.com/ninsun-labs/coredns-ugallu v0.1.0/go.mod h1:kPhRaEiPrNd3dSUSbyrvMb7CBHxf5fai7D9rk42Up5Q=
+github.com/ninsun-labs/tetragon-bridge v0.1.0 h1:L3LV/HfiQaDA3CobtLK1dxjAbm2fkP+dvXGZrXTKFlM=
+github.com/ninsun-labs/tetragon-bridge v0.1.0/go.mod h1:IXPh9KseVZHsQ4QzyZQ1utArax1oC9ntjRoXiwbbI7Q=
 github.com/onsi/ginkgo/v2 v2.27.2 h1:LzwLj0b89qtIy6SSASkzlNvX6WktqurSHwkk2ipF/Ns=
 github.com/onsi/ginkgo/v2 v2.27.2/go.mod h1:ArE1D/XhNXBXCBkKOLkbsb2c81dQHCRcF5zwn/ykDRo=
 github.com/onsi/gomega v1.38.2 h1:eZCjf2xjZAqe+LeWvKb5weQ+NcPwX84kqJ0cZNxok2A=
