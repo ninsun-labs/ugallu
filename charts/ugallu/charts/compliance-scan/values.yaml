@@ -1,0 +1,31 @@
+global:
+  namespaces:
+    system: ugallu-system
+
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+placeholder: true
+image:
+  repository: busybox
+  tag: "1.37"
+  pullPolicy: IfNotPresent
+
+command: ["/bin/sleep", "infinity"]
+args: []
+
+metricsPort: 9090
+healthProbePort: 8081
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

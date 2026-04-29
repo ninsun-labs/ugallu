@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "compliancescan.serviceAccount" . }}
+  namespace: {{ include "compliancescan.namespace" . }}
+  labels:
+    {{- include "compliancescan.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ugallu-compliance-scan
+  labels:
+    {{- include "compliancescan.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["compliancescanruns", "compliancescanruns/status"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["compliancescanresults", "compliancescanresults/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["securityevents"]
+    verbs: ["create"]
+  # The CEL-custom backend reads cluster-wide Pod state to evaluate
+  # the ships-non-root + readOnlyRootFilesystem checks.
+  - apiGroups: [""]
+    resources: ["pods", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ugallu-compliance-scan
+  labels:
+    {{- include "compliancescan.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ugallu-compliance-scan
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "compliancescan.serviceAccount" . }}
+    namespace: {{ include "compliancescan.namespace" . }}

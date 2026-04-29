@@ -94,3 +94,7 @@ dependencies:
     version: 0.0.1-alpha.1
     repository: file://charts/backup-verify
     condition: backup-verify.enabled
+  - name: compliance-scan
+    version: 0.0.1-alpha.1
+    repository: file://charts/compliance-scan
+    condition: compliance-scan.enabled

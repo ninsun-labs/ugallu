@@ -135,3 +135,10 @@ seccomp-gen:
 # object semantics.
 backup-verify:
   enabled: true
+
+# compliance-scan subchart (Wave 4 §S5): drives scan cycles via
+# kube-bench (CIS K8s) / Falco runtime rules / CEL-custom in-tree
+# checks. v0.1.0 ships the CEL-custom backend functional and stubs
+# kube-bench + Falco; the CRD surface is stable for the release.
+compliance-scan:
+  enabled: true

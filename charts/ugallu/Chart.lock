@@ -53,5 +53,8 @@ dependencies:
 - name: backup-verify
   repository: file://charts/backup-verify
   version: 0.0.1-alpha.1
-digest: sha256:a01f3368e5e262c166175a2de3f82e626b079c5321f9e8617fe684b27348aab1
-generated: "2026-04-29T13:21:38.131597128+02:00"
+- name: compliance-scan
+  repository: file://charts/compliance-scan
+  version: 0.0.1-alpha.1
+digest: sha256:563fe675d21dc374799aebeaaa766299339743abe1d168e2adde08fdf2d05320
+generated: "2026-04-29T13:44:16.311512332+02:00"
