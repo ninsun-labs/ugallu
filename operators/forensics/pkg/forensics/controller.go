@@ -206,7 +206,12 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 		return ctrl.Result{}, err
 	}
-	if se.Spec.Class != "Forensic" || se.Spec.Type != securityv1alpha1.TypeIncidentCaptureCompleted {
+	if se.Spec.Class != "Forensic" {
+		return ctrl.Result{}, nil
+	}
+	switch se.Spec.Type {
+	case securityv1alpha1.TypeIncidentCaptureCompleted, securityv1alpha1.TypeIncidentCaptureFailed:
+	default:
 		return ctrl.Result{}, nil
 	}
 	if strings.EqualFold(se.Annotations[unfreezeAppliedAnnotation], "true") {
@@ -216,6 +221,18 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	autoUnfreezeReason := ""
 	manualAck := strings.EqualFold(se.Annotations[IncidentAcknowledgedAnnotation], "true")
+	// On IncidentCaptureFailed, an annotation overrides the
+	// auto-unfreeze policy. Without override (default = "auto"),
+	// the same grace window as a Completed SE applies — a stranded
+	// pod is worse than a slightly-early unfreeze. With
+	// "manual" the operator waits for an admin ack (e.g.
+	// credentials/configuration failures need human triage before
+	// releasing the suspect pod).
+	failurePolicy := se.Annotations[FailureUnfreezePolicyAnnotation]
+	if se.Spec.Type == securityv1alpha1.TypeIncidentCaptureFailed && strings.EqualFold(failurePolicy, "manual") && !manualAck {
+		// Stays frozen until ack.
+		return ctrl.Result{}, nil
+	}
 	if !manualAck {
 		// No manual ack — check whether auto-unfreeze is configured
 		// and whether the grace window has elapsed.
@@ -232,6 +249,9 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return ctrl.Result{RequeueAfter: requeueAfter}, nil
 		}
 		autoUnfreezeReason = "auto-unfreeze-grace-elapsed"
+		if se.Spec.Type == securityv1alpha1.TypeIncidentCaptureFailed {
+			autoUnfreezeReason = "auto-unfreeze-after-capture-failed"
+		}
 	}
 
 	if se.Spec.Subject.Name == "" || se.Spec.Subject.Namespace == "" {
@@ -334,3 +354,10 @@ func (r *UnfreezeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // unfreezeAppliedAnnotation marks an SE the unfreeze controller has
 // already processed so duplicate reconciles are cheap.
 const unfreezeAppliedAnnotation = "ugallu.io/incident-unfreeze-applied"
+
+// FailureUnfreezePolicyAnnotation is read on IncidentCaptureFailed
+// SEs to decide whether the unfreeze loop runs the same auto path
+// as Completed (`auto`, default — empty value) or pauses for an
+// explicit ack (`manual` — admin must triage before release, e.g.
+// the snapshot binary aborted on `creds`/`config` step).
+const FailureUnfreezePolicyAnnotation = "ugallu.io/failure-unfreeze-policy"
