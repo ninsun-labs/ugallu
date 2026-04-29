@@ -30,6 +30,11 @@ type Options struct {
 	ConfigName      string
 	ClusterIdentity securityv1alpha1.ClusterIdentity
 	Emitter         *emitterv1alpha1.Emitter
+
+	// Resolver hydrates Pod attribution on every DNS event before the
+	// dispatcher fans it out. Nil disables enrichment — detectors
+	// degrade to the SrcIP synthetic key.
+	Resolver source.Resolver
 }
 
 // SetupWithManager loads the DNSDetectConfig, builds the 5 detectors
@@ -52,7 +57,7 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 	}
 
 	detectors, blocklistDet := buildDetectors(&cfg.Spec.Detectors)
-	src, srcKind, err := buildSource(cfg.Spec.Source)
+	src, srcKind, err := buildSource(cfg.Spec.Source, opts.Resolver)
 	if err != nil {
 		return fmt.Errorf("source setup: %w", err)
 	}
@@ -136,7 +141,7 @@ func buildDetectors(cfg *securityv1alpha1.DNSDetectorsConfig) ([]detector.Detect
 // buildSource picks the primary source from Spec.Source.Primary.
 // Fallback wiring is a follow-up — for now the operator runs on the
 // primary and emits DNSSourceSilent when it goes quiet.
-func buildSource(cfg securityv1alpha1.DNSSourceConfig) (source.Source, securityv1alpha1.DNSDetectSourceMode, error) {
+func buildSource(cfg securityv1alpha1.DNSSourceConfig, resolver source.Resolver) (source.Source, securityv1alpha1.DNSDetectSourceMode, error) {
 	switch cfg.Primary {
 	case securityv1alpha1.DNSDetectSourceCoreDNSPlugin:
 		endpoint := ""
@@ -146,9 +151,10 @@ func buildSource(cfg securityv1alpha1.DNSSourceConfig) (source.Source, securityv
 		if endpoint == "" {
 			return nil, "", errors.New("source.primary=coredns_plugin requires source.plugin.grpcEndpoint")
 		}
-		s, err := source.NewCoreDNSPluginSource(source.CoreDNSPluginConfig{
+		s, err := source.NewCoreDNSPluginSource(&source.CoreDNSPluginConfig{
 			GRPCEndpoint: endpoint,
 			NodeName:     os.Getenv("HOSTNAME"),
+			Resolver:     resolver,
 		})
 		if err != nil {
 			return nil, "", err

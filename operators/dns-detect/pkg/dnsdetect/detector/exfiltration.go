@@ -65,8 +65,9 @@ func (d *ExfiltrationDetector) Name() string { return "exfiltration" }
 
 // Evaluate runs the heuristic. State is keyed on the resolved Subject
 // UID when present, otherwise on the SrcIP-derived synthetic UID so
-// the detector still fires on unresolved sources (the resolver wiring
-// is a Wave 4 follow-up).
+// the detector still fires on unresolved sources (resolver miss /
+// outage; the source layer enriches Pod + SubjectUID via the SDK
+// resolver before dispatch).
 func (d *ExfiltrationDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if ev == nil {
 		return Finding{}

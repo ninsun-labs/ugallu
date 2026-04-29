@@ -16,9 +16,24 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"k8s.io/apimachinery/pkg/types"
+
+	resolverv1 "github.com/ninsun-labs/ugallu/sdk/pkg/resolver/clientv1"
 
 	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
+
+// DefaultEnrichTimeout caps a single resolver round-trip so a slow
+// resolver never stalls the DNS event stream. Matches design 20 §S2
+// budget for the UDS-fast path.
+const DefaultEnrichTimeout = 100 * time.Millisecond
+
+// Resolver is the subset of the resolver SDK stub the source needs to
+// hydrate Pod attribution on inbound events. CachedClient satisfies it.
+type Resolver interface {
+	ResolveByCgroupID(ctx context.Context, in *resolverv1.CgroupIDRequest, opts ...grpc.CallOption) (*resolverv1.SubjectResponse, error)
+	ResolveByPodIP(ctx context.Context, in *resolverv1.PodIPRequest, opts ...grpc.CallOption) (*resolverv1.SubjectResponse, error)
+}
 
 // CoreDNSPluginConfig wires the gRPC stream client.
 type CoreDNSPluginConfig struct {
@@ -27,6 +42,15 @@ type CoreDNSPluginConfig struct {
 	NodeName        string        // SubscribeRequest.subscriber_id discriminator
 	MaxEventsPerSec uint32        // server-side rate limit
 	ReconnectBase   time.Duration // base for exponential backoff
+
+	// Resolver hydrates Pod / SubjectUID per event using the SDK
+	// resolver. Nil disables enrichment — detectors fall back to the
+	// SrcIP synthetic key.
+	Resolver Resolver
+
+	// EnrichTimeout caps each resolver call. Zero falls back to
+	// DefaultEnrichTimeout.
+	EnrichTimeout time.Duration
 }
 
 // CoreDNSPluginSource is the primary backend (design 21 §D2.1). Dials
@@ -39,7 +63,10 @@ type CoreDNSPluginSource struct {
 }
 
 // NewCoreDNSPluginSource validates cfg and returns a source.
-func NewCoreDNSPluginSource(cfg CoreDNSPluginConfig) (*CoreDNSPluginSource, error) {
+func NewCoreDNSPluginSource(cfg *CoreDNSPluginConfig) (*CoreDNSPluginSource, error) {
+	if cfg == nil {
+		return nil, errors.New("CoreDNSPluginSource: nil config")
+	}
 	if cfg.GRPCEndpoint == "" {
 		return nil, errors.New("CoreDNSPluginSource: empty GRPCEndpoint")
 	}
@@ -49,7 +76,10 @@ func NewCoreDNSPluginSource(cfg CoreDNSPluginConfig) (*CoreDNSPluginSource, erro
 	if cfg.NodeName == "" {
 		cfg.NodeName = "dns-detect-unknown"
 	}
-	return &CoreDNSPluginSource{cfg: cfg}, nil
+	if cfg.EnrichTimeout <= 0 {
+		cfg.EnrichTimeout = DefaultEnrichTimeout
+	}
+	return &CoreDNSPluginSource{cfg: *cfg}, nil
 }
 
 // Name implements Source.
@@ -120,16 +150,69 @@ func (s *CoreDNSPluginSource) runOnce(ctx context.Context, out chan<- *dnsevent.
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case out <- pbToInternal(ev):
+		case out <- s.toEnriched(ctx, ev):
 		}
 	}
 }
 
+// toEnriched runs the wire→internal translation and (when configured)
+// the resolver lookup that fills Pod + SubjectUID. Errors are swallowed
+// — a resolver outage degrades detectors to the SrcIP fallback path,
+// it must not stop the DNS stream.
+func (s *CoreDNSPluginSource) toEnriched(ctx context.Context, ev *dnseventv1.DNSEvent) *dnsevent.DNSEvent {
+	internal := pbToInternal(ev)
+	if internal == nil || s.cfg.Resolver == nil {
+		return internal
+	}
+	s.enrich(ctx, internal)
+	return internal
+}
+
+// enrich queries the resolver with cgroup-id (UDS-fast path) first,
+// then falls back to PodIP. The first successful hit wins. Both calls
+// are bounded by EnrichTimeout so a slow resolver never blocks the
+// stream — on a miss the detector chain still runs and the SrcIP
+// fallback in subjectFromEvent keeps state-keying coherent.
+func (s *CoreDNSPluginSource) enrich(parent context.Context, ev *dnsevent.DNSEvent) {
+	if ev.SrcCgroup != 0 {
+		ctx, cancel := context.WithTimeout(parent, s.cfg.EnrichTimeout)
+		resp, err := s.cfg.Resolver.ResolveByCgroupID(ctx, &resolverv1.CgroupIDRequest{CgroupId: ev.SrcCgroup})
+		cancel()
+		if err == nil && applySubjectResponse(ev, resp) {
+			return
+		}
+	}
+	if ev.SrcIP != nil {
+		ctx, cancel := context.WithTimeout(parent, s.cfg.EnrichTimeout)
+		resp, err := s.cfg.Resolver.ResolveByPodIP(ctx, &resolverv1.PodIPRequest{Ip: ev.SrcIP.String()})
+		cancel()
+		if err == nil {
+			_ = applySubjectResponse(ev, resp)
+		}
+	}
+}
+
+// applySubjectResponse copies a non-empty resolver response into the
+// event. Returns true when the event was populated (a real Pod hit).
+// Unresolved/Tombstone responses are intentionally ignored so the
+// caller can try the next lookup path.
+func applySubjectResponse(ev *dnsevent.DNSEvent, resp *resolverv1.SubjectResponse) bool {
+	if resp == nil || resp.GetUnresolved() || resp.GetTombstone() {
+		return false
+	}
+	if resp.GetNamespace() == "" || resp.GetName() == "" {
+		return false
+	}
+	ev.Pod = types.NamespacedName{Namespace: resp.GetNamespace(), Name: resp.GetName()}
+	if uid := resp.GetUid(); uid != "" {
+		ev.SubjectUID = types.UID(uid)
+	}
+	return true
+}
+
 // pbToInternal translates the wire protobuf shape to the
-// source-agnostic dnsevent.DNSEvent the dispatcher consumes. Pod
-// resolution is left as a follow-up — the resolver SDK call would
-// happen here on a per-event basis once the dns-detect operator
-// wires its resolver client.
+// source-agnostic dnsevent.DNSEvent the dispatcher consumes. Resolver
+// enrichment is layered on top by toEnriched.
 func pbToInternal(ev *dnseventv1.DNSEvent) *dnsevent.DNSEvent {
 	if ev == nil {
 		return nil
