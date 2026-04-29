@@ -9,6 +9,10 @@
 #   audit-detection-bin
 #   forensics-bin
 #   forensics-snapshot-bin
+#   webhook-auditor-bin
+#   dns-detect-bin
+#   tenant-escape-bin
+#   honeypot-bin
 #
 # Cross-compile each binary with:
 #   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w'
@@ -30,5 +34,9 @@ COPY resolver-bin /bin/ugallu-resolver
 COPY audit-detection-bin /bin/ugallu-audit-detection
 COPY forensics-bin /bin/ugallu-forensics
 COPY forensics-snapshot-bin /bin/ugallu-forensics-snapshot
+COPY webhook-auditor-bin /bin/ugallu-webhook-auditor
+COPY dns-detect-bin /bin/ugallu-dns-detect
+COPY tenant-escape-bin /bin/ugallu-tenant-escape
+COPY honeypot-bin /bin/ugallu-honeypot
 USER 65532:65532
 ENTRYPOINT ["/bin/ugallu-attestor"]
