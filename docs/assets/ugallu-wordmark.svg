@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 10 466 100" role="img" aria-label="ugallu wordmark">
+  <!-- Same visual family as the ninsun-labs wordmark:
+       cuneiform-blocky letterforms in #00e5ff, separator dots
+       between letters, square brackets framing the glyphs,
+       dashed scan lines top and bottom, corner dots. -->
+
+  <!-- u -->
+  <rect x="60" y="28" width="4" height="56" fill="#00e5ff"/>
+  <rect x="60" y="80" width="26" height="4" fill="#00e5ff"/>
+  <rect x="82" y="28" width="4" height="56" fill="#00e5ff"/>
+
+  <!-- separator dot -->
+  <circle cx="106" cy="60" r="2.5" fill="#00e5ff" opacity="0.4"/>
+
+  <!-- g -->
+  <rect x="128" y="28" width="24" height="4" fill="#00e5ff"/>
+  <rect x="128" y="28" width="4" height="64" fill="#00e5ff"/>
+  <rect x="128" y="88" width="24" height="4" fill="#00e5ff"/>
+  <rect x="148" y="58" width="4" height="34" fill="#00e5ff"/>
+  <rect x="140" y="58" width="12" height="4" fill="#00e5ff"/>
+
+  <!-- separator dot -->
+  <circle cx="174" cy="60" r="2.5" fill="#00e5ff" opacity="0.4"/>
+
+  <!-- a -->
+  <rect x="196" y="28" width="4" height="64" fill="#00e5ff"/>
+  <rect x="196" y="28" width="24" height="4" fill="#00e5ff"/>
+  <rect x="216" y="28" width="4" height="64" fill="#00e5ff"/>
+  <rect x="196" y="56" width="24" height="4" fill="#00e5ff"/>
+
+  <!-- separator dot -->
+  <circle cx="242" cy="60" r="2.5" fill="#00e5ff" opacity="0.4"/>
+
+  <!-- l -->
+  <rect x="264" y="28" width="4" height="64" fill="#00e5ff"/>
+  <rect x="264" y="88" width="24" height="4" fill="#00e5ff"/>
+
+  <!-- separator dot -->
+  <circle cx="310" cy="60" r="2.5" fill="#00e5ff" opacity="0.4"/>
+
+  <!-- l -->
+  <rect x="332" y="28" width="4" height="64" fill="#00e5ff"/>
+  <rect x="332" y="88" width="24" height="4" fill="#00e5ff"/>
+
+  <!-- separator dot -->
+  <circle cx="378" cy="60" r="2.5" fill="#00e5ff" opacity="0.4"/>
+
+  <!-- u -->
+  <rect x="400" y="28" width="4" height="56" fill="#00e5ff"/>
+  <rect x="400" y="80" width="26" height="4" fill="#00e5ff"/>
+  <rect x="422" y="28" width="4" height="56" fill="#00e5ff"/>
+
+  <!-- bracket left -->
+  <polyline points="40,22 28,22 28,98 40,98" fill="none" stroke="#00e5ff" stroke-width="1.2" opacity="0.5"/>
+
+  <!-- bracket right -->
+  <polyline points="462,22 474,22 474,98 462,98" fill="none" stroke="#00e5ff" stroke-width="1.2" opacity="0.5"/>
+
+  <!-- top separator line -->
+  <line x1="28" y1="18" x2="474" y2="18" stroke="#00e5ff" stroke-width="0.5" stroke-dasharray="4 10" opacity="0.25"/>
+
+  <!-- bottom separator line -->
+  <line x1="28" y1="102" x2="474" y2="102" stroke="#00e5ff" stroke-width="0.5" stroke-dasharray="4 10" opacity="0.25"/>
+
+  <!-- corner dots -->
+  <circle cx="28" cy="18" r="2" fill="#00e5ff" opacity="0.5"/>
+  <circle cx="474" cy="18" r="2" fill="#00e5ff" opacity="0.5"/>
+  <circle cx="28" cy="102" r="2" fill="#00e5ff" opacity="0.5"/>
+  <circle cx="474" cy="102" r="2" fill="#00e5ff" opacity="0.5"/>
+</svg>

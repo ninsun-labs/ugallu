@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="docs/assets/ugallu-wordmark.svg" alt="ugallu" height="80">
+</p>
+
 # ugallu
 
-Kubernetes security platform — apotropaic guardian for cluster ingress and runtime.
+Kubernetes security platform - apotropaic guardian for cluster ingress and runtime.
 
 > **Status: pre-alpha.** Wave 2 closed at tag `wave2-final` (audit-detection + forensics + monitoring); Wave 3+ in design.
 
