@@ -51,10 +51,19 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 		return fmt.Errorf("load DNSDetectConfig %q: %w", opts.ConfigName, err)
 	}
 
-	detectors := buildDetectors(&cfg.Spec.Detectors)
+	detectors, blocklistDet := buildDetectors(&cfg.Spec.Detectors)
 	src, srcKind, err := buildSource(cfg.Spec.Source)
 	if err != nil {
 		return fmt.Errorf("source setup: %w", err)
+	}
+
+	// Wire the blocklist refresher so the BlocklistDetector picks
+	// up entries from the admin-curated ConfigMaps. Without this,
+	// the detector starts empty and never fires.
+	if blocklistDet != nil && len(cfg.Spec.Detectors.Blocklist.ConfigMaps) > 0 {
+		if err := addBlocklistRefresher(mgr, blocklistDet, cfg.Spec.Detectors.Blocklist.ConfigMaps, 0); err != nil {
+			return fmt.Errorf("blocklist refresher: %w", err)
+		}
 	}
 
 	disp := NewDispatcher(detectors, opts.Emitter, opts.ClusterIdentity)
@@ -87,9 +96,12 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 }
 
 // buildDetectors instantiates the 5 detectors from the config block.
-// Disabled detectors are silently skipped.
-func buildDetectors(cfg *securityv1alpha1.DNSDetectorsConfig) []detector.Detector {
+// Disabled detectors are silently skipped. Returns the BlocklistDetector
+// instance (or nil if disabled) so the caller can wire the refresher
+// that pushes entries from admin-curated ConfigMaps.
+func buildDetectors(cfg *securityv1alpha1.DNSDetectorsConfig) ([]detector.Detector, *detector.BlocklistDetector) {
 	out := make([]detector.Detector, 0, 5)
+	var blocklist *detector.BlocklistDetector
 	if cfg.Exfiltration.Enabled {
 		minEntropy, _ := strconv.ParseFloat(cfg.Exfiltration.MinEntropy, 64)
 		out = append(out, detector.NewExfiltrationDetector(detector.ExfiltrationConfig{
@@ -105,10 +117,8 @@ func buildDetectors(cfg *securityv1alpha1.DNSDetectorsConfig) []detector.Detecto
 		}))
 	}
 	if cfg.Blocklist.Enabled {
-		// Entries are pushed at runtime by the ConfigMap watcher;
-		// commit-4 wires that. For now, an empty list — the detector
-		// no-fires until SetEntries is called.
-		out = append(out, detector.NewBlocklistDetector())
+		blocklist = detector.NewBlocklistDetector()
+		out = append(out, blocklist)
 	}
 	if cfg.YoungDomain.Enabled {
 		// AgeLookup wired to RDAP in a follow-up commit; nil disables
@@ -120,7 +130,7 @@ func buildDetectors(cfg *securityv1alpha1.DNSDetectorsConfig) []detector.Detecto
 	if cfg.AnomalousPort.Enabled {
 		out = append(out, detector.NewAnomalousPortDetector())
 	}
-	return out
+	return out, blocklist
 }
 
 // buildSource picks the primary source from Spec.Source.Primary.

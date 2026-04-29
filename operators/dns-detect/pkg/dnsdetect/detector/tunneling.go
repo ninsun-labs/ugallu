@@ -51,9 +51,11 @@ func NewTunnelingDetector(cfg TunnelingConfig) *TunnelingDetector {
 func (d *TunnelingDetector) Name() string { return "tunneling" }
 
 // Evaluate runs the heuristic. Returns at most one Finding per
-// (Pod, ratelimitPerPod) window.
+// (Pod-or-SrcIP, ratelimitPerPod) window. Falls back to a SrcIP-
+// derived synthetic UID when the event has no resolved SubjectUID
+// (the resolver wiring is a Wave 4 follow-up).
 func (d *TunnelingDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
-	if ev == nil || ev.SubjectUID == "" {
+	if ev == nil {
 		return Finding{}
 	}
 	leftLabel := leftmostLabel(ev.QName)
@@ -73,14 +75,22 @@ func (d *TunnelingDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 		return Finding{}
 	}
 
+	rateKey := ev.SubjectUID
+	if rateKey == "" {
+		if ev.SrcIP == nil {
+			return Finding{}
+		}
+		rateKey = types.UID("ip-" + ev.SrcIP.String())
+	}
+
 	d.mu.Lock()
-	last, seen := d.lastFire[ev.SubjectUID]
+	last, seen := d.lastFire[rateKey]
 	now := d.now()
 	if seen && now.Sub(last) < d.cfg.RatelimitPerPod {
 		d.mu.Unlock()
 		return Finding{}
 	}
-	d.lastFire[ev.SubjectUID] = now
+	d.lastFire[rateKey] = now
 	d.mu.Unlock()
 
 	sample := decoded

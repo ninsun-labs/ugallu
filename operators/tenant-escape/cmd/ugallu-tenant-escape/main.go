@@ -47,13 +47,14 @@ func main() {
 
 func runMain() error {
 	var (
-		metricsAddr      string
-		probeAddr        string
-		leaderElectionNS string
-		clusterID        string
-		clusterName      string
-		auditBusEndpoint string
-		auditBusToken    string
+		metricsAddr          string
+		probeAddr            string
+		leaderElectionNS     string
+		clusterID            string
+		clusterName          string
+		auditBusEndpoint     string
+		auditBusToken        string
+		auditBusConsumerName string
 	)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "Prometheus metrics bind address")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "Health probe bind address")
@@ -64,6 +65,8 @@ func runMain() error {
 		"audit-detection event bus gRPC endpoint")
 	flag.StringVar(&auditBusToken, "audit-bus-token", os.Getenv("AUDIT_BUS_TOKEN"),
 		"bearer token for the audit bus (default reads $AUDIT_BUS_TOKEN)")
+	flag.StringVar(&auditBusConsumerName, "audit-bus-consumer-name", "tenant-escape",
+		"audit-bus consumer name; must match an entry in AuditDetectionConfig.spec.consumers")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
@@ -102,9 +105,10 @@ func runMain() error {
 			ClusterID:   clusterID,
 			ClusterName: clusterName,
 		},
-		Emitter:          emitter,
-		AuditBusEndpoint: auditBusEndpoint,
-		AuditBusToken:    auditBusToken,
+		Emitter:              emitter,
+		AuditBusEndpoint:     auditBusEndpoint,
+		AuditBusToken:        auditBusToken,
+		AuditBusConsumerName: auditBusConsumerName,
 	}); err != nil {
 		return fmt.Errorf("tenantescape reconcilers setup: %w", err)
 	}

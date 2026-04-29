@@ -64,10 +64,11 @@ func NewExfiltrationDetector(cfg ExfiltrationConfig) *ExfiltrationDetector {
 func (d *ExfiltrationDetector) Name() string { return "exfiltration" }
 
 // Evaluate runs the heuristic. State is keyed on the resolved Subject
-// UID — events from External (unresolved) sources skip the detector
-// since rarely-seen external sources don't have a meaningful "window".
+// UID when present, otherwise on the SrcIP-derived synthetic UID so
+// the detector still fires on unresolved sources (the resolver wiring
+// is a Wave 4 follow-up).
 func (d *ExfiltrationDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
-	if ev == nil || ev.SubjectUID == "" {
+	if ev == nil {
 		return Finding{}
 	}
 	if ev.QType != "A" && ev.QType != "AAAA" && ev.QType != "TXT" {
@@ -82,12 +83,22 @@ func (d *ExfiltrationDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 		return Finding{}
 	}
 
+	stateKey := ev.SubjectUID
+	if stateKey == "" {
+		// Fallback: synthesise a key from SrcIP so the detector
+		// still windows correctly on unresolved sources.
+		if ev.SrcIP == nil {
+			return Finding{}
+		}
+		stateKey = types.UID("ip-" + ev.SrcIP.String())
+	}
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	st, ok := d.state[ev.SubjectUID]
+	st, ok := d.state[stateKey]
 	if !ok {
 		st = &exfilState{}
-		d.state[ev.SubjectUID] = st
+		d.state[stateKey] = st
 	}
 	st.totalSeen++
 	st.highEntropyCount++

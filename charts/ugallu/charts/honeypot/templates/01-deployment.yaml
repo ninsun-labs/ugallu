@@ -45,14 +45,18 @@ spec:
           {{- if .Values.placeholder }}
           command: ["/bin/sleep", "infinity"]
           {{- else }}
-          command: ["/ugallu-honeypot"]
+          command: {{ .Values.command | default (list "/ugallu-honeypot") | toJson }}
           args:
+            {{- if .Values.args }}
+            {{- toYaml .Values.args | nindent 12 }}
+            {{- else }}
             - --metrics-bind-address=:{{ .Values.metricsPort }}
             - --health-probe-bind-address=:{{ .Values.healthProbePort }}
             - --leader-election-namespace={{ include "honeypot.namespace" . }}
             - --cluster-id={{ .Values.clusterIdentity.clusterID | default "" }}
             - --cluster-name={{ .Values.clusterIdentity.clusterName | default "" }}
             - --audit-bus-endpoint={{ .Values.auditBus.endpoint }}
+            {{- end }}
           {{- end }}
           ports:
             - name: metrics

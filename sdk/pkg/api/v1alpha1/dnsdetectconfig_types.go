@@ -17,8 +17,16 @@ import (
 // +kubebuilder:validation:Enum=coredns_plugin;tetragon_kprobe
 type DNSDetectSourceMode string
 
+// DNSDetectSourceMode enumerates the supported DNS event sources
+// the dns-detect operator consumes. coredns_plugin is the primary
+// (gRPC stream from the in-tree plugin); tetragon_kprobe is the
+// fallback used when the cluster cannot host a CoreDNS plugin.
 const (
-	DNSDetectSourceCoreDNSPlugin  DNSDetectSourceMode = "coredns_plugin"
+	// DNSDetectSourceCoreDNSPlugin reads from the coredns-ugallu
+	// plugin's UgalluDNSStream gRPC server.
+	DNSDetectSourceCoreDNSPlugin DNSDetectSourceMode = "coredns_plugin"
+	// DNSDetectSourceTetragonKprobe reads kprobe DNS events from
+	// the tetragon-bridge sidecar (Wave 4 §D7).
 	DNSDetectSourceTetragonKprobe DNSDetectSourceMode = "tetragon_kprobe"
 )
 

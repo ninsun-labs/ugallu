@@ -15,6 +15,7 @@ package bus
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -28,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 	auditstreamv1 "github.com/ninsun-labs/ugallu/sdk/pkg/auditstream/clientv1"
@@ -100,6 +102,8 @@ func New(cfg Config) (*Server, error) {
 // Start binds the listener and serves until ctx is cancelled. Returns
 // nil on graceful shutdown.
 func (s *Server) Start(ctx context.Context) error {
+	log := ctrl.Log.WithName("audit-bus")
+	log.Info("bus listening", "addr", s.cfg.ListenAddr, "consumers", len(s.cfg.Consumers))
 	lis, err := net.Listen("tcp", s.cfg.ListenAddr)
 	if err != nil {
 		return fmt.Errorf("listen %s: %w", s.cfg.ListenAddr, err)
@@ -141,6 +145,7 @@ func (s *Server) Subscribe(req *auditstreamv1.SubscribeRequest, stream grpc.Serv
 	if !ok {
 		return status.Errorf(codes.PermissionDenied, "consumer %q not declared in AuditDetectionConfig", name)
 	}
+	ctrl.Log.WithName("audit-bus").Info("subscriber connected", "consumer", name)
 
 	sub := &subscriber{
 		id:       fmt.Sprintf("%s/%d", name, time.Now().UnixNano()),
@@ -286,10 +291,21 @@ func toWireEvent(ev *auditdetection.AuditEvent) *auditstreamv1.AuditEvent {
 	if ev.ResponseStatus != nil {
 		out.ResponseStatusCode = uint32(ev.ResponseStatus.Code) //nolint:gosec // HTTP status code, fits in uint32
 	}
-	// We do not forward RequestObject / ResponseObject by default —
-	// the bus opts into raw bodies only when consumer filter
-	// requires them. Wave 3 ships always-forward; the size guard
-	// lands as a follow-up.
+	// Forward RequestObject / ResponseObject as JSON bytes so
+	// downstream consumers (tenant-escape HostPathOverlap +
+	// NetworkPolicy detectors, honeypot Misplaced detector) can
+	// peek inside Pod / NetworkPolicy specs. Size guard lands in
+	// Wave 4.
+	if len(ev.RequestObject) > 0 {
+		if b, err := json.Marshal(ev.RequestObject); err == nil {
+			out.RequestObject = b
+		}
+	}
+	if len(ev.ResponseObject) > 0 {
+		if b, err := json.Marshal(ev.ResponseObject); err == nil {
+			out.ResponseObject = b
+		}
+	}
 	return out
 }
 

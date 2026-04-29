@@ -47,6 +47,14 @@ spec:
             - name: metrics
               containerPort: {{ .Values.metricsPort }}
               protocol: TCP
+          env:
+            # HOSTNAME populates SubscribeRequest.subscriber_id on
+            # the coredns-ugallu plugin gRPC stream — the server
+            # rejects empty subscriber ids with InvalidArgument.
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

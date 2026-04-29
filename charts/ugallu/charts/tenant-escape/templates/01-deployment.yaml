@@ -45,8 +45,11 @@ spec:
           {{- if .Values.placeholder }}
           command: ["/bin/sleep", "infinity"]
           {{- else }}
-          command: ["/ugallu-tenant-escape"]
+          command: {{ .Values.command | default (list "/ugallu-tenant-escape") | toJson }}
           args:
+            {{- if .Values.args }}
+            {{- toYaml .Values.args | nindent 12 }}
+            {{- else }}
             - --metrics-bind-address=:{{ .Values.metricsPort }}
             - --health-probe-bind-address=:{{ .Values.healthProbePort }}
             - --leader-election-namespace={{ include "tenantescape.namespace" . }}
@@ -54,6 +57,7 @@ spec:
             - --cluster-name={{ .Values.clusterIdentity.clusterName | default "" }}
             - --audit-bus-endpoint={{ .Values.auditBus.endpoint }}
             - --audit-bus-consumer-name={{ .Values.auditBus.consumerName | default "tenant-escape" }}
+            {{- end }}
           {{- end }}
           ports:
             - name: metrics

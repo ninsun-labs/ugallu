@@ -109,7 +109,6 @@ func (s *CoreDNSPluginSource) runOnce(ctx context.Context, out chan<- *dnsevent.
 	if err != nil {
 		return fmt.Errorf("subscribe: %w", err)
 	}
-
 	for {
 		ev, err := stream.Recv()
 		if errors.Is(err, io.EOF) {

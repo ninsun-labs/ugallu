@@ -39,12 +39,77 @@ HP_BAD=hp-smoke-bad-${RUN_ID}
 SA_ATTACKER=attacker-${RUN_ID}
 SA_BACKUP=backup-operator-${RUN_ID}
 
+# Inject synthetic apiserver audit events directly into the
+# audit-detection webhook (the lab apiserver is not configured with
+# audit-webhook so we simulate the events).
+NS_UGALLU=ugallu-system
+WEBHOOK_HOST=ugallu-audit-detection-webhook.${NS_UGALLU}.svc.cluster.local
+WEBHOOK_PORT=443
+WEBHOOK_PATH=/v1/audit
+WEBHOOK_SECRET_NAME=ugallu-audit-webhook-token
+TOKEN=$(kubectl -n "$NS_UGALLU" get secret "$WEBHOOK_SECRET_NAME" -o jsonpath='{.data.token}' | base64 -d 2>/dev/null || echo "")
+WEBHOOK_SVC_IP=$(kubectl -n "$NS_UGALLU" get svc ugallu-audit-detection-webhook -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+
+webhook_post() {
+  local payload="$1"
+  kubectl -n "$NS_UGALLU" delete job hp-smoke-curl --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS_UGALLU" delete configmap hp-smoke-payload --ignore-not-found >/dev/null 2>&1 || true
+  printf '%s' "$payload" > /tmp/hp-smoke-body.json
+  kubectl -n "$NS_UGALLU" create configmap hp-smoke-payload \
+    --from-file=body.json=/tmp/hp-smoke-body.json >/dev/null
+  cat <<EOF | kubectl -n "$NS_UGALLU" apply -f - >/dev/null
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hp-smoke-curl
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: curl
+          image: alpine/curl:8.11.1
+          env:
+            - { name: TOKEN, value: "$TOKEN" }
+          command: ["sh", "-c"]
+          args:
+            - |
+              curl -sk -X POST \
+                -H "Authorization: Bearer \$TOKEN" \
+                -H "Content-Type: application/json" \
+                --data @/payload/body.json \
+                --resolve ${WEBHOOK_HOST}:${WEBHOOK_PORT}:${WEBHOOK_SVC_IP} \
+                https://${WEBHOOK_HOST}:${WEBHOOK_PORT}${WEBHOOK_PATH}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - { name: payload, mountPath: /payload }
+      volumes:
+        - name: payload
+          configMap:
+            name: hp-smoke-payload
+EOF
+  kubectl -n "$NS_UGALLU" wait --for=condition=complete --timeout=60s job/hp-smoke-curl >/dev/null
+}
+
 cleanup() {
   kubectl delete ns "$NS" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete honeypotconfig "$HP_GOOD" "$HP_BAD" --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS_UGALLU" delete job hp-smoke-curl --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS_UGALLU" delete configmap hp-smoke-payload --ignore-not-found >/dev/null 2>&1 || true
   kubectl get securityevent --no-headers 2>/dev/null \
     | awk -v rid="$RUN_ID" '$0 ~ rid {print $1}' \
     | xargs -r kubectl delete securityevent --ignore-not-found >/dev/null 2>&1 || true
+  rm -f /tmp/hp-smoke-body.json 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -124,10 +189,13 @@ kubectl -n "$NS" get secret "prod-db-creds-${RUN_ID}" -o jsonpath='{.metadata.la
   || fail "decoy Secret missing label ugallu.io/decoy=true"
 pass "decoys materialised (Secret + ServiceAccount with decoy label)"
 
+# Give honeypot leader time to connect to the audit bus before we
+# post synthetic events.
+sleep 10
+
 # --- Test 3: HoneypotTriggered fires on attacker read ---------------
-info "Test 3: HoneypotTriggered fires when attacker SA reads decoy"
-kubectl --as="system:serviceaccount:${NS}:${SA_ATTACKER}" \
-  -n "$NS" get secret "prod-db-creds-${RUN_ID}" >/dev/null 2>&1 || true
+info "Test 3: HoneypotTriggered fires when attacker SA reads decoy (synthetic audit)"
+webhook_post '{"kind":"EventList","apiVersion":"audit.k8s.io/v1","items":[{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"hp-smoke-trig-'${RUN_ID}'","stage":"ResponseComplete","verb":"get","user":{"username":"system:serviceaccount:'${NS}':'${SA_ATTACKER}'"},"objectRef":{"resource":"secrets","namespace":"'${NS}'","name":"prod-db-creds-'${RUN_ID}'"},"responseStatus":{"code":200},"requestReceivedTimestamp":"2026-04-29T08:00:00.000000Z","stageTimestamp":"2026-04-29T08:00:00.001000Z"}]}'
 if wait_for_se HoneypotTriggered 60; then
   pass "HoneypotTriggered SE emitted"
 else
@@ -135,28 +203,8 @@ else
 fi
 
 # --- Test 4: HoneypotMisplaced fires on Pod with decoy volume -------
-info "Test 4: HoneypotMisplaced fires when a Pod mounts a decoy Secret"
-cat <<EOF | kubectl apply -f - || true
-apiVersion: v1
-kind: Pod
-metadata:
-  name: exfil-pod-${RUN_ID}
-  namespace: ${NS}
-spec:
-  restartPolicy: Never
-  containers:
-    - name: x
-      image: busybox:1.37
-      command: ["/bin/sleep", "3"]
-      volumeMounts:
-        - name: stolen
-          mountPath: /stolen
-  volumes:
-    - name: stolen
-      secret:
-        secretName: prod-db-creds-${RUN_ID}
-EOF
-
+info "Test 4: HoneypotMisplaced fires when a Pod mounts a decoy Secret (synthetic audit)"
+webhook_post '{"kind":"EventList","apiVersion":"audit.k8s.io/v1","items":[{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"RequestResponse","auditID":"hp-smoke-misp-'${RUN_ID}'","stage":"ResponseComplete","verb":"create","user":{"username":"system:serviceaccount:'${NS}':'${SA_ATTACKER}'"},"objectRef":{"resource":"pods","namespace":"'${NS}'","name":"exfil-pod-'${RUN_ID}'"},"requestObject":{"spec":{"volumes":[{"name":"stolen","secret":{"secretName":"prod-db-creds-'${RUN_ID}'"}}]}},"responseStatus":{"code":201},"requestReceivedTimestamp":"2026-04-29T08:00:00.000000Z","stageTimestamp":"2026-04-29T08:00:00.001000Z"}]}'
 if wait_for_se HoneypotMisplaced 60; then
   pass "HoneypotMisplaced SE emitted"
 else
@@ -164,15 +212,14 @@ else
 fi
 
 # --- Test 5: Allowlisted SA does NOT fire ---------------------------
-info "Test 5: allowlisted backup SA reads decoy → no fire"
+info "Test 5: allowlisted backup SA reads decoy → no fire (synthetic audit)"
 # Drop the previous SE so we see a fresh emit (or absence of one).
 kubectl get securityevent --no-headers 2>/dev/null \
   | awk '/HoneypotTriggered/ {print $1}' \
   | xargs -r kubectl delete securityevent --ignore-not-found >/dev/null 2>&1 || true
 
-kubectl --as="system:serviceaccount:${NS}:${SA_BACKUP}" \
-  -n "$NS" get secret "prod-db-creds-${RUN_ID}" >/dev/null 2>&1 || true
-sleep 30
+webhook_post '{"kind":"EventList","apiVersion":"audit.k8s.io/v1","items":[{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"hp-smoke-allow-'${RUN_ID}'","stage":"ResponseComplete","verb":"get","user":{"username":"system:serviceaccount:'${NS}':'${SA_BACKUP}'"},"objectRef":{"resource":"secrets","namespace":"'${NS}'","name":"prod-db-creds-'${RUN_ID}'"},"responseStatus":{"code":200},"requestReceivedTimestamp":"2026-04-29T08:00:00.000000Z","stageTimestamp":"2026-04-29T08:00:00.001000Z"}]}'
+sleep 10
 if wait_for_se HoneypotTriggered 5; then
   fail "allowlisted SA should not have produced a HoneypotTriggered SE"
 else

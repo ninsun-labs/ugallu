@@ -47,13 +47,79 @@ TB_B=te-smoke-b-${RUN_ID}
 TB_OVERLAP=te-smoke-overlap-${RUN_ID}
 SA_A=team-a-bot
 
+# Inject synthetic apiserver audit events directly into the
+# audit-detection webhook (the lab apiserver is not configured with
+# audit-webhook so we simulate the events the same way
+# audit-detection-smoke does — webhook_post helper).
+NS_UGALLU=ugallu-system
+WEBHOOK_HOST=ugallu-audit-detection-webhook.${NS_UGALLU}.svc.cluster.local
+WEBHOOK_PORT=443
+WEBHOOK_PATH=/v1/audit
+WEBHOOK_SECRET_NAME=ugallu-audit-webhook-token
+TOKEN=$(kubectl -n "$NS_UGALLU" get secret "$WEBHOOK_SECRET_NAME" -o jsonpath='{.data.token}' | base64 -d 2>/dev/null || echo "")
+WEBHOOK_SVC_IP=$(kubectl -n "$NS_UGALLU" get svc ugallu-audit-detection-webhook -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+
+webhook_post() {
+  local payload="$1"
+  kubectl -n "$NS_UGALLU" delete job te-smoke-curl --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS_UGALLU" delete configmap te-smoke-payload --ignore-not-found >/dev/null 2>&1 || true
+  printf '%s' "$payload" > /tmp/te-smoke-body.json
+  kubectl -n "$NS_UGALLU" create configmap te-smoke-payload \
+    --from-file=body.json=/tmp/te-smoke-body.json >/dev/null
+  cat <<EOF | kubectl -n "$NS_UGALLU" apply -f - >/dev/null
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: te-smoke-curl
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: curl
+          image: alpine/curl:8.11.1
+          env:
+            - { name: TOKEN, value: "$TOKEN" }
+          command: ["sh", "-c"]
+          args:
+            - |
+              curl -sk -X POST \
+                -H "Authorization: Bearer \$TOKEN" \
+                -H "Content-Type: application/json" \
+                --data @/payload/body.json \
+                --resolve ${WEBHOOK_HOST}:${WEBHOOK_PORT}:${WEBHOOK_SVC_IP} \
+                https://${WEBHOOK_HOST}:${WEBHOOK_PORT}${WEBHOOK_PATH}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - { name: payload, mountPath: /payload }
+      volumes:
+        - name: payload
+          configMap:
+            name: te-smoke-payload
+EOF
+  kubectl -n "$NS_UGALLU" wait --for=condition=complete --timeout=60s job/te-smoke-curl >/dev/null
+}
+
 cleanup() {
   kubectl delete ns "$NS_A" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete ns "$NS_B" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete tenantboundary "$TB_A" "$TB_B" "$TB_OVERLAP" --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS_UGALLU" delete job te-smoke-curl --ignore-not-found >/dev/null 2>&1 || true
+  kubectl -n "$NS_UGALLU" delete configmap te-smoke-payload --ignore-not-found >/dev/null 2>&1 || true
   kubectl get securityevent --no-headers 2>/dev/null \
     | awk -v rid="$RUN_ID" '$0 ~ rid {print $1}' \
     | xargs -r kubectl delete securityevent --ignore-not-found >/dev/null 2>&1 || true
+  rm -f /tmp/te-smoke-body.json 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -136,13 +202,14 @@ for _ in $(seq 1 30); do
 done
 info "TB ${TB_A}.status.matchedNamespaces = $matched"
 
-# --- Test 2: CrossTenantSecretAccess --------------------------------
-info "Test 2: CrossTenantSecretAccess (team-a SA reads Secret in team-b)"
-kubectl create secret generic shared-creds-${RUN_ID} -n "$NS_B" \
-  --from-literal=foo=bar --dry-run=client -o yaml | kubectl apply -f -
-kubectl --as="system:serviceaccount:${NS_A}:${SA_A}" \
-  -n "$NS_B" get secret "shared-creds-${RUN_ID}" >/dev/null 2>&1 || true
+# Give tenant-escape leader time to connect to the audit bus before
+# we post synthetic events (Subscribe takes a couple of seconds
+# after lease acquisition).
+sleep 10
 
+# --- Test 2: CrossTenantSecretAccess --------------------------------
+info "Test 2: CrossTenantSecretAccess (synthetic audit: team-a SA gets Secret in team-b)"
+webhook_post '{"kind":"EventList","apiVersion":"audit.k8s.io/v1","items":[{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"RequestResponse","auditID":"te-smoke-secret-'${RUN_ID}'","stage":"ResponseComplete","verb":"get","user":{"username":"system:serviceaccount:'${NS_A}':'${SA_A}'"},"objectRef":{"resource":"secrets","namespace":"'${NS_B}'","name":"shared-creds-'${RUN_ID}'"},"responseStatus":{"code":200},"requestReceivedTimestamp":"2026-04-29T08:00:00.000000Z","stageTimestamp":"2026-04-29T08:00:00.001000Z"}]}'
 if wait_for_se CrossTenantSecretAccess 60; then
   pass "CrossTenantSecretAccess SE emitted"
 else
@@ -150,28 +217,8 @@ else
 fi
 
 # --- Test 3: CrossTenantHostPathOverlap -----------------------------
-info "Test 3: CrossTenantHostPathOverlap (Pod in team-a mounts /var/lib/${TB_B}/)"
-cat <<EOF | kubectl apply -f - || true
-apiVersion: v1
-kind: Pod
-metadata:
-  name: hostpath-poacher-${RUN_ID}
-  namespace: ${NS_A}
-spec:
-  restartPolicy: Never
-  containers:
-    - name: x
-      image: busybox:1.37
-      command: ["/bin/sleep", "5"]
-      volumeMounts:
-        - name: poached
-          mountPath: /poached
-  volumes:
-    - name: poached
-      hostPath:
-        path: /var/lib/${TB_B}/secrets
-        type: DirectoryOrCreate
-EOF
+info "Test 3: CrossTenantHostPathOverlap (synthetic audit: Pod create in team-a with hostPath of team-b)"
+webhook_post '{"kind":"EventList","apiVersion":"audit.k8s.io/v1","items":[{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"RequestResponse","auditID":"te-smoke-hostpath-'${RUN_ID}'","stage":"ResponseComplete","verb":"create","user":{"username":"system:serviceaccount:'${NS_A}':'${SA_A}'"},"objectRef":{"resource":"pods","namespace":"'${NS_A}'","name":"hostpath-poacher-'${RUN_ID}'"},"requestObject":{"spec":{"volumes":[{"hostPath":{"path":"/var/lib/'${TB_B}'/secrets"}}]}},"responseStatus":{"code":201},"requestReceivedTimestamp":"2026-04-29T08:00:00.000000Z","stageTimestamp":"2026-04-29T08:00:00.001000Z"}]}'
 
 if wait_for_se CrossTenantHostPathOverlap 60; then
   pass "CrossTenantHostPathOverlap SE emitted"
@@ -180,22 +227,8 @@ else
 fi
 
 # --- Test 4: CrossTenantNetworkPolicy --------------------------------
-info "Test 4: CrossTenantNetworkPolicy (NP in team-a allows ingress from team-b)"
-cat <<EOF | kubectl apply -f -
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: open-ingress-${RUN_ID}
-  namespace: ${NS_A}
-spec:
-  podSelector: {}
-  policyTypes: ["Ingress"]
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ${NS_B}
-EOF
+info "Test 4: CrossTenantNetworkPolicy (synthetic audit: NP create in team-a allows ingress from team-b)"
+webhook_post '{"kind":"EventList","apiVersion":"audit.k8s.io/v1","items":[{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"RequestResponse","auditID":"te-smoke-np-'${RUN_ID}'","stage":"ResponseComplete","verb":"create","user":{"username":"system:serviceaccount:'${NS_A}':'${SA_A}'"},"objectRef":{"resource":"networkpolicies","apiGroup":"networking.k8s.io","namespace":"'${NS_A}'","name":"open-ingress-'${RUN_ID}'"},"requestObject":{"spec":{"podSelector":{},"policyTypes":["Ingress"],"ingress":[{"from":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"'${NS_B}'"}}}]}]}},"responseStatus":{"code":201},"requestReceivedTimestamp":"2026-04-29T08:00:00.000000Z","stageTimestamp":"2026-04-29T08:00:00.001000Z"}]}'
 
 if wait_for_se CrossTenantNetworkPolicy 60; then
   pass "CrossTenantNetworkPolicy SE emitted"

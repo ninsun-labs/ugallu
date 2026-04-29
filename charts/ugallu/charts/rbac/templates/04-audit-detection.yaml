@@ -53,6 +53,15 @@ rules:
   - apiGroups: ["security.ugallu.io"]
     resources: ["sigmarules/status"]
     verbs: ["update", "patch"]
+
+  # Read AuditDetectionConfig (cluster-scoped singleton) at boot
+  # to enable the Wave 3 §S2 event bus + per-consumer filter.
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["auditdetectionconfigs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["security.ugallu.io"]
+    resources: ["auditdetectionconfigs/status"]
+    verbs: ["update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -81,9 +90,6 @@ metadata:
   labels:
     {{- include "rbac.labels" . | nindent 4 }}
 rules:
-  - apiGroups: ["security.ugallu.io"]
-    resources: ["auditdetectionconfigs"]
-    verbs: ["get", "list", "watch"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     resourceNames: ["ugallu-audit-detection-leader"]
@@ -117,9 +123,6 @@ metadata:
   labels:
     {{- include "rbac.labels" . | nindent 4 }}
 rules:
-  - apiGroups: ["security.ugallu.io"]
-    resources: ["auditdetectionconfigs"]
-    verbs: ["get", "list", "watch"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     resourceNames: ["ugallu-audit-detection-leader"]
