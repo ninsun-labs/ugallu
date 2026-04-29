@@ -1,0 +1,61 @@
+{{- /*
+Policy 15 - ComplianceScanRun spec invariants (Wave 4 §S5).
+
+Two safety bounds:
+  - timeout <= 30m: a stuck scan must not pin operator workers
+    forever, especially when running on a CronJob cadence.
+  - backend / framework values are pinned to the supported enum.
+*/ -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ugallu.compliance-scan-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["compliancescanruns"]
+  validations:
+    - expression: |
+        has(object.spec.backend) && object.spec.backend in ['kube-bench', 'falco', 'cel-custom']
+      message: "ComplianceScanRun.spec.backend must be one of kube-bench, falco, cel-custom."
+      reason: Invalid
+    - expression: |
+        has(object.spec.profile) && object.spec.profile != ''
+      message: "ComplianceScanRun.spec.profile is required."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.timeout) || object.spec.timeout <= duration('30m')
+      message: "ComplianceScanRun.spec.timeout must be <= 30m."
+      reason: Invalid
+    - expression: |
+        !has(object.spec.controlMappings) ||
+        object.spec.controlMappings.all(m,
+          has(m.checkID) && m.checkID != '' &&
+          has(m.frameworks) && size(m.frameworks) > 0 &&
+          m.frameworks.all(f,
+            has(f.name) && f.name in ['soc2','iso27001','pci-dss','nist-800-53','custom'] &&
+            has(f.controlID) && f.controlID != ''))
+      message: "ComplianceScanRun.spec.controlMappings entries must carry a checkID and at least one framework with a supported name + controlID."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ugallu.compliance-scan-run
+  labels:
+    {{- include "admission-policies.labels" . | nindent 4 }}
+spec:
+  policyName: ugallu.compliance-scan-run
+  validationActions: [Deny]
+  matchResources:
+    resourceRules:
+      - apiGroups:   ["security.ugallu.io"]
+        apiVersions: ["v1alpha1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["compliancescanruns"]

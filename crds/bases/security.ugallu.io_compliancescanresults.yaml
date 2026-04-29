@@ -1,0 +1,188 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: compliancescanresults.security.ugallu.io
+spec:
+  group: security.ugallu.io
+  names:
+    kind: ComplianceScanResult
+    listKind: ComplianceScanResultList
+    plural: compliancescanresults
+    shortNames:
+    - csres
+    singular: compliancescanresult
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.backend
+      name: Backend
+      type: string
+    - jsonPath: .status.worstSeverity
+      name: Worst
+      type: string
+    - jsonPath: .spec.derivedFromRun.name
+      name: Run
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          ComplianceScanResult is the per-check report. Retained 365d per
+          design (W4-D7) by the ugallu-ttl operator.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ComplianceScanResultSpec is the per-check report the scan
+              produced.
+            properties:
+              backend:
+                description: |-
+                  Backend / Profile mirror the run for downstream consumers
+                  that only see the result.
+                enum:
+                - kube-bench
+                - falco
+                - cel-custom
+                type: string
+              checks:
+                description: Checks is the per-check report.
+                items:
+                  description: ComplianceCheckResult is one scanner row.
+                  properties:
+                    checkID:
+                      description: CheckID is the scanner-native identifier.
+                      type: string
+                    detail:
+                      description: |-
+                        Detail is free-form scanner output (one line is enough; the
+                        raw scanner artifact lives in the WORM bucket).
+                      type: string
+                    frameworks:
+                      description: Frameworks copies the matching ControlMapping entries.
+                      items:
+                        description: FrameworkControl is one (framework, controlID)
+                          pair.
+                        properties:
+                          controlID:
+                            description: ControlID inside the framework.
+                            type: string
+                          name:
+                            description: |-
+                              Name of the regulatory framework, lowercase
+                              (soc2|iso27001|pci-dss|nist-800-53|custom).
+                            enum:
+                            - soc2
+                            - iso27001
+                            - pci-dss
+                            - nist-800-53
+                            - custom
+                            type: string
+                        required:
+                        - controlID
+                        - name
+                        type: object
+                      type: array
+                    outcome:
+                      description: Outcome is the canonical pass/fail state.
+                      enum:
+                      - pass
+                      - fail
+                      - warn
+                      - skip
+                      type: string
+                    severity:
+                      allOf:
+                      - enum:
+                        - critical
+                        - high
+                        - medium
+                        - low
+                        - info
+                      - enum:
+                        - critical
+                        - high
+                        - medium
+                        - low
+                        - info
+                      description: Severity uses the canonical 5-grade scale.
+                      type: string
+                    title:
+                      description: Title is a human-readable description of the check.
+                      type: string
+                  required:
+                  - checkID
+                  - outcome
+                  - title
+                  type: object
+                type: array
+              derivedFromRun:
+                description: |-
+                  DerivedFromRun is the ComplianceScanRun that produced this
+                  result. Same namespace.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              profile:
+                type: string
+              summary:
+                additionalProperties:
+                  type: integer
+                description: Summary is a {pass,fail,warn,skip}→count map.
+                type: object
+            required:
+            - backend
+            - derivedFromRun
+            - profile
+            type: object
+          status:
+            description: ComplianceScanResultStatus carries the worst observed severity.
+            properties:
+              worstSeverity:
+                allOf:
+                - enum:
+                  - critical
+                  - high
+                  - medium
+                  - low
+                  - info
+                - enum:
+                  - critical
+                  - high
+                  - medium
+                  - low
+                  - info
+                description: Severity is the 5-grade severity scale (design D7).
+                type: string
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

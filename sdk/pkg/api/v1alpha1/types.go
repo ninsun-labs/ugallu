@@ -316,4 +316,9 @@ const (
 	TypeBackupVerifyCompleted = "BackupVerifyCompleted"
 	TypeBackupVerifyMismatch  = "BackupVerifyMismatch"
 	TypeBackupVerifyFailed    = "BackupVerifyFailed"
+
+	// Compliance (compliance-scan — design 21 §C / Wave 4 §S5).
+	TypeComplianceScanStarted   = "ComplianceScanStarted"
+	TypeComplianceScanCompleted = "ComplianceScanCompleted"
+	TypeComplianceScanFailed    = "ComplianceScanFailed"
 )

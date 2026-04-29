@@ -58,7 +58,9 @@ spec:
           'SeccompTrainingStarted', 'SeccompTrainingCompleted',
           'SeccompTrainingFailed',
           'BackupVerifyStarted', 'BackupVerifyCompleted',
-          'BackupVerifyMismatch', 'BackupVerifyFailed'
+          'BackupVerifyMismatch', 'BackupVerifyFailed',
+          'ComplianceScanStarted', 'ComplianceScanCompleted',
+          'ComplianceScanFailed'
         ] ||
         (has(object.metadata.labels) &&
          'ugallu.io/type-experimental' in object.metadata.labels &&
