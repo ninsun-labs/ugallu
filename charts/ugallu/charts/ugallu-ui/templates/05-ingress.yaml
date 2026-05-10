@@ -1,0 +1,42 @@
+{{- if eq .Values.routing.kind "ingress" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ugallu-ui
+  namespace: {{ include "ugalluui.namespace" . }}
+  labels:
+    {{- include "ugalluui.labels" . | nindent 4 }}
+  annotations:
+    {{- if and .Values.ingress.tls.enabled .Values.ingress.tls.issuerRef }}
+    {{- if eq .Values.ingress.tls.issuerRef.kind "ClusterIssuer" }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.issuerRef.name | quote }}
+    {{- else }}
+    cert-manager.io/issuer: {{ .Values.ingress.tls.issuerRef.name | quote }}
+    {{- end }}
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: ugallu-ui-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ugallu-ui
+                port:
+                  name: web
+{{- end }}

@@ -1,0 +1,484 @@
+openapi: 3.1.0
+info:
+  title: ugallu BFF
+  description: |
+    Backend-for-Frontend that powers the ugallu UI. Read-only REST
+    surface over the security.ugallu.io CRD group, gated by an
+    OIDC-derived session cookie. The BFF holds the cluster
+    ServiceAccount; the browser only ever holds a signed cookie.
+  version: 0.0.1-alpha.1
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+
+servers:
+  - url: /api/v1
+    description: Stable surface
+
+tags:
+  - name: auth
+    description: OIDC + PKCE flow endpoints (mounted at /auth, NOT under /api/v1).
+  - name: identity
+    description: Identity of the authenticated user.
+  - name: events
+    description: SecurityEvent listing and detail.
+  - name: runs
+    description: Unified Run + Result/Profile listing across the four Run kinds.
+  - name: configurations
+    description: Read-only view of the *Config singletons.
+
+paths:
+  /me:
+    get:
+      tags: [identity]
+      summary: Current authenticated user
+      operationId: getMe
+      responses:
+        "200":
+          description: Authenticated user payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /events:
+    get:
+      tags: [events]
+      summary: List SecurityEvents
+      operationId: listEvents
+      parameters:
+        - in: query
+          name: namespace
+          schema: { type: string }
+          description: Filter by namespace (cluster-scoped CRD; this filters labels for namespaced subjects).
+        - in: query
+          name: class
+          schema:
+            type: string
+            enum: [Detection, Audit, Forensic, Compliance, Anomaly, PolicyViolation]
+        - in: query
+          name: type
+          schema: { type: string }
+          description: One of the 92 closed SecurityEvent types.
+        - in: query
+          name: severity
+          schema:
+            type: string
+            enum: [info, low, medium, high, critical]
+        - in: query
+          name: subjectKind
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Free-text match across name + type + signals.
+        - in: query
+          name: labelSelector
+          schema: { type: string }
+          description: K8s-style label selector (forwarded to the apiserver).
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: continue
+          schema: { type: string }
+          description: Continue token from a previous page (echoed by the apiserver).
+      responses:
+        "200":
+          description: Paged list of summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Internal"
+
+  /events/{name}:
+    get:
+      tags: [events]
+      summary: Get a SecurityEvent by name
+      operationId: getEvent
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema: { type: string }
+        - in: query
+          name: namespace
+          schema: { type: string }
+      responses:
+        "200":
+          description: Full SecurityEvent (raw apiserver payload)
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Raw security.ugallu.io/v1alpha1.SecurityEvent
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/Internal"
+
+  /runs:
+    get:
+      tags: [runs]
+      summary: List runs across the four Run kinds
+      description: |
+        Lists BackupVerifyRun, ComplianceScanRun,
+        ConfidentialAttestationRun, and SeccompTrainingRun in a
+        single call. Each row carries a `details` map with
+        kind-specific fields (backend / mode / profile / node /
+        ...) so the SPA can render a uniform table.
+      operationId: listRuns
+      parameters:
+        - in: query
+          name: namespace
+          schema: { type: string }
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum:
+              - BackupVerifyRun
+              - ComplianceScanRun
+              - ConfidentialAttestationRun
+              - SeccompTrainingRun
+        - in: query
+          name: phase
+          schema:
+            type: string
+            enum: [Pending, Running, Succeeded, Failed]
+      responses:
+        "200":
+          description: Sorted run summaries (newest first)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /runs/{kind}/{namespace}/{name}:
+    get:
+      tags: [runs]
+      summary: Get a run with its linked Result or Profile
+      operationId: getRun
+      parameters:
+        - in: path
+          name: kind
+          required: true
+          schema:
+            type: string
+            enum:
+              - BackupVerifyRun
+              - ComplianceScanRun
+              - ConfidentialAttestationRun
+              - SeccompTrainingRun
+        - in: path
+          name: namespace
+          required: true
+          schema: { type: string }
+        - in: path
+          name: name
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Run + linked Result (or Profile, for SeccompTrainingRun)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunDetailResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /configurations:
+    get:
+      tags: [configurations]
+      summary: List *Config singletons
+      operationId: listConfigurations
+      parameters:
+        - in: query
+          name: kind
+          schema: { type: string }
+      responses:
+        "200":
+          description: Per-kind sorted summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /configurations/{kind}/{namespace}/{name}:
+    get:
+      tags: [configurations]
+      summary: Get a *Config CR by name (namespaced kinds)
+      operationId: getNamespacedConfiguration
+      parameters:
+        - in: path
+          name: kind
+          required: true
+          schema: { type: string }
+        - in: path
+          name: namespace
+          required: true
+          schema: { type: string }
+        - in: path
+          name: name
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Raw apiserver payload of the configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigDetailResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /configurations/{kind}/{name}:
+    get:
+      tags: [configurations]
+      summary: Get a cluster-scoped *Config CR by name
+      operationId: getClusterConfiguration
+      parameters:
+        - in: path
+          name: kind
+          required: true
+          schema: { type: string }
+        - in: path
+          name: name
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Raw apiserver payload of the configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigDetailResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    MeResponse:
+      type: object
+      required: [sub, bffVersion]
+      properties:
+        sub: { type: string, description: OIDC subject identifier }
+        email: { type: string, format: email }
+        name: { type: string, description: Display name (claim "name" or "preferred_username") }
+        groups:
+          type: array
+          items: { type: string }
+        bffVersion: { type: string, description: Build version of the BFF (e.g. v0.0.1-alpha.1) }
+
+    EventListResponse:
+      type: object
+      required: [items, generation]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/EventSummary" }
+        generation:
+          type: string
+          description: Apiserver resourceVersion of the list, for change-detection in clients.
+        continue:
+          type: string
+          description: Continue token to pass back as `continue` for the next page.
+
+    EventSummary:
+      type: object
+      required: [name, uid, creationTimestamp, type, class, severity, subject, source]
+      properties:
+        name: { type: string }
+        namespace: { type: string }
+        uid: { type: string }
+        creationTimestamp: { type: string, format: date-time }
+        type: { type: string }
+        class: { $ref: "#/components/schemas/Class" }
+        severity: { $ref: "#/components/schemas/Severity" }
+        subject: { $ref: "#/components/schemas/EventSubject" }
+        source: { $ref: "#/components/schemas/EventSource" }
+        phase: { type: string, enum: ["", Active, Attested, Archived] }
+        correlationID: { type: string }
+        labels:
+          type: object
+          additionalProperties: { type: string }
+
+    EventSubject:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string }
+        name: { type: string }
+        namespace: { type: string }
+        uid: { type: string }
+
+    EventSource:
+      type: object
+      properties:
+        kind: { type: string }
+        name: { type: string }
+        instance: { type: string }
+        clusterName: { type: string }
+        clusterID: { type: string }
+
+    # --- Runs ----------------------------------------------------
+
+    RunKind:
+      type: string
+      enum:
+        - BackupVerifyRun
+        - ComplianceScanRun
+        - ConfidentialAttestationRun
+        - SeccompTrainingRun
+
+    RunPhase:
+      type: string
+      enum: ["", Pending, Running, Succeeded, Failed]
+
+    RunSummary:
+      type: object
+      required: [kind, namespace, name, uid, creationTimestamp]
+      properties:
+        kind: { $ref: "#/components/schemas/RunKind" }
+        namespace: { type: string }
+        name: { type: string }
+        uid: { type: string }
+        phase: { $ref: "#/components/schemas/RunPhase" }
+        startTime: { type: string, format: date-time }
+        completionTime: { type: string, format: date-time }
+        creationTimestamp: { type: string, format: date-time }
+        worstSeverity: { $ref: "#/components/schemas/Severity" }
+        resultName: { type: string }
+        details:
+          type: object
+          additionalProperties: { type: string }
+          description: Kind-specific fields (backend, mode, profile, node, ...).
+
+    RunListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/RunSummary" }
+
+    RunDetailResponse:
+      type: object
+      required: [kind, run]
+      properties:
+        kind: { $ref: "#/components/schemas/RunKind" }
+        run:
+          type: object
+          additionalProperties: true
+          description: Raw apiserver Run object.
+        result:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Raw apiserver Result CR (or Profile, for SeccompTrainingRun). Empty when the run has not produced one.
+
+    # --- Configurations ------------------------------------------
+
+    ConfigKind:
+      type: string
+      enum:
+        - AuditDetectionConfig
+        - DNSDetectConfig
+        - ForensicsConfig
+        - HoneypotConfig
+        - WebhookAuditorConfig
+        - TTLConfig
+        - WORMConfig
+        - AttestorConfig
+        - GitOpsResponderConfig
+
+    ConfigSummary:
+      type: object
+      required: [kind, name, uid, creationTimestamp, healthy]
+      properties:
+        kind: { $ref: "#/components/schemas/ConfigKind" }
+        namespace: { type: string }
+        name: { type: string }
+        uid: { type: string }
+        creationTimestamp: { type: string, format: date-time }
+        generation: { type: integer, format: int64 }
+        lastConfigLoadAt: { type: string, format: date-time }
+        healthy: { type: boolean }
+
+    ConfigListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ConfigSummary" }
+
+    ConfigDetailResponse:
+      type: object
+      required: [kind, object]
+      properties:
+        kind: { $ref: "#/components/schemas/ConfigKind" }
+        object:
+          type: object
+          additionalProperties: true
+          description: Raw apiserver payload of the configuration CR.
+
+    Class:
+      type: string
+      enum: [Detection, Audit, Forensic, Compliance, Anomaly, PolicyViolation]
+
+    Severity:
+      type: string
+      enum: [info, low, medium, high, critical]
+
+    Error:
+      type: object
+      required: [code, message, ts]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        ts: { type: string, format: date-time }
+        loginURL:
+          type: string
+          description: Present on `unauthenticated` responses; redirects through the OIDC flow.
+
+  responses:
+    Unauthorized:
+      description: No or invalid session cookie
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource does not exist
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Internal:
+      description: Internal server error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }

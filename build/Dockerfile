@@ -18,6 +18,8 @@
 #   compliance-scan-bin
 #   confidential-attestation-bin
 #   tetragon-bridge-bin
+#   ugallu-bff-bin
+#   ugallu-ui-spa/                # SvelteKit static bundle (cmd/ugallu-ui/build/)
 #
 # Cross-compile each binary with:
 #   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w'
@@ -29,8 +31,14 @@
 FROM alpine:3.20 AS certs
 RUN apk add --no-cache ca-certificates
 
+# Static busybox - the ugallu-ui chart's initContainer needs `cp`
+# to copy /srv/www/ugallu-ui/ into a shared emptyDir for the nginx
+# sidecar. The musl variant is fully static and works from scratch.
+FROM busybox:1.37-musl AS busybox
+
 FROM scratch
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=busybox /bin/busybox /bin/busybox
 COPY attestor-bin /bin/ugallu-attestor
 COPY ttl-bin /bin/ugallu-ttl
 COPY backpressure-bin /bin/ugallu-backpressure
@@ -48,5 +56,10 @@ COPY backup-verify-bin /bin/ugallu-backup-verify
 COPY compliance-scan-bin /bin/ugallu-compliance-scan
 COPY confidential-attestation-bin /bin/ugallu-confidential-attestation
 COPY tetragon-bridge-bin /bin/tetragon-bridge
+COPY ugallu-bff-bin /bin/ugallu-bff
+# SvelteKit static bundle - served by the nginx-distroless sidecar
+# in the ugallu-ui Pod through a shared emptyDir mount populated
+# by the chart's initContainer (see charts/ugallu-ui).
+COPY ugallu-ui-spa/ /srv/www/ugallu-ui/
 USER 65532:65532
 ENTRYPOINT ["/bin/ugallu-attestor"]

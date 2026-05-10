@@ -138,3 +138,50 @@ confidential-attestation:
     tpm: { enabled: false }
     sevSnp: { enabled: false }
     tdx: { enabled: false }
+
+# UI: SvelteKit SPA + Go BFF, served by an nginx-distroless front
+# inside a single Pod. Reachable on the lab at https://ui.ugallu.lab
+# once cert-manager has issued the TLS certificate.
+#
+# Prerequisites the lab admin must seed before the chart applies:
+#   - Keycloak realm `ugallu` with a client `ugallu-ui` configured
+#     for Authorization Code + PKCE.
+#   - Secret/ugallu-ui-oidc with key=client_secret in ugallu-system.
+#   - Secret/ugallu-ui-cookie with key=cookie_secret (>=32 bytes
+#     random). Seed with:
+#       kubectl -n ugallu-system create secret generic ugallu-ui-cookie \
+#         --from-literal=cookie_secret="$(openssl rand -hex 32)"
+#   - ClusterIssuer `ugallu-issuer` provisioned by cert-manager.
+ugallu-ui:
+  enabled: true
+  image:
+    repository: localhost/ugallu-runtime
+    tag: wave5-rc1
+    pullPolicy: Never
+  # Lab/dev escape hatch: skip OIDC entirely so the SPA loads
+  # without a Keycloak realm. The BFF accepts every API call as
+  # 'lab-user'. Flip back to false (and seed the OIDC + cookie
+  # Secrets) once the Keycloak client is provisioned.
+  auth:
+    disabled: true
+  oidc:
+    issuer: ""
+    clientID: ugallu-ui
+  externalURL: https://ui.ugallu.lab
+  cookie:
+    domain: ugallu.lab
+  # Cilium Gateway API: HTTPRoute attached to ugallu-gateway in
+  # ugallu-system (listener `http`, VIP 192.168.122.200 from the
+  # lb-ipam pool). HTTPS lands once cert-manager's gateway-shim
+  # issues a Certificate for ui.ugallu.lab.
+  routing:
+    kind: gateway
+  gateway:
+    host: ui.ugallu.lab
+    parentRef:
+      name: ugallu-gateway
+      namespace: ugallu-system
+      sectionName: http
+  clusterIdentity:
+    clusterID: rke2-lab
+    clusterName: rke2-lab

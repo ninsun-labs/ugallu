@@ -151,3 +151,15 @@ compliance-scan:
 # operator emits indeterminate verdicts in that case.
 confidential-attestation:
   enabled: true
+
+# ugallu-ui subchart: the SOC view. SvelteKit SPA + Go BFF, served
+# from a single Pod with an nginx-distroless front. Disabled by
+# default because the chart hard-fails when oidc.issuer or
+# externalURL is empty - opt in once the OIDC issuer is reachable
+# and the cookie/oidc Secrets are present.
+ugallu-ui:
+  enabled: false
+  oidc:
+    issuer: ""
+    clientID: ugallu-ui
+  externalURL: ""

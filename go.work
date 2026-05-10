@@ -4,6 +4,7 @@ use (
 	./attestor
 	./backpressure
 	./cmd/ugallu
+	./cmd/ugallu-bff
 	./hack/rdap-mock
 	./operators/audit-detection
 	./operators/backup-verify

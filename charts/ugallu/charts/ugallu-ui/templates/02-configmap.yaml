@@ -1,0 +1,85 @@
+---
+# Nginx serves the SPA bundle and proxies /api + /auth + the BFF
+# health endpoints to the BFF on 127.0.0.1:{{ .Values.bff.port }}.
+# The "try_files $uri $uri/ /index.html" line is the SPA fallback
+# that lets client-side routing handle deep links.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ugallu-ui-nginx
+  namespace: {{ include "ugalluui.namespace" . }}
+  labels:
+    {{- include "ugalluui.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    pid /tmp/nginx.pid;
+    worker_processes auto;
+    error_log /dev/stderr warn;
+    events { worker_connections 1024; }
+    http {
+      include       /etc/nginx/mime.types;
+      default_type  application/octet-stream;
+      sendfile      on;
+      keepalive_timeout 65;
+      gzip on;
+      gzip_types text/plain text/css application/json application/javascript application/xml text/xml application/wasm image/svg+xml;
+      gzip_min_length 1024;
+      access_log /dev/stdout;
+
+      # Distroless nginx images run as a non-root user with a
+      # read-only rootfs; every writable path needs to be under
+      # /tmp or another emptyDir mount.
+      client_body_temp_path /tmp/client_body;
+      proxy_temp_path       /tmp/proxy;
+      fastcgi_temp_path     /tmp/fastcgi;
+      uwsgi_temp_path       /tmp/uwsgi;
+      scgi_temp_path        /tmp/scgi;
+
+      server {
+        listen      {{ .Values.service.port }};
+        server_name _;
+        root        /usr/share/nginx/html;
+        index       index.html;
+
+        # Hardening - the SPA does not need any framing context.
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options        "DENY"   always;
+        add_header Referrer-Policy        "no-referrer" always;
+        add_header Cache-Control          "no-store" always;
+
+        # Hashed asset bundles get a long TTL.
+        location /_app/ {
+          add_header Cache-Control "public, max-age=31536000, immutable" always;
+          try_files $uri =404;
+        }
+
+        # SPA fallback: any unknown path renders index.html so
+        # client-side routing can take over.
+        location / {
+          try_files $uri $uri/ /index.html;
+        }
+
+        # API + auth + healthz proxy to the BFF.
+        location /api/ {
+          proxy_pass         http://127.0.0.1:{{ .Values.bff.port }};
+          proxy_set_header   Host $host;
+          proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header   X-Forwarded-Proto $scheme;
+          proxy_read_timeout 60s;
+        }
+        location /auth/ {
+          proxy_pass         http://127.0.0.1:{{ .Values.bff.port }};
+          proxy_set_header   Host $host;
+          proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+        location = /healthz {
+          proxy_pass         http://127.0.0.1:{{ .Values.bff.port }}/healthz;
+          access_log off;
+        }
+        location = /readyz {
+          proxy_pass         http://127.0.0.1:{{ .Values.bff.port }}/readyz;
+          access_log off;
+        }
+      }
+    }

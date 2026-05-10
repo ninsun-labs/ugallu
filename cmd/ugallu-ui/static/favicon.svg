@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="ugallu mark">
+  <!-- Visual family inherited from the ninsun-labs wordmark:
+       cuneiform-blocky letterforms, scan lines, corner dots, and
+       square brackets framing the glyph. The fill colour adapts to
+       the user's preferred colour scheme via a CSS media query so
+       the mark stays AA-readable on both light and dark browser
+       chrome backgrounds. -->
+  <style>
+    :root { --u: #00e5ff; }
+    @media (prefers-color-scheme: light) { :root { --u: #006d7d; } }
+    .stroke { stroke: var(--u); }
+    .fill   { fill:   var(--u); }
+  </style>
+
+  <!-- top + bottom scan lines -->
+  <line x1="6" y1="6" x2="58" y2="6" class="stroke" stroke-width="0.5" stroke-dasharray="2 4" opacity="0.25"/>
+  <line x1="6" y1="58" x2="58" y2="58" class="stroke" stroke-width="0.5" stroke-dasharray="2 4" opacity="0.25"/>
+
+  <!-- left and right brackets -->
+  <polyline points="14,8 6,8 6,56 14,56" fill="none" class="stroke" stroke-width="0.8" opacity="0.5"/>
+  <polyline points="50,8 58,8 58,56 50,56" fill="none" class="stroke" stroke-width="0.8" opacity="0.5"/>
+
+  <!-- corner dots -->
+  <circle cx="6" cy="6" r="1.2" class="fill" opacity="0.5"/>
+  <circle cx="58" cy="6" r="1.2" class="fill" opacity="0.5"/>
+  <circle cx="6" cy="58" r="1.2" class="fill" opacity="0.5"/>
+  <circle cx="58" cy="58" r="1.2" class="fill" opacity="0.5"/>
+
+  <!-- the letter U, cuneiform-blocky strokes -->
+  <rect x="20" y="14" width="3" height="30" class="fill"/>
+  <rect x="41" y="14" width="3" height="30" class="fill"/>
+  <rect x="20" y="41" width="24" height="3" class="fill"/>
+
+  <!-- apotropaic eye inside the U bowl: blocky outline + pupil -->
+  <rect x="29" y="24" width="6" height="6" fill="none" class="stroke" stroke-width="1" opacity="0.9"/>
+  <rect x="31" y="26" width="2" height="2" class="fill"/>
+</svg>

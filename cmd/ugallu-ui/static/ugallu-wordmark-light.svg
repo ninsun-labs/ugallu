@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 10 466 100" role="img" aria-label="ugallu wordmark">
+  <!-- Light-theme variant of ugallu-wordmark.svg.
+       Darker cyan (#006d7d) for AA contrast on white backgrounds. -->
+
+  <!-- u -->
+  <rect x="60" y="28" width="4" height="56" fill="#006d7d"/>
+  <rect x="60" y="80" width="26" height="4" fill="#006d7d"/>
+  <rect x="82" y="28" width="4" height="56" fill="#006d7d"/>
+
+  <circle cx="106" cy="60" r="2.5" fill="#006d7d" opacity="0.4"/>
+
+  <!-- g -->
+  <rect x="128" y="28" width="24" height="4" fill="#006d7d"/>
+  <rect x="128" y="28" width="4" height="64" fill="#006d7d"/>
+  <rect x="128" y="88" width="24" height="4" fill="#006d7d"/>
+  <rect x="148" y="58" width="4" height="34" fill="#006d7d"/>
+  <rect x="140" y="58" width="12" height="4" fill="#006d7d"/>
+
+  <circle cx="174" cy="60" r="2.5" fill="#006d7d" opacity="0.4"/>
+
+  <!-- a -->
+  <rect x="196" y="28" width="4" height="64" fill="#006d7d"/>
+  <rect x="196" y="28" width="24" height="4" fill="#006d7d"/>
+  <rect x="216" y="28" width="4" height="64" fill="#006d7d"/>
+  <rect x="196" y="56" width="24" height="4" fill="#006d7d"/>
+
+  <circle cx="242" cy="60" r="2.5" fill="#006d7d" opacity="0.4"/>
+
+  <!-- l -->
+  <rect x="264" y="28" width="4" height="64" fill="#006d7d"/>
+  <rect x="264" y="88" width="24" height="4" fill="#006d7d"/>
+
+  <circle cx="310" cy="60" r="2.5" fill="#006d7d" opacity="0.4"/>
+
+  <!-- l -->
+  <rect x="332" y="28" width="4" height="64" fill="#006d7d"/>
+  <rect x="332" y="88" width="24" height="4" fill="#006d7d"/>
+
+  <circle cx="378" cy="60" r="2.5" fill="#006d7d" opacity="0.4"/>
+
+  <!-- u -->
+  <rect x="400" y="28" width="4" height="56" fill="#006d7d"/>
+  <rect x="400" y="80" width="26" height="4" fill="#006d7d"/>
+  <rect x="422" y="28" width="4" height="56" fill="#006d7d"/>
+
+  <polyline points="40,22 28,22 28,98 40,98" fill="none" stroke="#006d7d" stroke-width="1.2" opacity="0.5"/>
+  <polyline points="462,22 474,22 474,98 462,98" fill="none" stroke="#006d7d" stroke-width="1.2" opacity="0.5"/>
+
+  <line x1="28" y1="18" x2="474" y2="18" stroke="#006d7d" stroke-width="0.5" stroke-dasharray="4 10" opacity="0.25"/>
+  <line x1="28" y1="102" x2="474" y2="102" stroke="#006d7d" stroke-width="0.5" stroke-dasharray="4 10" opacity="0.25"/>
+
+  <circle cx="28" cy="18" r="2" fill="#006d7d" opacity="0.5"/>
+  <circle cx="474" cy="18" r="2" fill="#006d7d" opacity="0.5"/>
+  <circle cx="28" cy="102" r="2" fill="#006d7d" opacity="0.5"/>
+  <circle cx="474" cy="102" r="2" fill="#006d7d" opacity="0.5"/>
+</svg>

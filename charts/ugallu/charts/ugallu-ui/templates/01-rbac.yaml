@@ -1,0 +1,93 @@
+---
+# ServiceAccount the BFF impersonates against. RBAC is read-only on
+# the security.ugallu.io group plus impersonate verb on users (so
+# the apiserver audit log retains the human OIDC subject even
+# though the actual TCP client is the BFF SA).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "ugalluui.serviceAccountName" . }}
+  namespace: {{ include "ugalluui.namespace" . }}
+  labels:
+    {{- include "ugalluui.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "ugalluui.serviceAccountName" . }}
+  labels:
+    {{- include "ugalluui.labels" . | nindent 4 }}
+rules:
+  # Read-only over the security.ugallu.io API group. The BFF
+  # never proxies write verbs - mutations go through `kubectl
+  # apply` / GitOps.
+  - apiGroups: ["security.ugallu.io"]
+    resources:
+      - securityevents
+      - eventresponses
+      - attestationbundles
+      - sigmarules
+      - tenantboundaries
+      - auditdetectionconfigs
+      - dnsdetectconfigs
+      - forensicsconfigs
+      - honeypotconfigs
+      - webhookauditorconfigs
+      - ttlconfigs
+      - wormconfigs
+      - attestorconfigs
+      - gitopsresponderconfigs
+      - backupverifyruns
+      - backupverifyresults
+      - compliancescanruns
+      - compliancescanresults
+      - confidentialattestationruns
+      - confidentialattestationresults
+      - seccomptrainingruns
+      - seccomptrainingprofiles
+    verbs: [get, list, watch]
+  # Surface the operator's own status fields.
+  - apiGroups: ["security.ugallu.io"]
+    resources:
+      - securityevents/status
+      - eventresponses/status
+      - attestationbundles/status
+      - backupverifyruns/status
+      - backupverifyresults/status
+      - compliancescanruns/status
+      - compliancescanresults/status
+      - confidentialattestationruns/status
+      - confidentialattestationresults/status
+      - seccomptrainingruns/status
+      - seccomptrainingprofiles/status
+    verbs: [get]
+  # Impersonation: the BFF stamps Impersonate-User on every
+  # apiserver call so audit retains the OIDC subject. Audit's
+  # impersonatedUser column is populated by this verb.
+  {{- if .Values.impersonate }}
+  - apiGroups: [""]
+    resources: [users]
+    verbs: [impersonate]
+  - apiGroups: [""]
+    resources: [groups]
+    verbs: [impersonate]
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "ugalluui.serviceAccountName" . }}
+  labels:
+    {{- include "ugalluui.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "ugalluui.serviceAccountName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "ugalluui.serviceAccountName" . }}
+    namespace: {{ include "ugalluui.namespace" . }}

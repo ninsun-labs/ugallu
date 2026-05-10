@@ -1,0 +1,182 @@
+---
+{{- if not .Values.auth.disabled }}
+{{- if not .Values.externalURL }}
+{{- fail "ugallu-ui: .Values.externalURL is required (the public URL of the SPA, e.g. https://ui.example.internal). For lab/dev, set auth.disabled=true to skip OIDC." }}
+{{- end }}
+{{- if not .Values.oidc.issuer }}
+{{- fail "ugallu-ui: .Values.oidc.issuer is required (the OIDC issuer URL, e.g. https://keycloak.example/realms/ugallu). For lab/dev, set auth.disabled=true to skip OIDC." }}
+{{- end }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ugallu-ui
+  namespace: {{ include "ugalluui.namespace" . }}
+  labels:
+    {{- include "ugalluui.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ugalluui.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ugalluui.labels" . | nindent 8 }}
+      annotations:
+        # roll the Pod when the nginx config or the OIDC config
+        # values change.
+        checksum/nginx: {{ include (print $.Template.BasePath "/02-configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "ugalluui.serviceAccountName" . }}
+      priorityClassName: system-cluster-critical
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+
+      initContainers:
+        # Copy the SvelteKit static bundle out of the multi-binary
+        # runtime image into a shared emptyDir mount that nginx
+        # serves from. The image is FROM scratch + a static busybox
+        # so we invoke `busybox cp` directly (no /bin/sh).
+        - name: copy-static
+          image: {{ include "ugalluui.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/busybox", "cp", "-R", "/srv/www/ugallu-ui/.", "/static/"]
+          volumeMounts:
+            - name: static
+              mountPath: /static
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+
+      containers:
+        # ---- BFF ---------------------------------------------------
+        - name: bff
+          image: {{ include "ugalluui.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/ugallu-bff"]
+          args:
+            - "-listen=:{{ .Values.bff.port }}"
+            {{- if .Values.auth.disabled }}
+            - "-auth-disabled=true"
+            {{- else }}
+            - "-oidc-issuer={{ .Values.oidc.issuer }}"
+            - "-oidc-client-id={{ .Values.oidc.clientID }}"
+            - "-external-url={{ .Values.externalURL }}"
+            {{- if .Values.cookie.domain }}
+            - "-cookie-domain={{ .Values.cookie.domain }}"
+            {{- end }}
+            - "-impersonate={{ .Values.impersonate }}"
+            {{- end }}
+          env:
+            {{- if not .Values.auth.disabled }}
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.clientSecretRef.name }}
+                  key:  {{ .Values.oidc.clientSecretRef.key }}
+            - name: COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cookie.secretRef.name }}
+                  key:  {{ .Values.cookie.secretRef.key }}
+            {{- end }}
+            - name: CLUSTER_ID
+              value: {{ .Values.clusterIdentity.clusterID | quote }}
+            - name: CLUSTER_NAME
+              value: {{ .Values.clusterIdentity.clusterName | quote }}
+          ports:
+            - name: bff
+              containerPort: {{ .Values.bff.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: bff
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: bff
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources.bff | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+
+        # ---- Nginx -------------------------------------------------
+        - name: nginx
+          image: {{ .Values.nginx.image | quote }}
+          imagePullPolicy: {{ .Values.nginx.pullPolicy }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: web
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: web
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          volumeMounts:
+            - name: static
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-state
+              mountPath: /var/lib/nginx
+          resources:
+            {{- toYaml .Values.resources.nginx | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+
+      volumes:
+        - name: static
+          emptyDir: { medium: Memory, sizeLimit: 64Mi }
+        - name: nginx-config
+          configMap:
+            name: ugallu-ui-nginx
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+        - name: tmp
+          emptyDir: { medium: Memory, sizeLimit: 16Mi }
+        - name: nginx-state
+          emptyDir: { medium: Memory, sizeLimit: 16Mi }

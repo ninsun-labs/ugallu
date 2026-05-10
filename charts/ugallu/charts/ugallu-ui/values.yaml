@@ -1,0 +1,124 @@
+# ugallu-ui subchart values.
+#
+# The chart deploys ONE Pod with TWO containers:
+#   - bff: the Go backend, listens on a private port (default :9090).
+#   - nginx: nginx-distroless, listens on the public port (:8080),
+#     serves the SPA static files, proxies /api and /auth to the
+#     BFF on 127.0.0.1:9090.
+#
+# A separate initContainer copies the SPA bundle out of the
+# multi-binary runtime image into a shared emptyDir mount.
+
+replicas: 1
+
+# Multi-binary runtime image. Same image used by every operator.
+# The BFF binary is at /usr/bin/ugallu-bff; the SPA bundle is at
+# /srv/www/ugallu-ui/.
+image:
+  repository: ghcr.io/ninsun-labs/ugallu/runtime
+  tag: ""           # default: chart appVersion
+  pullPolicy: IfNotPresent
+
+nginx:
+  image: cgr.dev/chainguard/nginx:latest
+  pullPolicy: IfNotPresent
+
+# Public port (exposed by Service, terminated by Ingress).
+service:
+  port: 8080
+
+# Internal BFF port (cluster-local, never exposed by Service).
+bff:
+  port: 9090
+
+# Authentication mode. auth.disabled=true bypasses OIDC entirely.
+# Every API request is served as a synthetic 'lab-user'. The chart
+# skips the OIDC issuer / externalURL / Secret requirements in this
+# mode. Lab/dev only - NEVER set in production.
+auth:
+  disabled: false
+
+oidc:
+  # Required (unless auth.disabled): OIDC issuer URL (Keycloak
+  # realm, Auth0 tenant, ...).
+  issuer: ""
+  clientID: ugallu-ui
+  # Secret with the OIDC client secret. The chart does not
+  # auto-create this; provision it via your secret-management
+  # pipeline (External Secrets, Vault, sealed-secrets).
+  clientSecretRef:
+    name: ugallu-ui-oidc
+    key: client_secret
+
+# Public URL where the SPA is reachable. Used as the OIDC
+# redirect_uri base. Required.
+externalURL: ""
+
+cookie:
+  domain: ""        # empty = host-only cookie (recommended)
+  # Secret holding the >=32-byte HMAC key for the session cookie.
+  secretRef:
+    name: ugallu-ui-cookie
+    key: cookie_secret
+
+# Routing strategy. The lab runs Cilium Gateway API so the default
+# is `gateway`; flip to `ingress` for clusters that still use the
+# v1 Ingress API. Pick exactly one - the templates skip the other.
+routing:
+  kind: gateway   # gateway | ingress | none
+
+# Gateway API HTTPRoute. The Gateway itself is provisioned and
+# managed by the cluster operator (it owns the TLS listener +
+# certificate ref); the chart only owns the route attached to it.
+gateway:
+  host: ui.ugallu.lab
+  parentRef:
+    name: ugallu-gateway
+    namespace: ugallu-system
+    sectionName: https     # name of the TLS listener on the Gateway
+
+# Legacy Ingress fallback. Used when routing.kind=ingress.
+ingress:
+  className: ""             # empty falls back to the cluster default
+  annotations: {}
+  host: ui.ugallu.local
+  tls:
+    enabled: true
+    issuerRef:
+      kind: ClusterIssuer
+      name: ugallu-issuer
+
+serviceAccount:
+  name: ugallu-ui-bff
+  # Annotations are useful for cloud IRSA / Workload Identity.
+  annotations: {}
+
+resources:
+  bff:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  nginx:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits:   { cpu: 200m, memory: 64Mi }
+
+# Cluster identity flags propagated to the BFF for log
+# correlation. The BFF does not use them in the API surface today,
+# but reserving the flags keeps logs joinable with the operators.
+clusterIdentity:
+  clusterID: ""
+  clusterName: ""
+
+# Toggle off impersonation when the OIDC issuer doesn't carry a
+# stable subject claim, or when the BFF's SA already has
+# audit-friendly identity (e.g. SPIRE SVID).
+impersonate: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Globals receive overrides from the umbrella chart.
+global:
+  namespaces:
+    system: ugallu-system
+    privileged: ugallu-system-privileged

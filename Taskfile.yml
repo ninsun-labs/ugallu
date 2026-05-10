@@ -138,6 +138,24 @@ tasks:
         fi
         out="$(pwd)/build/_artifacts/tetragon-bridge-bin"
         (cd "$bridge" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o "$out" ./cmd/tetragon-bridge)
+      # Wave 5 ugallu-ui: BFF binary + SvelteKit static bundle.
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/ugallu-bff-bin ./cmd/ugallu-bff
+      - task: build:ui-spa
+
+  build:ui-spa:
+    desc: |
+      Build the SvelteKit static bundle (cmd/ugallu-ui) and stage it
+      under build/_artifacts/ugallu-ui-spa/. The runtime Dockerfile
+      copies that directory to /srv/www/ugallu-ui/.
+    cmds:
+      - mkdir -p build/_artifacts
+      - rm -rf build/_artifacts/ugallu-ui-spa
+      - |
+        set -e
+        cd cmd/ugallu-ui
+        if [ ! -d node_modules ]; then npm ci --no-audit --no-fund; fi
+        npm run build
+      - cp -R cmd/ugallu-ui/build build/_artifacts/ugallu-ui-spa
 
   test:
     desc: Run go test (-race) on every module (envtest assets auto-fetched)

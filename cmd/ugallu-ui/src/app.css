@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----------------------------------------------------------------
+ * Design tokens - mirror the ninsun-labs ossp UI palette.
+ *
+ * Note: colours are stored as raw HSL channels (without `hsl()`)
+ * so the Tailwind config can compose them with `<alpha-value>`.
+ * Reference hex values:
+ *
+ *   background       #0a1628   (217, 60%, 10%)
+ *   sidebar          #081020   (220, 60%, 8%)
+ *   card / popover   #0f1f35   (215, 60%, 13%)
+ *   secondary/muted  #162a45   (215, 50%, 18%)
+ *   border / input   #1e3a5f   (215, 52%, 25%)
+ *   primary (cyan)   #00e5ff   (188, 100%, 50%)
+ *   foreground       #e0e8f0   (210, 28%, 91%)
+ *   muted-fg         #7090b0   (210, 27%, 56%)
+ *   destructive      #ff3d5a   (351, 100%, 62%)
+ * ---------------------------------------------------------------- */
+:root {
+	--background: 217 60% 10%;
+	--foreground: 210 33% 96%;
+	--card: 215 60% 13%;
+	--card-foreground: 210 33% 96%;
+	--popover: 215 60% 13%;
+	--popover-foreground: 210 33% 96%;
+	--primary: 188 100% 50%;
+	--primary-foreground: 217 60% 10%;
+	--secondary: 215 50% 22%;
+	--secondary-foreground: 210 30% 92%;
+	--muted: 215 50% 22%;
+	--muted-foreground: 210 30% 75%;
+	--accent: 215 52% 30%;
+	--accent-foreground: 188 100% 50%;
+	--destructive: 351 100% 65%;
+	--destructive-foreground: 217 60% 10%;
+	--border: 215 52% 32%;
+	--input: 215 52% 32%;
+	--ring: 188 100% 50%;
+	--radius: 0.625rem;
+	--sidebar: 220 60% 8%;
+	--sidebar-foreground: 210 30% 92%;
+	--sidebar-accent: 215 50% 22%;
+	--sidebar-accent-foreground: 188 100% 50%;
+	--sidebar-border: 215 52% 32%;
+}
+
+/* Light theme inversion - same approach as the docs site. */
+:root.light {
+	--background: 0 0% 100%;
+	--foreground: 217 60% 10%;
+	--card: 210 33% 97%;
+	--card-foreground: 217 60% 10%;
+	--popover: 210 33% 97%;
+	--popover-foreground: 217 60% 10%;
+	--primary: 188 100% 25%;
+	--primary-foreground: 0 0% 100%;
+	--secondary: 210 28% 91%;
+	--secondary-foreground: 217 60% 18%;
+	--muted: 210 28% 91%;
+	--muted-foreground: 210 27% 35%;
+	--accent: 210 28% 88%;
+	--accent-foreground: 188 100% 25%;
+	--destructive: 351 80% 45%;
+	--destructive-foreground: 0 0% 100%;
+	--border: 210 28% 80%;
+	--input: 210 28% 80%;
+	--ring: 188 100% 25%;
+	--sidebar: 210 33% 97%;
+	--sidebar-foreground: 217 60% 18%;
+	--sidebar-accent: 210 28% 91%;
+	--sidebar-accent-foreground: 188 100% 25%;
+	--sidebar-border: 210 28% 80%;
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+}
