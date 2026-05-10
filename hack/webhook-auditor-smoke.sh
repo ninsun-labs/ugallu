@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-webhook-auditor — Wave 3 Sprint 1 close gate.
+# E2E lab smoke for ugallu-webhook-auditor.
 #
 # Assumes:
 #   - kubectl context already pointed at the lab
 #   - ugallu-webhook-auditor running with the real binary (placeholder=false)
 #   - WebhookAuditorConfig 'default' singleton present (chart-shipped)
 #
-# What it covers (3 scenarios — Phase 1 close per design 21 §VIII):
+# What it covers (3 scenarios):
 #   1. High-risk MWC emits MutatingWebhookHighRisk + sub-score SEs
 #   2. Sub-threshold VWC emits only the active sub-score SE (no top-level)
 #   3. Ignore-policy match (ugallu.* glob) skips evaluation

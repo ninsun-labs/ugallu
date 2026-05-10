@@ -9,9 +9,8 @@ clusterIdentity:
   clusterName: ""
 
 # Singleton ForensicsConfig CR shipped with the chart. The trigger
-# defaults track design 20 §F2 (Detection / Anomaly classes,
-# high+critical severities, attestation required, manual ack only,
-# explicit type whitelist).
+# defaults: Detection / Anomaly classes, high+critical severities,
+# attestation required, manual ack only, explicit type whitelist.
 forensicsConfig:
   enabled: true
   trigger:

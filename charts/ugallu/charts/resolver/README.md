@@ -1,6 +1,6 @@
 # resolver
 
-Wave 1 subchart for `ugallu-resolver` (DaemonSet on every node).
+Subchart for `ugallu-resolver` (DaemonSet on every node).
 
 ## Status
 
@@ -11,7 +11,7 @@ Wave 1 subchart for `ugallu-resolver` (DaemonSet on every node).
 - `DaemonSet/ugallu-resolver` in the privileged namespace
 - `Service/ugallu-resolver` (ClusterIP, gRPC + metrics ports)
 
-The DaemonSet uses the `ugallu-resolver` SA (created by the `rbac` subchart) and lands in the privileged namespace (created by the `namespaces` subchart). Privileges and host paths match design 03 R7:
+The DaemonSet uses the `ugallu-resolver` SA (created by the `rbac` subchart) and lands in the privileged namespace (created by the `namespaces` subchart). Privileges and host paths:
 
 - `hostPID: true` (PID resolution)
 - caps: `BPF`, `PERFMON`, `SYS_ADMIN` (eBPF cgroup tracker + BTF)

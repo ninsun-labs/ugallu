@@ -37,8 +37,8 @@ spec:
       openAPIV3Schema:
         description: |-
           ConfidentialAttestationResult is the verifier's per-run report.
-          Retained 7d per design (W4-D7) by ugallu-ttl; the linked
-          AttestationBundle captures the long-term signed snapshot.
+          Retained 7d by ugallu-ttl; the linked AttestationBundle captures
+          the long-term signed snapshot.
         properties:
           apiVersion:
             description: |-

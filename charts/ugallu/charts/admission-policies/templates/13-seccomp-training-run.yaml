@@ -1,5 +1,5 @@
 {{- /*
-Policy 13 - SeccompTrainingRun spec invariants (Wave 4 §S3).
+Policy 13 - SeccompTrainingRun spec invariants.
 
 Training a seccomp profile attaches a privileged Tetragon TracingPolicy
 to a subset of production Pods for the configured duration. Two limits

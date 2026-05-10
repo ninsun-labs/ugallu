@@ -16,8 +16,7 @@ import (
 	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
-// ExfiltrationConfig matches DNSDetectConfig.spec.detectors.exfiltration
-// (design 21 §D3.1).
+// ExfiltrationConfig matches DNSDetectConfig.spec.detectors.exfiltration.
 type ExfiltrationConfig struct {
 	MinLabelLen         int
 	MinEntropy          float64

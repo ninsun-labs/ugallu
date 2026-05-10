@@ -9,10 +9,10 @@ import (
 )
 
 // DNSDetectSourceMode picks which DNS observation backend the
-// operator subscribes to. CoreDNSPlugin is the primary
-// (full-payload, design 21 §D2) — Wave 3 Sprint 3 lockata. Tetragon
-// kprobe is a degraded fallback when the plugin is not available
-// (only DNSAnomalousPort detector remains functional).
+// operator subscribes to. CoreDNSPlugin is the primary (full
+// payload). Tetragon kprobe is a degraded fallback when the plugin
+// is not available (only DNSAnomalousPort detector remains
+// functional).
 //
 // +kubebuilder:validation:Enum=coredns_plugin;tetragon_kprobe
 type DNSDetectSourceMode string
@@ -26,12 +26,12 @@ const (
 	// plugin's UgalluDNSStream gRPC server.
 	DNSDetectSourceCoreDNSPlugin DNSDetectSourceMode = "coredns_plugin"
 	// DNSDetectSourceTetragonKprobe reads kprobe DNS events from
-	// the tetragon-bridge sidecar (Wave 4 §D7).
+	// the tetragon-bridge sidecar.
 	DNSDetectSourceTetragonKprobe DNSDetectSourceMode = "tetragon_kprobe"
 )
 
 // DNSDetectConfigSpec is the runtime config the ugallu-dns-detect
-// operator reads (design 21 §D4).
+// operator reads.
 type DNSDetectConfigSpec struct {
 	// Source selects the DNS event source backend.
 	Source DNSSourceConfig `json:"source"`
@@ -42,8 +42,8 @@ type DNSDetectConfigSpec struct {
 
 // DNSSourceConfig wraps the source-specific knobs.
 type DNSSourceConfig struct {
-	// Primary is the default source. coredns_plugin is the Wave 3
-	// production default — full payload, mTLS gRPC stream.
+	// Primary is the default source. coredns_plugin is the production
+	// default: full payload, mTLS gRPC stream.
 	// +kubebuilder:default=coredns_plugin
 	Primary DNSDetectSourceMode `json:"primary"`
 
@@ -72,8 +72,8 @@ type DNSPluginEndpoint struct {
 	// Default cluster-DNS endpoint: "coredns.kube-system.svc.cluster.local:8443".
 	GRPCEndpoint string `json:"grpcEndpoint"`
 
-	// TokenSecret references the bearer-token Secret used during
-	// Wave 3 (mTLS lands in a follow-up).
+	// TokenSecret references the bearer-token Secret used to
+	// authenticate to the plugin (mTLS lands in a follow-up).
 	// +optional
 	TokenSecret *corev1.SecretKeySelector `json:"tokenSecret,omitempty"`
 }

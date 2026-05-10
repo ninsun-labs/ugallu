@@ -8,9 +8,9 @@ clusterIdentity:
   clusterName: ""
 
 # Singleton WebhookAuditorConfig CR shipped with the chart. The defaults
-# track design 21 §W3 (riskThreshold=60, ignore-list whitelists ugallu's
-# own admission policies + cert-manager + RKE2 system webhooks; trusted
-# subject DNs whitelist cert-manager / kube-aggregator CAs).
+# pin riskThreshold=60; the ignore-list whitelists ugallu's own
+# admission policies, cert-manager, and RKE2 system webhooks; the
+# trusted subject DNs whitelist cert-manager / kube-aggregator CAs.
 webhookAuditorConfig:
   enabled: true
   riskThreshold: 60

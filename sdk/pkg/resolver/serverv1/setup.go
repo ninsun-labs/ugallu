@@ -27,8 +27,7 @@ type Options struct {
 	// (default 10m).
 	InformerResync time.Duration
 
-	// TombstoneGrace overrides the Pod tombstone retention (default
-	// 60s per design 03).
+	// TombstoneGrace overrides the Pod tombstone retention (default 60s).
 	TombstoneGrace time.Duration
 
 	// TombstoneInterval overrides the GC scan period (default 30s).

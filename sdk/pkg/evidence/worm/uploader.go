@@ -26,8 +26,7 @@ type Uploader interface {
 type PutOpts struct {
 	// LockUntil is the earliest time the object may be deleted. The
 	// real S3 implementation maps this to Object Lock retention in
-	// Compliance mode (design 07 W2). The stub stores the value but
-	// does not enforce it.
+	// Compliance mode. The stub stores the value but does not enforce it.
 	LockUntil time.Time
 
 	// MediaType is the Content-Type of the payload.

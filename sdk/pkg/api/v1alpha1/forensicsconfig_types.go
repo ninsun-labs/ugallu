@@ -10,7 +10,7 @@ import (
 
 // ForensicsConfigSpec is the runtime config the ugallu-forensics
 // operator reads to decide which SecurityEvents trigger an incident
-// capture and how the snapshot pipeline behaves (design 20 §F2).
+// capture and how the snapshot pipeline behaves.
 type ForensicsConfigSpec struct {
 	// Trigger is the predicate evaluated against each incoming SE.
 	// All conditions must match for the operator to start a capture.

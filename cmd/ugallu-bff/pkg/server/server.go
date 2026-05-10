@@ -42,8 +42,11 @@ type Server struct {
 	auth *Auth
 }
 
-// New constructs a Server from validated Options.
-func New(opts Options) (*Server, error) {
+// New constructs a Server from validated Options. The Options
+// value is large (multiple slog/oauth/oidc handles); take a
+// pointer to keep the call site cheap and to satisfy
+// gocritic's hugeParam check.
+func New(opts *Options) (*Server, error) {
 	var auth *Auth
 	if opts.AuthDisabled {
 		auth = &Auth{disabled: true, log: opts.Logger}
@@ -54,7 +57,7 @@ func New(opts Options) (*Server, error) {
 		}
 		auth = a
 	}
-	return &Server{opts: opts, auth: auth}, nil
+	return &Server{opts: *opts, auth: auth}, nil
 }
 
 // Handler returns the public http.Handler with all routes mounted.
@@ -90,7 +93,7 @@ func (s *Server) Handler() http.Handler {
 }
 
 // writeJSON encodes body to w with the given status. JSON errors at
-// this point indicate a programmer mistake; we log and ignore.
+// this point indicate a programmer mistake; logged and ignored.
 func (s *Server) writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)

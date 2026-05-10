@@ -13,7 +13,7 @@ import (
 // EventResponse, captured at emit time. It carries common identity fields
 // plus exactly one populated kind-specific discriminator pointer.
 //
-// The discriminator is enforced by an admission policy (design 15).
+// The discriminator is enforced by an admission policy.
 type SubjectTier1 struct {
 	APIVersion      string                  `json:"apiVersion,omitempty"`
 	Kind            SubjectKind             `json:"kind"`
@@ -47,7 +47,7 @@ type SubjectTier1 struct {
 	Cluster        *ClusterSubject        `json:"cluster,omitempty"`
 	External       *ExternalSubject       `json:"external,omitempty"`
 
-	// Failure markers (resolver fallback path, design 03).
+	// Failure markers (resolver fallback path).
 	Partial    bool `json:"partial,omitempty"`
 	Tombstone  bool `json:"tombstone,omitempty"`
 	Unresolved bool `json:"unresolved,omitempty"`
@@ -68,7 +68,7 @@ type ServiceRef struct {
 	Port      *int32 `json:"port,omitempty"`
 }
 
-// PodSubject — see design 10.
+// PodSubject is the Tier-1 snapshot for a Pod.
 type PodSubject struct {
 	NodeName            string          `json:"nodeName,omitempty"`
 	ServiceAccountName  string          `json:"serviceAccountName,omitempty"`
@@ -106,7 +106,7 @@ type PodSubject struct {
 	QOSClass string `json:"qosClass,omitempty"`
 }
 
-// PodSecCtx is the pod-level security context (design 10 F8).
+// PodSecCtx is the pod-level security context.
 type PodSecCtx struct {
 	RunAsUser           *int64           `json:"runAsUser,omitempty"`
 	RunAsGroup          *int64           `json:"runAsGroup,omitempty"`
@@ -120,7 +120,7 @@ type PodSecCtx struct {
 	AppArmorProfile     *AppArmorProfile `json:"appArmorProfile,omitempty"`
 }
 
-// ContainerInfo is the slim per-container snapshot (design 10 F9).
+// ContainerInfo is the slim per-container snapshot.
 type ContainerInfo struct {
 	Name            string                       `json:"name"`
 	Image           string                       `json:"image,omitempty"`
@@ -141,7 +141,7 @@ type ContainerInfo struct {
 	TTY             bool                         `json:"tty,omitempty"`
 }
 
-// ContainerSecCtx — design 10 F10 (LSM completeness).
+// ContainerSecCtx is the per-container security context (LSM completeness).
 type ContainerSecCtx struct {
 	Privileged               bool                 `json:"privileged,omitempty"`
 	RunAsUser                *int64               `json:"runAsUser,omitempty"`
@@ -156,7 +156,7 @@ type ContainerSecCtx struct {
 	ProcMount                string               `json:"procMount,omitempty"`
 }
 
-// VolumeMount is the slim mount info (no host path leaks beyond design 10).
+// VolumeMount is the slim mount info.
 type VolumeMount struct {
 	Name             string `json:"name"`
 	MountPath        string `json:"mountPath"`
@@ -182,7 +182,7 @@ type ContainerPort struct {
 	HostIP        string `json:"hostIP,omitempty"`
 }
 
-// VolumeInfo — design 10 F11 captures the actual hostPath for security audit.
+// VolumeInfo captures the actual hostPath for security audit.
 type VolumeInfo struct {
 	Name         string `json:"name"`
 	Type         string `json:"type"`
@@ -280,7 +280,7 @@ type ContainerSubject struct {
 	Embedded      *ContainerInfo `json:"embedded,omitempty"`
 }
 
-// NodeSubject — design 10.
+// NodeSubject is the Tier-1 snapshot for a Node.
 type NodeSubject struct {
 	Roles            []string            `json:"roles,omitempty"`
 	KernelVersion    string              `json:"kernelVersion,omitempty"`
@@ -297,7 +297,7 @@ type NodeSubject struct {
 	Hostname         string              `json:"hostname,omitempty"`
 }
 
-// ServiceAccountSubject — design 10 (BoundPSAS removed per F1).
+// ServiceAccountSubject is the Tier-1 snapshot for a ServiceAccount.
 type ServiceAccountSubject struct {
 	AutomountToken   *bool    `json:"automountToken,omitempty"`
 	ImagePullSecrets []string `json:"imagePullSecrets,omitempty"`
@@ -320,7 +320,7 @@ type ConfigMapSubject struct {
 	SizeBytes      int      `json:"sizeBytes,omitempty"`
 }
 
-// NamespaceSubject — design 10.
+// NamespaceSubject is the Tier-1 snapshot for a Namespace.
 type NamespaceSubject struct {
 	Labels      map[string]string `json:"labels,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
@@ -336,7 +336,7 @@ type PSAInfo struct {
 	Warn           string `json:"warn,omitempty"`
 }
 
-// ServiceSubject — design 10 F2.
+// ServiceSubject is the Tier-1 snapshot for a Service.
 type ServiceSubject struct {
 	Type                     string            `json:"type,omitempty"`
 	ClusterIP                string            `json:"clusterIP,omitempty"`
@@ -362,7 +362,7 @@ type ServicePort struct {
 	NodePort   int32  `json:"nodePort,omitempty"`
 }
 
-// EndpointSliceSubject — design 10 F3.
+// EndpointSliceSubject is the Tier-1 snapshot for an EndpointSlice.
 type EndpointSliceSubject struct {
 	AddressType  string         `json:"addressType,omitempty"`
 	Endpoints    []EndpointInfo `json:"endpoints,omitempty"`
@@ -503,7 +503,7 @@ type RuleInfo struct {
 	Scope       string   `json:"scope,omitempty"`
 }
 
-// CRDSubject — design 10 F4.
+// CRDSubject is the Tier-1 snapshot for a CustomResourceDefinition.
 type CRDSubject struct {
 	Group      string   `json:"group"`
 	Versions   []string `json:"versions,omitempty"`
@@ -522,7 +522,7 @@ type CRDNames struct {
 	ShortNames []string `json:"shortNames,omitempty"`
 }
 
-// APIServiceSubject — design 10 F5.
+// APIServiceSubject is the Tier-1 snapshot for an APIService.
 type APIServiceSubject struct {
 	Group                 string      `json:"group"`
 	Version               string      `json:"version"`
@@ -533,7 +533,7 @@ type APIServiceSubject struct {
 	Available             bool        `json:"available,omitempty"`
 }
 
-// CSRSubject — design 10 F6.
+// CSRSubject is the Tier-1 snapshot for a CertificateSigningRequest.
 type CSRSubject struct {
 	SignerName        string   `json:"signerName"`
 	Username          string   `json:"username,omitempty"`
@@ -543,7 +543,7 @@ type CSRSubject struct {
 	ExpirationSeconds *int32   `json:"expirationSeconds,omitempty"`
 }
 
-// ClusterSubject — design 10. Synthetic subject for cluster-scoped facts.
+// ClusterSubject is a synthetic subject for cluster-scoped facts.
 type ClusterSubject struct {
 	ClusterID         string `json:"clusterID,omitempty"`
 	ClusterName       string `json:"clusterName,omitempty"`
@@ -551,8 +551,8 @@ type ClusterSubject struct {
 	DistroProvider    string `json:"distroProvider,omitempty"`
 }
 
-// ExternalSubject — design 10 F7. ExternalSubject.Kind values:
-// ExternalUser | ExternalIP | ExternalEndpoint | Group.
+// ExternalSubject represents a subject outside the cluster.
+// ExternalSubject.Kind values: ExternalUser | ExternalIP | ExternalEndpoint | Group.
 type ExternalSubject struct {
 	Kind     string `json:"kind"`
 	Identity string `json:"identity"`

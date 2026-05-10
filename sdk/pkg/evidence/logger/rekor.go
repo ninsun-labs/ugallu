@@ -27,10 +27,10 @@ const DefaultRekorURL = "https://rekor.sigstore.dev"
 // responses. Protects against runaway upstream errors filling the log.
 const rekorMaxErrorBody = 4 * 1024
 
-// RekorLogger publishes DSSE envelopes to a Rekor v1 transparency log
-// (design 06 V2). Entries use the intoto/v0.0.2 schema, which embeds
-// the signer's public key in each signature object so the log can
-// independently verify the envelope.
+// RekorLogger publishes DSSE envelopes to a Rekor v1 transparency log.
+// Entries use the intoto/v0.0.2 schema, which embeds the signer's
+// public key in each signature object so the log can independently
+// verify the envelope.
 type RekorLogger struct {
 	// URL is the Rekor base URL (no trailing slash, e.g.
 	// "https://rekor.sigstore.dev"). Defaults to DefaultRekorURL.

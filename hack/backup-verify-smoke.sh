@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-backup-verify — Wave 4 Sprint 7 close gate.
+# E2E lab smoke for ugallu-backup-verify.
 #
 # Scenarios (4):
 #   1. Admission policy 14 rejects backend not in [velero, etcd-snapshot].

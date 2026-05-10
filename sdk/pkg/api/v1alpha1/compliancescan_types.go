@@ -179,8 +179,8 @@ type ComplianceScanResultStatus struct {
 // +kubebuilder:printcolumn:name="Run",type="string",JSONPath=".spec.derivedFromRun.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// ComplianceScanResult is the per-check report. Retained 365d per
-// design (W4-D7) by the ugallu-ttl operator.
+// ComplianceScanResult is the per-check report. Retained 365d by
+// the ugallu-ttl operator.
 type ComplianceScanResult struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

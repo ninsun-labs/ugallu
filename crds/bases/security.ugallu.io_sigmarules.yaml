@@ -63,7 +63,7 @@ spec:
           spec:
             description: |-
               SigmaRuleSpec is the predicate + emit declaration for a single
-              detection rule consumed by audit-detection (design 20 §A3-A5).
+              detection rule consumed by audit-detection.
             properties:
               description:
                 description: Description is a free-form human-readable summary.
@@ -90,13 +90,13 @@ spec:
                       - Forensic
                     default: Detection
                     description: Class is the top-level classification of a SecurityEvent
-                      (design D1, locked enum).
+                      (locked enum).
                     type: string
                   securityEventType:
                     description: |-
-                      SecurityEventType MUST be a value from the type catalog
-                      (design 11). Validated by admission policy 6 at apply-time
-                      and re-checked by the engine at runtime.
+                      SecurityEventType MUST be a value from the type catalog.
+                      Validated by admission policy 6 at apply-time and re-checked
+                      by the engine at runtime.
                     type: string
                   severity:
                     allOf:
@@ -112,7 +112,7 @@ spec:
                       - medium
                       - low
                       - info
-                    description: Severity is the 5-grade severity scale (design D7).
+                    description: Severity is the 5-grade severity scale.
                     type: string
                   signals:
                     additionalProperties:
@@ -421,7 +421,7 @@ spec:
                     type: array
                 type: object
               rateLimit:
-                description: RateLimit overrides the global token bucket (design 16).
+                description: RateLimit overrides the global token bucket.
                 properties:
                   burst:
                     default: 50

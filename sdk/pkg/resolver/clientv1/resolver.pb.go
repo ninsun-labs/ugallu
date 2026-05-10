@@ -7,21 +7,22 @@
 // 	protoc        v3.19.6
 // source: resolver/v1/resolver.proto
 
-// Package ugallu.resolver.v1 is the gRPC contract for ugallu-resolver
-// (design 03 R6). The service is exposed on a Unix socket (per-node, fast
-// path) and on a ClusterIP Service (cluster-wide). Clients are detection
-// sources, reasoners, and responders that need to map low-level identifiers
-// (cgroup ID, PID, IP, container ID, SA username) into a SubjectTier1
-// snapshot suitable for embedding in a SecurityEvent.
+// Package ugallu.resolver.v1 is the gRPC contract for ugallu-resolver.
+// The service is exposed on a Unix socket (per-node, fast path) and
+// on a ClusterIP Service (cluster-wide). Clients are detection
+// sources, reasoners, and responders that need to map low-level
+// identifiers (cgroup ID, PID, IP, container ID, SA username) into a
+// SubjectTier1 snapshot suitable for embedding in a SecurityEvent.
 
 package resolverv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -476,7 +477,7 @@ type SubjectResponse struct {
 	Labels          map[string]string      `protobuf:"bytes,7,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// tier1_json is the JSON-encoded v1alpha1.SubjectTier1.
 	Tier1Json []byte `protobuf:"bytes,10,opt,name=tier1_json,json=tier1Json,proto3" json:"tier1_json,omitempty"`
-	// Failure markers (resolver fallback path, design 03).
+	// Failure markers (resolver fallback path).
 	Partial    bool `protobuf:"varint,20,opt,name=partial,proto3" json:"partial,omitempty"`
 	Tombstone  bool `protobuf:"varint,21,opt,name=tombstone,proto3" json:"tombstone,omitempty"`
 	Unresolved bool `protobuf:"varint,22,opt,name=unresolved,proto3" json:"unresolved,omitempty"`

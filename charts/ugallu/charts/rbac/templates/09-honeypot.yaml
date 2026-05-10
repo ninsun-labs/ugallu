@@ -7,8 +7,8 @@ deployer must be a single writer to avoid two replicas creating
 duplicate decoys. Cluster-wide CRUD on Secret + ServiceAccount
 backs the deployer; cluster-wide read on the other resource kinds
 (Pods, ConfigMaps, Namespaces) lets the detector enrich audit
-events when needed. Wave 4 §H widens the kind enum to ConfigMap +
-Namespace; the RBAC is forward-compatible.
+events when needed. A future iteration widens the kind enum to
+ConfigMap + Namespace; the RBAC is forward-compatible.
 */ -}}
 apiVersion: v1
 kind: ServiceAccount

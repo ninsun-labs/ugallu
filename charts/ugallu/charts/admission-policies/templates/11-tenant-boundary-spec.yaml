@@ -1,5 +1,5 @@
 {{- /*
-Policy 11 - TenantBoundary spec invariants (design 21 §T2).
+Policy 11 - TenantBoundary spec invariants.
 
 Cross-tenant detection only works if every TenantBoundary CR opts
 namespaces in explicitly: an empty / missing NamespaceSelector

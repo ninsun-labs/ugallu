@@ -1,5 +1,5 @@
 {{- /*
-Policy 16 - ConfidentialAttestationRun spec invariants (Wave 4 §S6).
+Policy 16 - ConfidentialAttestationRun spec invariants.
 
 Anti-replay is the headline guarantee: every run must carry a fresh
 non-empty nonce that the attester binds into the quote. Backend +

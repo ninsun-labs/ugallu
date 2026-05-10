@@ -10,7 +10,7 @@ import (
 // CrossTenantSecretAccessDetector flags audit events where an SA in
 // one tenant reads/lists/watches Secrets in another tenant's
 // namespace, unless the actor SA is in the target tenant's
-// ServiceAccountAllowlist (design 21 §T4.1).
+// ServiceAccountAllowlist.
 type CrossTenantSecretAccessDetector struct{}
 
 // NewCrossTenantSecretAccessDetector returns a ready detector.

@@ -40,6 +40,9 @@ type EventSummary struct {
 	Labels            map[string]string `json:"labels,omitempty"`
 }
 
+// EventSubject is the flattened Subject projection on the
+// /events list. Keeps the SPA from having to know the full
+// SubjectTier1 discriminator on the row view.
 type EventSubject struct {
 	Kind      string `json:"kind"`
 	Name      string `json:"name,omitempty"`
@@ -58,8 +61,10 @@ type EventSource struct {
 	ClusterID   string `json:"clusterID,omitempty"`
 }
 
-const defaultEventLimit = 50
-const maxEventLimit = 200
+const (
+	defaultEventLimit = 50
+	maxEventLimit     = 200
+)
 
 func (s *Server) handleEventsList(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()

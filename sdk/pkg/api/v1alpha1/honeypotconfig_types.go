@@ -42,8 +42,8 @@ type HoneypotConfigSpec struct {
 
 // HoneypotDecoy is one decoy declaration.
 type HoneypotDecoy struct {
-	// Kind is the K8s kind of the decoy. Wave 3 ships Secret +
-	// ServiceAccount; ConfigMap and Namespace land in Wave 4.
+	// Kind is the K8s kind of the decoy. Currently supports Secret
+	// and ServiceAccount; ConfigMap and Namespace will be added later.
 	// +kubebuilder:validation:Enum=Secret;ServiceAccount
 	Kind string `json:"kind"`
 

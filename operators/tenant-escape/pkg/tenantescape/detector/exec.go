@@ -10,8 +10,8 @@ import (
 // CrossTenantExecDetector flags Tetragon process_exec events where
 // an SA from one tenant's namespace exec-s into a Pod in another
 // tenant's namespace, unless the executor SA is in the target
-// tenant's allowlist (design 21 §T4.4). Severity critical because
-// exec is remote-code-execution.
+// tenant's allowlist. Severity critical because exec is
+// remote-code-execution.
 type CrossTenantExecDetector struct{}
 
 // NewCrossTenantExecDetector returns a ready detector.

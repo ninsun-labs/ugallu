@@ -1,9 +1,9 @@
 // Copyright 2026 The ninsun-labs Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package detector implements the 4 cross-tenant detectors design 21
-// §T4 prescribes. Each detector is a pure function over an input
-// envelope (audit event OR Tetragon process exec) + the active
+// Package detector implements the 4 cross-tenant detectors.
+// Each detector is a pure function over an input envelope
+// (audit event OR Tetragon process exec) plus the active
 // TenantBoundary set.
 package detector
 
@@ -103,7 +103,6 @@ type ExecDetector interface {
 // Helpers ---------------------------------------------------------
 
 // Severity returns the canonical severity string for a Finding type.
-// Mapping pinned by design 21 §T4.
 func Severity(seType string) string {
 	switch seType {
 	case securityv1alpha1.TypeCrossTenantHostPathOverlap,

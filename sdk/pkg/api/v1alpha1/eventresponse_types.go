@@ -11,7 +11,7 @@ import (
 
 // EventResponseSpec describes a single atomic action taken by a responder
 // in reaction to a SecurityEvent. Spec is immutable post-creation
-// (enforced by admission policy, design 15).
+// (enforced by admission policy).
 type EventResponseSpec struct {
 	// SecurityEventRef is the parent SecurityEvent this response acts on.
 	SecurityEventRef SecurityEventRef `json:"securityEventRef"`
@@ -51,7 +51,7 @@ type Action struct {
 	Parameters map[string]string       `json:"parameters,omitempty"`
 }
 
-// RetryPolicy governs retry of transient errors only (design 04 Q11).
+// RetryPolicy governs retry of transient errors only.
 type RetryPolicy struct {
 	// +kubebuilder:default=3
 	MaxAttempts int `json:"maxAttempts,omitempty"`

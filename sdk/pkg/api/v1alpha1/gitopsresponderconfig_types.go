@@ -8,8 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GitOpsResponderConfigSpec is the runtime config for the GitOps responder
-// (design 08 G11).
+// GitOpsResponderConfigSpec is the runtime config for the GitOps responder.
 type GitOpsResponderConfigSpec struct {
 	Providers []GitProvider `json:"providers"`
 

@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TTLConfigSpec is the runtime config for ugallu-ttl (design 09 T7).
+// TTLConfigSpec is the runtime config for ugallu-ttl.
 type TTLConfigSpec struct {
 	Defaults TTLDefaults `json:"defaults"`
 
@@ -27,7 +27,7 @@ type TTLDefaults struct {
 	AttestationBundle AttestationBundleTTLConfig `json:"attestationBundle"`
 }
 
-// SeverityTTL is per-severity TTL for SecurityEvent (design 09 T3 + review H4).
+// SeverityTTL is per-severity TTL for SecurityEvent.
 type SeverityTTL struct {
 	// +kubebuilder:default="6h"
 	Info metav1.Duration `json:"info,omitempty"`

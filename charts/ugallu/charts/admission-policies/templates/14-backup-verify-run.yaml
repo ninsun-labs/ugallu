@@ -1,5 +1,5 @@
 {{- /*
-Policy 14 - BackupVerifyRun spec invariants (Wave 4 §S4).
+Policy 14 - BackupVerifyRun spec invariants.
 
 Verifying a backup in full-restore mode replays the backup into a
 sandbox namespace. Two safety bounds matter:

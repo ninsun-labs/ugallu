@@ -52,8 +52,8 @@ type RunDetailResponse struct {
 }
 
 // runKinds lists the four canonical Run kinds in the order they
-// appear in the catalog. This is the single point where we
-// register a new Run kind for the UI.
+// appear in the catalog. This is the single point where a new
+// Run kind gets registered for the UI.
 var runKinds = []string{
 	"BackupVerifyRun",
 	"ComplianceScanRun",
@@ -122,18 +122,18 @@ func (s *Server) handleRunsList(w http.ResponseWriter, r *http.Request) {
 
 	if filterKind := q.Get("kind"); filterKind != "" {
 		filtered := all[:0]
-		for _, e := range all {
-			if e.Kind == filterKind {
-				filtered = append(filtered, e)
+		for i := range all {
+			if all[i].Kind == filterKind {
+				filtered = append(filtered, all[i])
 			}
 		}
 		all = filtered
 	}
 	if filterPhase := q.Get("phase"); filterPhase != "" {
 		filtered := all[:0]
-		for _, e := range all {
-			if e.Phase == filterPhase {
-				filtered = append(filtered, e)
+		for i := range all {
+			if all[i].Phase == filterPhase {
+				filtered = append(filtered, all[i])
 			}
 		}
 		all = filtered
@@ -160,7 +160,7 @@ func (s *Server) handleRunGet(w http.ResponseWriter, r *http.Request) {
 	switch kind {
 	case "BackupVerifyRun":
 		var run securityv1alpha1.BackupVerifyRun
-		if err := s.getOr404(w, r.Context(), key, &run); err != nil {
+		if err := s.getOr404(r.Context(), w, key, &run); err != nil {
 			return
 		}
 		var result *securityv1alpha1.BackupVerifyResult
@@ -176,7 +176,7 @@ func (s *Server) handleRunGet(w http.ResponseWriter, r *http.Request) {
 
 	case "ComplianceScanRun":
 		var run securityv1alpha1.ComplianceScanRun
-		if err := s.getOr404(w, r.Context(), key, &run); err != nil {
+		if err := s.getOr404(r.Context(), w, key, &run); err != nil {
 			return
 		}
 		var result *securityv1alpha1.ComplianceScanResult
@@ -192,7 +192,7 @@ func (s *Server) handleRunGet(w http.ResponseWriter, r *http.Request) {
 
 	case "ConfidentialAttestationRun":
 		var run securityv1alpha1.ConfidentialAttestationRun
-		if err := s.getOr404(w, r.Context(), key, &run); err != nil {
+		if err := s.getOr404(r.Context(), w, key, &run); err != nil {
 			return
 		}
 		var result *securityv1alpha1.ConfidentialAttestationResult
@@ -208,7 +208,7 @@ func (s *Server) handleRunGet(w http.ResponseWriter, r *http.Request) {
 
 	case "SeccompTrainingRun":
 		var run securityv1alpha1.SeccompTrainingRun
-		if err := s.getOr404(w, r.Context(), key, &run); err != nil {
+		if err := s.getOr404(r.Context(), w, key, &run); err != nil {
 			return
 		}
 		var profile *securityv1alpha1.SeccompTrainingProfile
@@ -228,7 +228,7 @@ func (s *Server) handleRunGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) getOr404(w http.ResponseWriter, ctx context.Context, key types.NamespacedName, obj client.Object) error {
+func (s *Server) getOr404(ctx context.Context, w http.ResponseWriter, key types.NamespacedName, obj client.Object) error {
 	err := s.opts.K8sClient.Get(ctx, key, obj)
 	if apierrors.IsNotFound(err) {
 		s.writeError(w, http.StatusNotFound, "not_found", "no "+obj.GetObjectKind().GroupVersionKind().Kind+" "+key.String())
@@ -290,7 +290,7 @@ func (s *Server) summariseComplianceScan(ctx context.Context, items []securityv1
 	return out
 }
 
-func (s *Server) summariseConfidentialAttestation(ctx context.Context, items []securityv1alpha1.ConfidentialAttestationRun) []RunSummary {
+func (s *Server) summariseConfidentialAttestation(_ context.Context, items []securityv1alpha1.ConfidentialAttestationRun) []RunSummary {
 	out := make([]RunSummary, 0, len(items))
 	for i := range items {
 		r := &items[i]
@@ -307,15 +307,15 @@ func (s *Server) summariseConfidentialAttestation(ctx context.Context, items []s
 	return out
 }
 
-func (s *Server) summariseSeccompTraining(ctx context.Context, items []securityv1alpha1.SeccompTrainingRun) []RunSummary {
+func (s *Server) summariseSeccompTraining(_ context.Context, items []securityv1alpha1.SeccompTrainingRun) []RunSummary {
 	out := make([]RunSummary, 0, len(items))
 	for i := range items {
 		r := &items[i]
 		sum := baseSummary("SeccompTrainingRun", &r.ObjectMeta, r.Status.Phase, r.Status.StartTime, r.Status.CompletionTime)
 		sum.Details = map[string]string{
-			"targetNamespace":   r.Spec.TargetNamespace,
-			"durationSeconds":   formatDurationSeconds(r.Spec.Duration.Duration),
-			"observedSyscalls":  itoa(r.Status.ObservedSyscallCount),
+			"targetNamespace":  r.Spec.TargetNamespace,
+			"durationSeconds":  formatDurationSeconds(r.Spec.Duration.Duration),
+			"observedSyscalls": itoa(r.Status.ObservedSyscallCount),
 		}
 		if r.Status.ProfileRef != nil {
 			sum.ResultName = r.Status.ProfileRef.Name

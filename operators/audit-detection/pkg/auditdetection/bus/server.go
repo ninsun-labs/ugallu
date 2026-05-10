@@ -1,12 +1,11 @@
 // Copyright 2026 The ninsun-labs Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package bus implements the AuditDetection event bus (design 21
-// §S2). It is the server side of the
-// auditstreamv1.AuditStream Subscribe RPC: every AuditEvent the
-// sigma engine consumes is published, fanned out to the connected
-// subscribers per their AuditDetectionConsumer filter +
-// MaxEventsPerSec cap, and pushed onto each subscriber's bounded
+// Package bus implements the AuditDetection event bus. It is the
+// server side of the auditstreamv1.AuditStream Subscribe RPC: every
+// AuditEvent the sigma engine consumes is published, fanned out to
+// the connected subscribers per their AuditDetectionConsumer filter
+// and MaxEventsPerSec cap, and pushed onto each subscriber's bounded
 // drop-oldest ring buffer so a slow consumer never stalls the engine.
 //
 // Subscribers authenticate with a bearer token (when configured); a
@@ -294,8 +293,7 @@ func toWireEvent(ev *auditdetection.AuditEvent) *auditstreamv1.AuditEvent {
 	// Forward RequestObject / ResponseObject as JSON bytes so
 	// downstream consumers (tenant-escape HostPathOverlap +
 	// NetworkPolicy detectors, honeypot Misplaced detector) can
-	// peek inside Pod / NetworkPolicy specs. Size guard lands in
-	// Wave 4.
+	// peek inside Pod / NetworkPolicy specs. Size guard pending.
 	if len(ev.RequestObject) > 0 {
 		if b, err := json.Marshal(ev.RequestObject); err == nil {
 			out.RequestObject = b

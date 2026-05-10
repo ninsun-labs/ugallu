@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wave 2 end-to-end real-chain smoke.
+# End-to-end real-chain smoke.
 #
 # Exercises the FULL pipeline with no manual Status.Phase=Attested
 # patch — everything is driven by the live operators:
@@ -349,7 +349,7 @@ ELAPSED=$((T1 - T0))
 [ "$ELAPSED" -le 180 ] || fail "chain finished in ${ELAPSED}s, exceeds 180s budget"
 
 echo
-echo "${GREEN}Wave 2 real-chain smoke passed in ${ELAPSED}s.${NC}"
+echo "${GREEN}Real-chain smoke passed in ${ELAPSED}s.${NC}"
 echo "  trigger SE   : $TRIGGER_SE"
 echo "  bundle       : $BUNDLE_NAME"
 echo "  incident UID : $INCIDENT_UID"

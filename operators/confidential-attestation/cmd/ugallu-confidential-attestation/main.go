@@ -4,7 +4,7 @@
 // Command ugallu-confidential-attestation reconciles
 // ConfidentialAttestationRun CRs and produces a per-run
 // ConfidentialAttestationResult with the hardware-backed quote +
-// verifier verdict (design 21 §A — Wave 4 §S6).
+// verifier verdict.
 package main
 
 import (

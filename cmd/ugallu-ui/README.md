@@ -86,8 +86,8 @@ Components vendor into `src/lib/components/ui/`.
 
 ## What this does NOT cover (yet)
 
-- Run management views (S7).
-- Configurations + Honeypots views (S7).
-- SE detail page beyond the list link (S7).
-- Live tail / SSE (Wave 6+).
-- Write endpoints / ack flow (Wave 6+).
+- Run management views.
+- Configurations + Honeypots views.
+- SE detail page beyond the list link.
+- Live tail / SSE (future).
+- Write endpoints / ack flow (future).

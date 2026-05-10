@@ -232,8 +232,8 @@ func (r *Reconciler) recordEmits(kind securityv1alpha1.SubjectKind, br RiskBreak
 	}
 }
 
-// IgnoreMatcher is the design 21 §W4 skip-list. apiVersionGlob is
-// matched only when non-empty; nameGlobs accepts shell-style globs
+// IgnoreMatcher is the webhook skip-list. apiVersionGlob is matched
+// only when non-empty; nameGlobs accepts shell-style globs
 // (`*` wildcard, no regex).
 type IgnoreMatcher struct {
 	rules []securityv1alpha1.WebhookIgnoreRule

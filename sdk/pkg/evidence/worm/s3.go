@@ -45,7 +45,7 @@ type S3UploaderOptions struct {
 	SecretKey string
 
 	// ObjectLockMode selects the S3 Object Lock mode. Defaults to
-	// "COMPLIANCE" — design 07 W4 mandates this for the WORM bucket.
+	// "COMPLIANCE", which is required for the WORM bucket.
 	// Set to "GOVERNANCE" or "" only for tests / non-compliance backends.
 	ObjectLockMode string
 

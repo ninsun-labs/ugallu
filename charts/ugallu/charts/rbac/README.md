@@ -1,6 +1,6 @@
 # rbac
 
-Least-privilege RBAC bundle for the 5 ugallu Wave 1 binaries (design 13). Closes review H2.
+Least-privilege RBAC bundle for the core ugallu binaries.
 
 ## Components
 

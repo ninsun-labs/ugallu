@@ -109,8 +109,8 @@ func NewCachedClient(opts *CachedClientOpts) (*CachedClient, error) {
 	}, nil
 }
 
-// defaultBreakerSettings honours the design 20 §S2 numbers: 5
-// consecutive failures trip the breaker, 30s open state duration.
+// defaultBreakerSettings uses the standard tuning: 5 consecutive
+// failures trip the breaker, 30s open state duration.
 func defaultBreakerSettings() gobreaker.Settings {
 	return gobreaker.Settings{
 		Name:        "resolver-default",

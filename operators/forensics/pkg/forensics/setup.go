@@ -6,11 +6,10 @@
 //
 // Sprint 0 (this file) lands the Options + SetupController scaffold so
 // the cmd binary builds and the helm subchart deploys a real
-// (no-op for now) workload. Sprint 2 lands the ForensicsConfig CRD,
-// the IncidentCapture trigger, the sequential pipeline framework, and
-// the pod-freeze step (design 20 §F1-F4, §F6 Phase 2, §F7 base).
-// Sprint 3 layers in filesystem + memory snapshots, auto-unfreeze,
-// crash recovery and step idempotency (§F5-F7 Phase 3).
+// (no-op for now) workload. Subsequent sprints land the ForensicsConfig
+// CRD, the IncidentCapture trigger, the sequential pipeline framework,
+// the pod-freeze step, filesystem + memory snapshots, auto-unfreeze,
+// crash recovery and step idempotency.
 package forensics
 
 import (
@@ -28,7 +27,7 @@ const DefaultForensicsConfigName = "default"
 
 // DefaultWORMSecretName is the Secret bearing S3 credentials for
 // snapshot uploads. It mirrors the WORM credentials Secret used by the
-// Wave 1 attestor.
+// attestor.
 const DefaultWORMSecretName = "ugallu-worm-creds" //nolint:gosec // secret name, not a credential value
 
 // DefaultWORMSecretNamespace is the privileged-side namespace where

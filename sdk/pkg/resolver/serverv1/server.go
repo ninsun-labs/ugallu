@@ -80,8 +80,8 @@ func (s *Server) ResolveByContainerID(_ context.Context, req *resolverv1.Contain
 	return s.responseFromSnapshot(snap, methodContainerID, start), nil
 }
 
-// ResolveBySAUsername parses a Kubernetes auth username (design 03 R4)
-// and resolves the matching SA / Node / external subject.
+// ResolveBySAUsername parses a Kubernetes auth username and resolves
+// the matching SA / Node / external subject.
 func (s *Server) ResolveBySAUsername(_ context.Context, req *resolverv1.SAUsernameRequest) (*resolverv1.SubjectResponse, error) {
 	start := time.Now()
 	lookup := ResolveSAUsername(s.Cache, req.GetUsername())

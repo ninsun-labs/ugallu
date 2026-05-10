@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package tenantescape exposes the controller-runtime wiring for the
-// ugallu-tenant-escape operator (design 21 §T). It assembles:
+// ugallu-tenant-escape operator. It assembles:
 //   - the TenantBoundary reconciler (rebuilds the in-memory boundary
 //     index on every CR Add/Update/Delete);
 //   - the audit-bus + Tetragon-stub source backends;

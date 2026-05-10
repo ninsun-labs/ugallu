@@ -3,8 +3,7 @@
 
 // Command ugallu-backpressure is the leader-elected workload that
 // samples kube-apiserver storage usage and reconciles the
-// ugallu-backpressure ConfigMap consumed by every SDK emitter
-// (design 16 §Layer 4).
+// ugallu-backpressure ConfigMap consumed by every SDK emitter.
 package main
 
 import (

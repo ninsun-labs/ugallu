@@ -68,7 +68,7 @@ type WebhookSourceOpts struct {
 }
 
 // WebhookSource accepts batched audit-event POSTs from the
-// apiserver's audit-webhook backend (Phase 2 of design 20 §A2).
+// apiserver's audit-webhook backend.
 //
 // The wire shape is the audit.k8s.io/v1.EventList JSON object: a
 // top-level `items` array of audit events. The handler decodes the

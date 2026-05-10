@@ -1,6 +1,6 @@
 # forensics
 
-Wave 2 §F operator. Watches `SecurityEvent` CRs, evaluates the
+Forensics capture operator. Watches `SecurityEvent` CRs, evaluates the
 [ForensicsConfig](../../sdk/pkg/api/v1alpha1/forensicsconfig_types.go)
 trigger predicate, and runs an IR-as-code capture pipeline against
 the suspect Pod when the predicate fires.
@@ -148,7 +148,7 @@ client at startup).
   scenarios covering predicate skip, freeze, per-step ER chain
   with `parent-er` labels, manifest content-addressing, manual
   ack, auto-unfreeze, and admission-policy 8 deny path.
-- [hack/wave2-smoke.sh](../../hack/wave2-smoke.sh) — Wave 2 final
+- [hack/wave2-smoke.sh](../../hack/wave2-smoke.sh) end-to-end
   real-chain smoke that drives this operator from a real
   `audit-detection` emit through a real attestor seal into the
   pipeline, with no manual `Status.Phase=Attested` patch.

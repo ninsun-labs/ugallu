@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// WORMConfigSpec is the runtime config for the WORM adapter (design 07 W10).
+// WORMConfigSpec is the runtime config for the WORM adapter.
 type WORMConfigSpec struct {
 	// +kubebuilder:default=seaweedfs
 	Backend WORMBackend `json:"backend,omitempty"`

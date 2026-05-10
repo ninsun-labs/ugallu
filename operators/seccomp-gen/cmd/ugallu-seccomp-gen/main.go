@@ -6,7 +6,7 @@
 // stream filtered by TargetPod, captures the syscall surface for
 // the configured Duration, builds an OCI seccomp.json from the
 // observations, and writes a SeccompTrainingProfile in the same
-// namespace (design 21 §G — Wave 4 §S3).
+// namespace.
 package main
 
 import (

@@ -10,7 +10,7 @@ import (
 )
 
 // DefaultTombstoneInterval is how often the GC loop scans for expired
-// tombstones (design 03 says every 30s — a half of the 60s grace).
+// tombstones (30s: a half of the 60s grace).
 const DefaultTombstoneInterval = 30 * time.Second
 
 // RunTombstoneGC blocks until ctx is cancelled, periodically purging

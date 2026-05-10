@@ -53,9 +53,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: |-
-              GitOpsResponderConfigSpec is the runtime config for the GitOps responder
-              (design 08 G11).
+            description: GitOpsResponderConfigSpec is the runtime config for the GitOps
+              responder.
             properties:
               bot:
                 description: BotIdentity describes the GitOps bot identity.
@@ -94,8 +93,7 @@ spec:
                 type: object
               conflictBehavior:
                 default: abort
-                description: ConflictBehavior is the GitOps responder conflict policy
-                  (design 08 G5).
+                description: ConflictBehavior is the GitOps responder conflict policy.
                 enum:
                 - abort
                 - force
@@ -161,8 +159,7 @@ spec:
                     name:
                       type: string
                     type:
-                      description: GitProviderType is the kind of git host (design
-                        08 G2).
+                      description: GitProviderType is the kind of git host.
                       enum:
                       - github
                       - gitlab

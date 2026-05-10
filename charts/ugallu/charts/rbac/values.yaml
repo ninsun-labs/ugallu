@@ -5,8 +5,8 @@ global:
     privileged: ugallu-system-privileged
 
 # Per-component toggles. Disable a component's RBAC if you choose not to
-# deploy that component (e.g., forensics on Wave 2 environments where
-# IR is not enabled yet).
+# deploy that component (e.g., forensics in environments where IR is
+# not enabled yet).
 resolver:
   enabled: true
 attestor:

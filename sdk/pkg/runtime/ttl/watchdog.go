@@ -22,7 +22,7 @@ import (
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 )
 
-// Watchdog defaults (design 09 T13).
+// Watchdog defaults.
 const (
 	AttestorLeaseName         = "ugallu-attestor-leader"
 	DefaultLeaseStaleAfter    = 5 * time.Minute
@@ -32,7 +32,7 @@ const (
 
 // AttestorWatchdogReconciler watches the attestor's leader-election
 // Lease and emits anomaly SecurityEvents when the attestor falls
-// behind on its renewal cadence (design 09 T13).
+// behind on its renewal cadence.
 //
 // Emission is deduplicated within DedupWindow so a sustained outage
 // produces at most one SE per window. On recovery (a fresh renewTime

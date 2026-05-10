@@ -4,8 +4,7 @@
 // Command ugallu-compliance-scan reconciles ComplianceScanRun CRs:
 // for each Run it dispatches to one of the backend scanners
 // (kube-bench, Falco, CEL-custom), writes a ComplianceScanResult
-// with the per-check report, and emits the matching SE
-// (design 21 §C — Wave 4 §S5).
+// with the per-check report, and emits the matching SE.
 package main
 
 import (

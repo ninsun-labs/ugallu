@@ -3,12 +3,12 @@
 
 syntax = "proto3";
 
-// Package ugallu.resolver.v1 is the gRPC contract for ugallu-resolver
-// (design 03 R6). The service is exposed on a Unix socket (per-node, fast
-// path) and on a ClusterIP Service (cluster-wide). Clients are detection
-// sources, reasoners, and responders that need to map low-level identifiers
-// (cgroup ID, PID, IP, container ID, SA username) into a SubjectTier1
-// snapshot suitable for embedding in a SecurityEvent.
+// Package ugallu.resolver.v1 is the gRPC contract for ugallu-resolver.
+// The service is exposed on a Unix socket (per-node, fast path) and
+// on a ClusterIP Service (cluster-wide). Clients are detection
+// sources, reasoners, and responders that need to map low-level
+// identifiers (cgroup ID, PID, IP, container ID, SA username) into a
+// SubjectTier1 snapshot suitable for embedding in a SecurityEvent.
 package ugallu.resolver.v1;
 
 option go_package = "github.com/ninsun-labs/ugallu/sdk/pkg/resolver/clientv1;resolverv1";
@@ -115,7 +115,7 @@ message SubjectResponse {
   // tier1_json is the JSON-encoded v1alpha1.SubjectTier1.
   bytes tier1_json = 10;
 
-  // Failure markers (resolver fallback path, design 03).
+  // Failure markers (resolver fallback path).
   bool partial    = 20;
   bool tombstone  = 21;
   bool unresolved = 22;

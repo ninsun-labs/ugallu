@@ -12,7 +12,7 @@ import (
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 )
 
-// SAUsernamePrefixes recognised by ResolveBySAUsername (design 03 R4).
+// SAUsernamePrefixes recognised by ResolveBySAUsername.
 const (
 	saUsernameSAPrefix   = "system:serviceaccount:"
 	saUsernameNodePrefix = "system:node:"
@@ -20,7 +20,7 @@ const (
 )
 
 // BuildPodSubject converts a corev1.Pod into a Tier-1 SubjectTier1
-// snapshot. Phase 1 populates the high-value fields the design 10 F8
+// snapshot. Phase 1 populates the high-value fields the Tier-1
 // taxonomy mandates plus the slim container/volume info; the
 // fine-grained PodSecurityContext, affinity, scheduling tunables, and
 // per-probe details land in follow-up iterations as the operators
@@ -178,8 +178,8 @@ type SAUsernameLookup struct {
 	Partial bool
 }
 
-// ResolveSAUsername parses a Kubernetes auth username per design 03
-// R4 and returns the matching subject.
+// ResolveSAUsername parses a Kubernetes auth username and returns
+// the matching subject.
 //
 //   - "system:serviceaccount:<ns>:<name>" -> SA lookup via lister
 //   - "system:node:<name>"                -> Node lookup via lister

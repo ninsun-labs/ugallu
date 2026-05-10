@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package dnsdetect carries the dispatcher + reconciler wiring for
-// the ugallu-dns-detect operator (design 21 §D). The 5 detectors
-// live in `detector/`, the source backends in `source/`, and the
-// shared event shape in `dnsevent/`.
+// the ugallu-dns-detect operator. The 5 detectors live in
+// `detector/`, the source backends in `source/`, and the shared
+// event shape in `dnsevent/`.
 package dnsdetect
 
 import (

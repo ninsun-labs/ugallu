@@ -1,5 +1,5 @@
 {{- /*
-Policy 12 - HoneypotConfig spec invariants (design 21 §H2).
+Policy 12 - HoneypotConfig spec invariants.
 
 Honeypots only work if every decoy lives in the cluster as a
 plausible target — empty Decoys list = no traps, defeating the
@@ -7,7 +7,7 @@ operator's purpose. The policy enforces three spec invariants on
 CREATE/UPDATE:
   - spec.decoys must be set with at least one entry.
   - decoy[*].kind must match the runtime-supported set
-    (Secret, ServiceAccount). ConfigMap/Namespace land in Wave 4.
+    (Secret, ServiceAccount). ConfigMap/Namespace land later.
   - decoy[*].name and decoy[*].namespace must be non-empty.
   - allowlistedActors[*] entries must follow
     "system:serviceaccount:<ns>:<name>".

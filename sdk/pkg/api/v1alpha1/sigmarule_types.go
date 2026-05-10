@@ -8,7 +8,7 @@ import (
 )
 
 // SigmaRuleSpec is the predicate + emit declaration for a single
-// detection rule consumed by audit-detection (design 20 §A3-A5).
+// detection rule consumed by audit-detection.
 type SigmaRuleSpec struct {
 	// Enabled gates whether the engine evaluates this rule. The
 	// kubebuilder default fills in true when the user posts a CR
@@ -30,7 +30,7 @@ type SigmaRuleSpec struct {
 	// Emit produces the SecurityEvent on match.
 	Emit SigmaEmit `json:"emit"`
 
-	// RateLimit overrides the global token bucket (design 16).
+	// RateLimit overrides the global token bucket.
 	RateLimit *SigmaRateLimit `json:"rateLimit,omitempty"`
 
 	// References point at upstream rule sources (Sigma community,
@@ -44,9 +44,9 @@ type SigmaRuleSpec struct {
 // SigmaMatch is the evaluated predicate. Top-level fields combine
 // with implicit AND. AnyOf restores OR; Not negates the nested
 // match. The split into SigmaMatch (top) + SigmaMatchLeaf (inside
-// AnyOf / Not) deliberately caps recursion at depth 1, matching the
-// design 20 §A3 statement that nested Not is not allowed and AnyOf
-// is one level deep — and lets the OpenAPI schema generator finish.
+// AnyOf / Not) deliberately caps recursion at depth 1: nested Not is
+// not allowed and AnyOf is one level deep, which also lets the
+// OpenAPI schema generator finish.
 type SigmaMatch struct {
 	SigmaMatchLeaf `json:",inline"`
 
@@ -111,9 +111,9 @@ type GlobMatch struct {
 
 // SigmaEmit produces the SecurityEvent on match.
 type SigmaEmit struct {
-	// SecurityEventType MUST be a value from the type catalog
-	// (design 11). Validated by admission policy 6 at apply-time
-	// and re-checked by the engine at runtime.
+	// SecurityEventType MUST be a value from the type catalog.
+	// Validated by admission policy 6 at apply-time and re-checked
+	// by the engine at runtime.
 	SecurityEventType string `json:"securityEventType"`
 
 	// +kubebuilder:validation:Enum=critical;high;medium;low;info

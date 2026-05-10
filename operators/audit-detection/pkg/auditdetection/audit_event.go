@@ -14,8 +14,8 @@ import (
 // wire shapes into this struct so the engine stays backend-agnostic.
 //
 // The schema mirrors the public fields of audit.k8s.io/v1.Event but
-// keeps only what the Sigma rules read in design 20 §A5. Fields
-// added later must remain optional so old rules keep matching.
+// keeps only what the Sigma rules consume. Fields added later must
+// remain optional so old rules keep matching.
 type AuditEvent struct {
 	// AuditID is the apiserver-assigned UUID of the entry. Used as
 	// the SecurityEvent CorrelationID seed when the rule fires.
@@ -106,7 +106,7 @@ type ResponseStatus struct {
 // Source produces a stream of AuditEvents to the engine. Two
 // implementations exist:
 //   - FileSource: tail + inotify on the kubelet/apiserver audit-log
-//     file (Phase 1 of design 20 §A2).
+//     file.
 //   - WebhookSource: HTTPS endpoint that accepts batched audit events
 //     from the apiserver's webhook backend (Phase 2).
 //

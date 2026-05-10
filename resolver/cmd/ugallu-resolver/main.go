@@ -7,7 +7,7 @@
 // Phase 1: informer-backed cache + four working RPCs (PodIP, PodUID,
 // ContainerID, SAUsername). The eBPF cgroup tracker (ResolveByCgroupID)
 // and /proc walker (ResolveByPID) are stubbed Unresolved and land in
-// follow-up commits per the resolver phasing plan in design 03.
+// follow-up commits per the resolver phasing plan.
 package main
 
 import (

@@ -57,8 +57,7 @@ spec:
           spec:
             description: |-
               SeccompTrainingRunSpec is the runtime config the ugallu-seccomp-gen
-              operator reads to drive a seccomp-profile training session
-              (design 21 §G — Wave 4 §S3).
+              operator reads to drive a seccomp-profile training session.
             properties:
               bridgeEndpoint:
                 description: |-

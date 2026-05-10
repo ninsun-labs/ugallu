@@ -24,8 +24,8 @@ import (
 )
 
 // DefaultEnrichTimeout caps a single resolver round-trip so a slow
-// resolver never stalls the DNS event stream. Matches design 20 §S2
-// budget for the UDS-fast path.
+// resolver never stalls the DNS event stream. Sized for the UDS-fast
+// path.
 const DefaultEnrichTimeout = 100 * time.Millisecond
 
 // Resolver is the subset of the resolver SDK stub the source needs to
@@ -38,13 +38,13 @@ type Resolver interface {
 // CoreDNSPluginConfig wires the gRPC stream client.
 type CoreDNSPluginConfig struct {
 	GRPCEndpoint    string        // host:port
-	BearerToken     string        // shared-secret auth (Wave 3 v0.1.0)
+	BearerToken     string        // shared-secret auth
 	NodeName        string        // SubscribeRequest.subscriber_id discriminator
 	MaxEventsPerSec uint32        // server-side rate limit
 	ReconnectBase   time.Duration // base for exponential backoff
 
 	// Resolver hydrates Pod / SubjectUID per event using the SDK
-	// resolver. Nil disables enrichment — detectors fall back to the
+	// resolver. Nil disables enrichment; detectors fall back to the
 	// SrcIP synthetic key.
 	Resolver Resolver
 
@@ -53,7 +53,7 @@ type CoreDNSPluginConfig struct {
 	EnrichTimeout time.Duration
 }
 
-// CoreDNSPluginSource is the primary backend (design 21 §D2.1). Dials
+// CoreDNSPluginSource is the primary backend. Dials
 // the coredns-ugallu plugin's UgalluDNSStream.Subscribe RPC,
 // reconnects with exponential backoff on transient errors, and
 // translates protobuf DNSEvent into the source-agnostic

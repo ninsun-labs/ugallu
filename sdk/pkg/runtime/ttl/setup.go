@@ -30,8 +30,7 @@ type Options struct {
 	WormStubDir string
 
 	// PostponeOnMissingBundle is the requeue interval applied when an
-	// SE/ER's parent AttestationBundle is not yet Sealed. Defaults to
-	// 1h (design 09 T5).
+	// SE/ER's parent AttestationBundle is not yet Sealed. Defaults to 1h.
 	PostponeOnMissingBundle time.Duration
 
 	// BundleGrace overrides the AttestationBundle sealed-to-archive

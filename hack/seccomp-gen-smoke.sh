@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-seccomp-gen — Wave 4 Sprint 7 close gate.
+# E2E lab smoke for ugallu-seccomp-gen.
 #
 # Scenarios (4):
 #   1. Admission policy 13 rejects ratio=0 / ratio>100.

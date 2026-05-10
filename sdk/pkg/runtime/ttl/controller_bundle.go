@@ -20,7 +20,7 @@ import (
 
 // AttestationBundleTTLReconciler garbage-collects AttestationBundle
 // CRs once they are Sealed and have aged past sealedAt + grace
-// (design 09 T3: parent TTL + 7d).
+// (parent TTL + 7d).
 //
 // The DSSE envelope persists in WORM independently of the CR (it was
 // archived by the attestor). This reconciler only reclaims etcd by

@@ -16,7 +16,7 @@ blocklist:
   shipDefault: true
   namespace: ugallu-dns-blocklists
 
-# Singleton DNSDetectConfig CR shipped with the chart (design 21 §D4).
+# Singleton DNSDetectConfig CR shipped with the chart.
 dnsDetectConfig:
   enabled: true
   source:
@@ -60,7 +60,7 @@ image:
 command: ["/bin/sleep", "infinity"]
 args: []
 
-# DaemonSet — one replica per node; design 21 §D1.
+# DaemonSet: one replica per node.
 resources:
   requests:
     cpu: "50m"

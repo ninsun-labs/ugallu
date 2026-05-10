@@ -17,9 +17,9 @@ import (
 // has two EnvelopeSignatures whose KeyIDs let verifiers tell them
 // apart.
 //
-// Verification semantics live in the consumer: design 06 §dual mode
-// supports either OR (any leg verifies) or AND (RequireAll, both legs
-// must verify) policies — see DualModeConfig in v1alpha1.
+// Verification semantics live in the consumer: dual mode supports
+// either OR (any leg verifies) or AND (RequireAll, both legs must
+// verify) policies. See DualModeConfig in v1alpha1.
 type DualSigner struct {
 	primary   Signer
 	secondary Signer
@@ -80,7 +80,7 @@ func (d *DualSigner) Mode() securityv1alpha1.SigningMode {
 // PublicKeyPEM forwards to the primary leg when it implements the
 // exporter — Rekor entries carry a single verifier key, so only the
 // leg most likely to drive transparency-log verification is exposed
-// here (Fulcio in the typical design 06 deployment).
+// here (Fulcio in the typical deployment).
 func (d *DualSigner) PublicKeyPEM() ([]byte, error) {
 	exp, ok := d.primary.(PublicKeyExporter)
 	if !ok {

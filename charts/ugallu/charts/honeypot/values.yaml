@@ -6,7 +6,7 @@ clusterIdentity:
   clusterID: ""
   clusterName: ""
 
-# audit-detection event bus consumer config (Wave 3 §S2). The bus is
+# audit-detection event bus consumer config. The bus is
 # enabled by setting AuditDetectionConfig.spec.eventBus.enabled=true
 # in the audit-detection subchart values; the endpoint here matches
 # the audit-detection bus Service.

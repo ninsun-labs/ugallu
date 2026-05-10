@@ -4,7 +4,7 @@ global:
   namespaces:
     privileged: ugallu-system-privileged
 
-# PLACEHOLDER image for Wave 1 scaffolding. Replace with the real binary
+# PLACEHOLDER image for scaffolding. Replace with the real binary
 # (ghcr.io/ninsun-labs/ugallu/ugallu-resolver:<tag>) once the controller
 # is implemented.
 placeholder: true

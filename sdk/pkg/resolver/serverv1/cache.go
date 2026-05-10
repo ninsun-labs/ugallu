@@ -17,7 +17,7 @@ import (
 
 // DefaultTombstoneGrace is how long a deleted Pod's snapshot survives
 // in the secondary indices so late detection events can still resolve
-// to the last-known subject (design 03).
+// to the last-known subject.
 const DefaultTombstoneGrace = 60 * time.Second
 
 // PodSnapshot carries everything the resolver keeps about a Pod for

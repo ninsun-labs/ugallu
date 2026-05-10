@@ -1,6 +1,6 @@
 # attestor
 
-Wave 1 subchart for `ugallu-attestor` (Deployment singleton via leader-election).
+Subchart for `ugallu-attestor` (Deployment singleton via leader-election).
 
 ## Status
 

@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-// Defaults from design 16. Tuned conservatively: emitters keep going
+// Defaults tuned conservatively: emitters keep going
 // at full rate until 70% of etcd capacity, halve at 70-90%, drop
 // non-critical above 90%, and recover only once usage falls under 50%
 // (hysteresis to avoid oscillation around the threshold).

@@ -121,7 +121,7 @@ else
 fi
 
 # Default retention is idempotent: PUT replaces the existing rule
-# atomically. 7 days = the design 07 W2 default for evidence blobs.
+# atomically. 7 days is the default for evidence blobs.
 info "Applying default retention (COMPLIANCE 7d)"
 kubectl -n ugallu-evidence exec aws-cli -- \
   aws s3api put-object-lock-configuration --bucket ugallu $EP \

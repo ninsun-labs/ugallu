@@ -6,8 +6,7 @@
 // etcd-snapshot file), computes its SHA-256, and (in full-restore
 // mode) replays the backup into the configured sandbox namespace
 // before diffing object counts. Each run produces a
-// BackupVerifyResult with the per-finding report (design 21 §B —
-// Wave 4 §S4).
+// BackupVerifyResult with the per-finding report.
 package main
 
 import (

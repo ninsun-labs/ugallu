@@ -3,9 +3,8 @@
 
 // Integration tests for the SigmaRule reconciler + Engine pair,
 // driven against a real apiserver via envtest. These scenarios are
-// the lab e2e backbone — every behaviour the operator advertises in
-// design 20 §A3-A9 is exercised here so the Sprint-1 close gate has
-// no skipped scenarios.
+// the lab e2e backbone: every behaviour the operator advertises is
+// exercised here so the close gate has no skipped scenarios.
 
 package engine_test
 

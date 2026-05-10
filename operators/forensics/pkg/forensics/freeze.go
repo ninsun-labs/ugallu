@@ -242,8 +242,8 @@ func (f *Freezer) applyCorePolicy(ctx context.Context, pod *corev1.Pod) error {
 						},
 					},
 				},
-				// Forensics workload — design 20 §F4 carryover for
-				// future IR-as-code feedback signaling.
+				// Forensics workload carryover for future IR-as-code
+				// feedback signaling.
 				{
 					To: []networkingv1.NetworkPolicyPeer{
 						{
@@ -319,11 +319,11 @@ func (f *Freezer) applyCiliumPolicy(ctx context.Context, pod *corev1.Pod) error 
 					},
 				},
 			},
-			// Original design 20 §F4 allowance: suspect Pod can
-			// signal back to the forensics operator. Sprint 2 MVP
-			// does not use this path (the operator polls via the
-			// K8s API), but the rule survives for the IR-as-code
-			// feedback loop landing in Sprint 3.
+			// Allowance for the suspect Pod to signal back to the
+			// forensics operator. The current implementation does
+			// not use this path (the operator polls via the K8s
+			// API), but the rule survives for the IR-as-code
+			// feedback loop.
 			map[string]any{
 				"toEndpoints": []any{
 					map[string]any{

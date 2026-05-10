@@ -1,9 +1,9 @@
 // Copyright 2026 The ninsun-labs Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package detector implements the 2 honeypot tripwire detectors
-// design 21 §H4 prescribes. Each detector is a pure function over
-// an audit envelope + the live decoy Index.
+// Package detector implements the 2 honeypot tripwire detectors.
+// Each detector is a pure function over an audit envelope plus the
+// live decoy Index.
 package detector
 
 import (
@@ -56,7 +56,6 @@ type AuditDetector interface {
 }
 
 // Severity returns the canonical severity string for a Finding type.
-// Mapping pinned by design 21 §H4.
 func Severity(seType string) string {
 	switch seType {
 	case securityv1alpha1.TypeHoneypotTriggered:

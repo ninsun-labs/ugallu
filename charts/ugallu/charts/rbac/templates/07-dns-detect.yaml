@@ -2,10 +2,10 @@
 {{- /*
 ugallu-dns-detect RBAC.
 
-DaemonSet (one replica per node) in ugallu-system. Wave 3 Sprint 3
-ships scaffolding RBAC: SA + minimal ClusterRole for SE emit + own
-config CR. Lease + plugin Secret read + ConfigMap blocklist read
-extend in Sprint 3 commit 4 (chart real).
+DaemonSet (one replica per node) in ugallu-system. The scaffolding
+RBAC bundles SA + minimal ClusterRole for SE emit + own config CR.
+Lease + plugin Secret read + ConfigMap blocklist read extend in a
+later iteration (chart real).
 */ -}}
 apiVersion: v1
 kind: ServiceAccount

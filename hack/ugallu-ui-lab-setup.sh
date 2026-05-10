@@ -3,7 +3,7 @@
 #
 # What this script does:
 #   1. Build the BFF binary + SvelteKit SPA bundle into the
-#      multi-binary lab image (`localhost/ugallu-runtime:wave5-rc1`)
+#      multi-binary lab image (`localhost/ugallu-runtime:v0.1.0-alpha.1`)
 #      via `task build:image-multi`.
 #   2. Distribute the image to every rke2-lab node (assumes ssh
 #      access via NODES env var; falls back to a single
@@ -33,7 +33,7 @@ fail() { echo "${RED}FAIL${NC} $*" >&2; exit 1; }
 info() { echo "${YELLOW}==>${NC} $*"; }
 
 NS="${UGALLU_UI_NS:-ugallu-system}"
-TAG="${UGALLU_UI_TAG:-wave5-rc1}"
+TAG="${UGALLU_UI_TAG:-v0.1.0-alpha.1}"
 APPLY="false"
 # AUTH_DISABLED=true skips the OIDC client_secret prompt + the
 # Secret/ugallu-ui-oidc + Secret/ugallu-ui-cookie seed; mirrors the

@@ -11,11 +11,11 @@ import (
 // the OIDC subject + groups plus a small platform header so the SPA
 // can identify which BFF version it is talking to.
 type MeResponse struct {
-	Sub    string   `json:"sub"`
-	Email  string   `json:"email,omitempty"`
-	Name   string   `json:"name,omitempty"`
-	Groups []string `json:"groups,omitempty"`
-	BFFVersion string `json:"bffVersion"`
+	Sub        string   `json:"sub"`
+	Email      string   `json:"email,omitempty"`
+	Name       string   `json:"name,omitempty"`
+	Groups     []string `json:"groups,omitempty"`
+	BFFVersion string   `json:"bffVersion"`
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {

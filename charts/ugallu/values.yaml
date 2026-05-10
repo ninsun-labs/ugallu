@@ -1,10 +1,10 @@
 # Umbrella chart values for ugallu. See subcharts for component-specific values.
 #
-# Two namespaces are provisioned (designs 14 and 18):
+# Two namespaces are provisioned:
 #   - ugallu-system               (PSA restricted)
 #   - ugallu-system-privileged    (PSA privileged: resolver, forensics, etc.)
 #
-# Hardening flag (design 14): when strict, install fails preflight unless all
+# Hardening flag: when strict, install fails preflight unless all
 # hardening prerequisites are met (NetworkPolicy, sigstore-policy-controller,
 # SPIRE, NTP).
 hardening:
@@ -16,11 +16,11 @@ global:
     system: ugallu-system
     privileged: ugallu-system-privileged
 
-# namespaces subchart (Wave -2): provisions ugallu-system + ugallu-system-privileged.
+# namespaces subchart: provisions ugallu-system + ugallu-system-privileged.
 namespaces:
   enabled: true
 
-# rbac subchart (Wave -2): ServiceAccounts + ClusterRole/Role bindings (design 13).
+# rbac subchart: ServiceAccounts + ClusterRole/Role bindings.
 rbac:
   enabled: true
   resolver: { enabled: true }
@@ -32,7 +32,7 @@ rbac:
   backpressure: { enabled: true }
   ciliumNetworkPolicies: true
 
-# admission-policies subchart (Wave -1): CEL ValidatingAdmissionPolicy (design 15).
+# admission-policies subchart: CEL ValidatingAdmissionPolicy bundle.
 admission-policies:
   enabled: true
 
@@ -47,7 +47,7 @@ admission-policies:
   ttlControllerNamespace: ugallu-system
   ttlControllerSAName: ugallu-ttl
 
-# Wave 1 SDK runtime singletons. Subcharts ship with PLACEHOLDER images
+# SDK runtime singletons. Subcharts ship with PLACEHOLDER images
 # (busybox sleep infinity) until the real binaries are implemented.
 resolver:
   enabled: true
@@ -60,57 +60,57 @@ gitops-responder:
 backpressure:
   enabled: true
 
-# audit-detection subchart (Wave 2 §A): apiserver audit log → Sigma rule
+# audit-detection subchart: apiserver audit log → Sigma rule
 # engine → SecurityEvent. Default mode is webhook (apiserver pushes
 # batched events over HTTPS); flip source.mode to "file" for the
 # DaemonSet that tails the kubelet/apiserver audit-log file.
 audit-detection:
   enabled: true
 
-# forensics subchart (Wave 2 §B): SE-triggered IR-as-code pipeline
+# forensics subchart: SE-triggered IR-as-code pipeline
 # (pod freeze + filesystem snapshot + WORM evidence). Runs leader-
 # elected in ugallu-system-privileged.
 forensics:
   enabled: true
 
-# monitoring subchart (Wave 2 §IV): PrometheusRule + Grafana
+# monitoring subchart: PrometheusRule + Grafana
 # dashboards covering audit-detection / forensics / emitter SDK.
 # Disable when the cluster has no kube-prometheus-stack;
 # the manifests still apply but PrometheusRule has no consumer.
 monitoring:
   enabled: true
 
-# webhook-auditor subchart (Wave 3 §W): risk-scores admission webhook
+# webhook-auditor subchart: risk-scores admission webhook
 # configurations and emits Detection-class SecurityEvents when a webhook
 # crosses the configured threshold. Scaffold ships placeholder=true
 # (busybox sleep) until the real binary lands.
 webhook-auditor:
   enabled: true
 
-# dns-detect subchart (Wave 3 §D): consumes DNS query stream from
+# dns-detect subchart: consumes DNS query stream from
 # coredns-ugallu plugin (primary) or Tetragon kprobe (fallback) and
 # emits SecurityEvents when one of 5 detectors fires (exfiltration,
 # tunneling, blocklist, young-domain, anomalous port).
 dns-detect:
   enabled: true
 
-# tenant-escape subchart (Wave 3 §T): consumes the audit-detection
+# tenant-escape subchart: consumes the audit-detection
 # event bus + Tetragon network namespace events to detect
 # multi-tenancy isolation breaches (cross-tenant Secret access,
 # hostPath overlap, NetworkPolicy ingress, exec).
 tenant-escape:
   enabled: true
 
-# honeypot subchart (Wave 3 §H): materialises declared decoy K8s
-# resources (Secret/ServiceAccount, ConfigMap/Namespace post-Wave-4)
+# honeypot subchart: materialises declared decoy K8s
+# resources (Secret/ServiceAccount; ConfigMap/Namespace later)
 # from HoneypotConfig CRs and consumes the audit-detection event
 # bus to fire HoneypotTriggered SEs the moment any actor touches
-# one of those decoys. Tripwire model — there is no legitimate
+# one of those decoys. Tripwire model: there is no legitimate
 # reason to read a decoy.
 honeypot:
   enabled: true
 
-# tetragon-bridge subchart (Wave 4 §S2): typed gRPC fan-out from
+# tetragon-bridge subchart: typed gRPC fan-out from
 # Tetragon FineGuidanceSensors GetEvents. Operators (dns-detect
 # Tetragon-fallback, tenant-escape exec source, seccomp-gen training
 # capture) subscribe to this single bridge instead of dialling
@@ -122,32 +122,32 @@ tetragon-bridge:
   source:
     mode: synthetic
 
-# seccomp-gen subchart (Wave 4 §S3): consumes the tetragon-bridge
+# seccomp-gen subchart: consumes the tetragon-bridge
 # StreamFileOpen and produces a seccomp.json from the captured
 # syscall surface. SeccompTrainingRun + SeccompTrainingProfile CRDs
 # in the security.ugallu.io/v1alpha1 group.
 seccomp-gen:
   enabled: true
 
-# backup-verify subchart (Wave 4 §S4): verifies Velero / etcd-snapshot
-# backups via checksum + (optional) sandbox restore. Out of scope:
-# Restic and S3-raw — verifying raw blobs doesn't compose with K8s
+# backup-verify subchart: verifies Velero / etcd-snapshot backups
+# via checksum + (optional) sandbox restore. Out of scope:
+# Restic and S3-raw - verifying raw blobs doesn't compose with K8s
 # object semantics.
 backup-verify:
   enabled: true
 
-# compliance-scan subchart (Wave 4 §S5): drives scan cycles via
+# compliance-scan subchart: drives scan cycles via
 # kube-bench (CIS K8s) / Falco runtime rules / CEL-custom in-tree
-# checks. v0.1.0 ships the CEL-custom backend functional and stubs
-# kube-bench + Falco; the CRD surface is stable for the release.
+# checks. The initial release ships the CEL-custom backend
+# functional and stubs kube-bench + Falco; the CRD surface is stable.
 compliance-scan:
   enabled: true
 
-# confidential-attestation subchart (Wave 4 §S6): hardware-backed
-# node attestation. Multi-backend from v1: TPM 2.0 (PCR 0-7), AMD
-# SEV-SNP attestation report, Intel TDX guest quote. Default
+# confidential-attestation subchart: hardware-backed node attestation.
+# Multi-backend from v1: TPM 2.0 (PCR 0-7), AMD SEV-SNP attestation
+# report, Intel TDX guest quote. Default
 # devices.{tpm,sevSnp,tdx}.enabled=false so the chart applies on
-# lab clusters without confidential-computing hardware — the
+# lab clusters without confidential-computing hardware - the
 # operator emits indeterminate verdicts in that case.
 confidential-attestation:
   enabled: true

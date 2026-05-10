@@ -3,10 +3,10 @@
 
 // Command ugallu-tenant-escape consumes the audit-detection event
 // bus + Tetragon network namespace events to detect multi-tenancy
-// isolation breaches (design 21 §T).
+// isolation breaches.
 //
 // Scaffold commit: manager boots, Options validated, real wiring
-// arrives in commits 3 + 4 of Wave 3 Sprint 4.
+// arrives in subsequent commits.
 package main
 
 import (

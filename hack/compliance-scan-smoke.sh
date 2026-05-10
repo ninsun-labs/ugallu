@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-compliance-scan — Wave 4 Sprint 7 close gate.
+# E2E lab smoke for ugallu-compliance-scan.
 #
 # Scenarios (3):
 #   1. Admission policy 15 rejects backend not in [kube-bench, falco, cel-custom].

@@ -14,8 +14,7 @@ import (
 )
 
 // debouncedEntry caches the last evaluation of a webhook configuration
-// so cosmetic edits (label/annotation churn) do not re-emit. See
-// design 21 §W6.
+// so cosmetic edits (label/annotation churn) do not re-emit.
 type debouncedEntry struct {
 	score    int
 	specHash string

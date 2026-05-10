@@ -98,7 +98,7 @@ func EmitFindings(
 		}
 	}
 
-	// Per-sub-score SEs (severity hint pinned by design 21 §W5).
+	// Per-sub-score SEs (severity hint).
 	if br.Has(SubScoreCAUntrusted) {
 		if err := emitSubScore(ctx, opts, target, signals,
 			securityv1alpha1.TypeWebhookCAUntrusted, securityv1alpha1.SeverityMedium); err != nil {

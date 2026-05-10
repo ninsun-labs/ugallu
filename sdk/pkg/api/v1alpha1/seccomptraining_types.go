@@ -8,8 +8,7 @@ import (
 )
 
 // SeccompTrainingRunSpec is the runtime config the ugallu-seccomp-gen
-// operator reads to drive a seccomp-profile training session
-// (design 21 §G — Wave 4 §S3).
+// operator reads to drive a seccomp-profile training session.
 type SeccompTrainingRunSpec struct {
 	// TargetSelector picks the Pods whose syscall surface is recorded
 	// during the training window. Empty selector matches every Pod

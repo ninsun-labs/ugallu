@@ -6,9 +6,9 @@
 // runs an Engine that consumes one of two audit-event sources:
 //
 //   - file backend: tails the kubelet/apiserver audit-log file
-//     (DaemonSet, design 20 §A2 Phase 1)
+//     (DaemonSet)
 //   - webhook backend: HTTPS endpoint that the apiserver POSTs batched
-//     audit events to (Deployment, design 20 §A2 Phase 2)
+//     audit events to (Deployment)
 //
 // The source choice is a single --source flag.
 package main
@@ -87,8 +87,8 @@ func runMain() error {
 	flag.StringVar(&webhookKeyFile, "webhook-key", "", "TLS key file (webhook source)")
 	flag.StringVar(&webhookClientCAFile, "webhook-client-ca", "", "Client CA bundle for mTLS (webhook source)")
 	flag.StringVar(&webhookSecretEnv, "webhook-secret-env", "AUDIT_WEBHOOK_TOKEN", "Env var name carrying the bearer-token shared secret (webhook source)")
-	flag.StringVar(&configName, "config-name", "default", "AuditDetectionConfig CR name (cluster-scoped). Wave 3 §S2 event-bus settings live here; missing CR or EventBus.Enabled=false runs in Wave-2 mode (no bus).")
-	flag.StringVar(&busTokenEnv, "bus-token-env", "AUDIT_BUS_TOKEN", "Env var name carrying the bearer-token shared secret for the event bus (Wave 3)")
+	flag.StringVar(&configName, "config-name", "default", "AuditDetectionConfig CR name (cluster-scoped). Event-bus settings live here; missing CR or EventBus.Enabled=false runs without the bus.")
+	flag.StringVar(&busTokenEnv, "bus-token-env", "AUDIT_BUS_TOKEN", "Env var name carrying the bearer-token shared secret for the event bus")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))

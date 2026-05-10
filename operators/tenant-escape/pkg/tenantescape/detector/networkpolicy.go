@@ -12,8 +12,7 @@ import (
 // CrossTenantNetworkPolicyDetector flags NetworkPolicy /
 // CiliumNetworkPolicy create events where the policy lives in
 // tenant_x but the ingress.from selector targets a namespace owned
-// by tenant_y, AND tenant_y is NOT in tenant_x's TrustedNamespaces
-// (design 21 §T4.3).
+// by tenant_y, AND tenant_y is NOT in tenant_x's TrustedNamespaces.
 type CrossTenantNetworkPolicyDetector struct{}
 
 // NewCrossTenantNetworkPolicyDetector returns a ready detector.

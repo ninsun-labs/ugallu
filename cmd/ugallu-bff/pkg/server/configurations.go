@@ -335,7 +335,7 @@ func isReady(conds []metav1.Condition) bool {
 		}
 	}
 	// no Ready condition - check for an explicit Failure-type
-	// condition; absence means we treat as healthy.
+	// condition; absence is treated as healthy.
 	for _, c := range conds {
 		if (c.Type == "Failed" || c.Type == "Degraded") && c.Status == metav1.ConditionTrue {
 			return false

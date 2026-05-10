@@ -15,8 +15,8 @@ bridge:
     key: token
 
 # Placeholder image until the real binary is published. The operator
-# binary ships in the multi-binary runtime image alongside the Wave 3
-# operators (sprint 7 close-gate wires that path).
+# binary ships in the multi-binary runtime image alongside the other
+# detection operators.
 placeholder: true
 image:
   repository: busybox

@@ -55,7 +55,7 @@ rules:
     verbs: ["update", "patch"]
 
   # Read AuditDetectionConfig (cluster-scoped singleton) at boot
-  # to enable the Wave 3 §S2 event bus + per-consumer filter.
+  # to enable the event bus + per-consumer filter.
   - apiGroups: ["security.ugallu.io"]
     resources: ["auditdetectionconfigs"]
     verbs: ["get", "list", "watch"]

@@ -84,7 +84,7 @@ type Options struct {
 
 	// LockMode + LockUntil set Object Lock retention. Empty LockMode
 	// or zero LockUntil disables retention (lab/dev). Production
-	// targets COMPLIANCE per design 07 W2.
+	// targets COMPLIANCE.
 	LockMode  string
 	LockUntil time.Time
 

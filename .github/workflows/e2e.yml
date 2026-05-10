@@ -43,7 +43,7 @@ jobs:
 
       - name: Pre-create cluster prerequisite namespaces
         # The umbrella renders ConfigMaps + PrometheusRule into
-        # `monitoring` (Grafana dashboards + Wave 2 alerts) and a
+        # `monitoring` (Grafana dashboards + alerts) and a
         # cabundle ConfigMap into `cert-manager` (webhook-auditor
         # cert-manager.io/inject-ca-from-secret indirection
         # consumer). Both are external prerequisites in real
@@ -67,7 +67,7 @@ jobs:
             --set monitoring.enabled=false \
             | kubectl apply --server-side -f -
 
-      - name: Wait for Wave 1 pods
+      - name: Wait for core control-plane pods
         run: |
           set -e
           # Resolver is a DaemonSet (1 pod on the single CI node).

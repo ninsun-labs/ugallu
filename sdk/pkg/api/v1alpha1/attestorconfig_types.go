@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AttestorConfigSpec is the runtime config for the attestor (design 06 S8).
+// AttestorConfigSpec is the runtime config for the attestor.
 type AttestorConfigSpec struct {
 	// SigningMode selects the cryptographic mode: fulcio-keyless, openbao-transit, or dual.
 	// +kubebuilder:default=fulcio-keyless
@@ -22,7 +22,7 @@ type AttestorConfigSpec struct {
 	// DualMode tunes dual-sign verification semantics.
 	DualMode *DualModeConfig `json:"dualMode,omitempty"`
 
-	// Rekor configures the transparency log endpoint (always uploaded, design 06).
+	// Rekor configures the transparency log endpoint (always uploaded).
 	Rekor RekorConfig `json:"rekor"`
 }
 

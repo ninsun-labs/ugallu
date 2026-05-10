@@ -63,8 +63,8 @@ type EmitOpts struct {
 	// the same event from different angles).
 	CorrelationID string
 
-	// ClusterIdentity is filled by the caller — the resolver doesn't
-	// know the cluster name (design 03 R5).
+	// ClusterIdentity is filled by the caller; the resolver doesn't
+	// know the cluster name.
 	ClusterIdentity securityv1alpha1.ClusterIdentity
 
 	// DetectedAt is the wall-clock time the detection source

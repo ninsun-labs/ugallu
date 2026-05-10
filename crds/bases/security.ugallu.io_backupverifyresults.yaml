@@ -34,7 +34,7 @@ spec:
       openAPIV3Schema:
         description: |-
           BackupVerifyResult is one run's per-finding report. Retained for
-          30d per design (W4-D7) by the ugallu-ttl operator.
+          30d by the ugallu-ttl operator.
         properties:
           apiVersion:
             description: |-

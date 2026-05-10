@@ -18,8 +18,9 @@
 //  5. Optional resolver enrichment — short-circuit on cache hit, fall
 //     back to the bare Subject from EmitOpts on resolver failure.
 //
-// Wave 2 audit-detection and forensics consume this package directly.
-// Wave 1 attestor / TTL emit their own SE via the controller-runtime
-// client because they predate the emitter and don't need rate-limit
-// or correlation; future iterations may migrate them.
+// audit-detection and forensics consume this package directly.
+// The attestor and TTL operators emit their own SE via the
+// controller-runtime client because they predate the emitter and
+// don't need rate-limit or correlation; future iterations may
+// migrate them.
 package v1alpha1

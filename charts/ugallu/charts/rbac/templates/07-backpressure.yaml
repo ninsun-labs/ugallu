@@ -2,7 +2,7 @@
 {{- /*
 ugallu-backpressure: leader-elected workload that scrapes
 kube-apiserver storage metrics and writes the ugallu-backpressure
-ConfigMap consumed by every SDK emitter (design 16 §Layer 4).
+ConfigMap consumed by every SDK emitter.
 */ -}}
 apiVersion: v1
 kind: ServiceAccount

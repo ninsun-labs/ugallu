@@ -2,7 +2,7 @@
 # E2E smoke test for ugallu admission policies and CRD lifecycle.
 #
 # Assumes a kind / kubectl context already pointed at a cluster with
-# CRDs + admission policies + Wave 1 placeholders applied.
+# CRDs + admission policies + control-plane placeholders applied.
 #
 # Run locally:
 #   bash hack/e2e-smoke.sh

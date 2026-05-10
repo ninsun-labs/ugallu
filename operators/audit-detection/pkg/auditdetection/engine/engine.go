@@ -28,8 +28,8 @@ import (
 	"github.com/ninsun-labs/ugallu/operators/audit-detection/pkg/auditdetection/sigma"
 )
 
-// DefaultRuleBurst matches design 16 §A2 — the per-rule token bucket
-// peak when the SigmaRule does not override SigmaRateLimit.
+// DefaultRuleBurst is the per-rule token bucket peak when the
+// SigmaRule does not override SigmaRateLimit.
 const DefaultRuleBurst = 50
 
 // DefaultRuleSustainedPerSec is the per-rule sustained refill rate.
@@ -48,10 +48,10 @@ type Engine struct {
 }
 
 // Publisher is the optional fan-out hook the engine calls for every
-// AuditEvent it consumes — before the sigma matcher runs. The
-// audit-detection event bus (Wave 3 §S2) plugs in here so other
-// operators can subscribe to the raw stream without re-tailing the
-// audit log. nil = no-op.
+// AuditEvent it consumes, before the sigma matcher runs. The
+// audit-detection event bus plugs in here so other operators can
+// subscribe to the raw stream without re-tailing the audit log.
+// nil = no-op.
 type Publisher interface {
 	Publish(*auditdetection.AuditEvent)
 }
@@ -68,7 +68,7 @@ type Options struct {
 	Log *slog.Logger
 
 	// Publisher receives every AuditEvent before sigma matching.
-	// Optional; nil disables the fan-out (Wave 2 retrocompat).
+	// Optional; nil disables the fan-out.
 	Publisher Publisher
 }
 

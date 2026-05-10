@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package sign provides the cryptographic primitives used by the attestor:
-// the Signer interface (design 06 S7), the in-toto Statement builder
-// (design 05 A4), and a DSSE envelope encoder.
+// the Signer interface, the in-toto Statement builder, and a DSSE
+// envelope encoder.
 //
 // Implementations:
 //   - Ed25519Signer  in-process keypair. For dev / test only. Default when

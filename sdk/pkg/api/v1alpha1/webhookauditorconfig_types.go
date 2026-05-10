@@ -10,7 +10,7 @@ import (
 // WebhookAuditorConfigSpec is the runtime config the
 // ugallu-webhook-auditor operator reads to decide which admission
 // webhooks (MutatingWebhookConfiguration / ValidatingWebhookConfiguration)
-// to score and what to ignore (design 21 §W3-W4).
+// to score and what to ignore.
 type WebhookAuditorConfigSpec struct {
 	// RiskThreshold gates SE emission. A webhook with RiskScore strictly
 	// below this value does not produce a top-level
@@ -30,13 +30,13 @@ type WebhookAuditorConfigSpec struct {
 	// TrustedSubjectDNs is the canonical RFC 4514 DN allowlist for
 	// caBundle CAs. A webhook whose caBundle chain root has a subject
 	// DN in this list does NOT trigger the `WebhookCAUntrusted`
-	// sub-score. Stable across cert-manager rotations (see §W3.1).
+	// sub-score. Stable across cert-manager rotations.
 	TrustedSubjectDNs []string `json:"trustedSubjectDNs,omitempty"` //nolint:revive // DN is X.509 Distinguished Name
 
 	// TrustedCASources lists namespaces where the operator is allowed
 	// to read Secret data to dereference indirect caBundle references.
 	// Scope is intentionally narrow: cluster-wide Secret read would
-	// blow the cache.DisableFor=Secret guarantee (design 20 §F).
+	// blow the cache.DisableFor=Secret guarantee.
 	TrustedCASources []TrustedCASource `json:"trustedCASources,omitempty"`
 }
 

@@ -26,7 +26,7 @@ type SecurityEventTTLReconciler struct {
 	Scheme       *runtime.Scheme
 	WormUploader worm.Uploader
 	// PostponeOnMissingBundle is the requeue interval used when the
-	// parent bundle is not yet Sealed. Defaults to 1h (design 09 T5).
+	// parent bundle is not yet Sealed. Defaults to 1h.
 	PostponeOnMissingBundle time.Duration
 	// TTLConfigNamespace is the namespace consulted for the TTLConfig
 	// singleton. Defaults to "ugallu-system".

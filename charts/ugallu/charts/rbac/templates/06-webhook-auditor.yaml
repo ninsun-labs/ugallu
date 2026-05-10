@@ -6,7 +6,7 @@ Singleton Deployment in ugallu-system (PSA restricted). Watches the
 admission webhook configurations (cluster-scoped) and emits SE on
 threshold cross.
 
-Secret access (Wave 3 Phase 2): one Role + RoleBinding per namespace
+Secret access: one Role + RoleBinding per namespace
 listed in .Values.webhookAuditor.trustedCASources, granting only
 get,list,watch on Secrets in that namespace. Scope is intentionally
 narrow — the operator follows cert-manager-style indirect caBundle

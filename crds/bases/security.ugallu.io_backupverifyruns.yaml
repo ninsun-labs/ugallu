@@ -58,8 +58,7 @@ spec:
           spec:
             description: |-
               BackupVerifyRunSpec is the runtime config the ugallu-backup-verify
-              operator reads to drive a verification cycle (design 21 §B —
-              Wave 4 §S4).
+              operator reads to drive a verification cycle.
             properties:
               backend:
                 description: |-

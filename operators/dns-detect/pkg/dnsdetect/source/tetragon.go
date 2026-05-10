@@ -21,9 +21,9 @@ import (
 	"github.com/ninsun-labs/ugallu/operators/dns-detect/pkg/dnsevent"
 )
 
-// TetragonKprobeSource is the fallback backend (design 21 §D2.3) —
-// it subscribes to the tetragon-bridge StreamDNSQuery RPC and
-// translates each event into the source-agnostic dnsevent shape.
+// TetragonKprobeSource is the fallback backend: it subscribes to the
+// tetragon-bridge StreamDNSQuery RPC and translates each event into
+// the source-agnostic dnsevent shape.
 //
 // Limitations carried over from the kprobe data path:
 //   - PayloadLength is not available (kprobe doesn't see the answer

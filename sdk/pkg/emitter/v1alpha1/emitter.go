@@ -25,8 +25,8 @@ import (
 	resolverv1 "github.com/ninsun-labs/ugallu/sdk/pkg/resolver/clientv1"
 )
 
-// EmitterOpts configures NewEmitter. Defaults match the
-// Wave-2 design 20 §S1 numbers (50 burst / 10 sustained / 1000 ring).
+// EmitterOpts configures NewEmitter. Defaults: 50 burst, 10 sustained
+// tokens per second, 1000-entry retry ring.
 type EmitterOpts struct {
 	// Client is the controller-runtime client used to publish SE
 	// CRs. Required.

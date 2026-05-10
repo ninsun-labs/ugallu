@@ -15,7 +15,7 @@ metadata:
     {{- include "dnsdetect.labels" . | nindent 4 }}
 data:
   blocklist: |
-    # Default ugallu DNS blocklist (Wave 3 §D3.3 starter set).
+    # Default ugallu DNS blocklist (starter set).
     # Format: one entry per line; "*.example.com" is suffix match.
     # Lines starting with `#` and empty lines are ignored.
     *.bit

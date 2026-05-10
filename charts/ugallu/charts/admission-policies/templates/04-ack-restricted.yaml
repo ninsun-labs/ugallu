@@ -1,9 +1,8 @@
 {{- /*
 Policy 4 - Status.Acknowledged=true requires an authorized ServiceAccount.
 By default ackAuthorizedSAs is empty: no one can ack until an admin adds
-an SA explicitly. Closes the privilege-escalation vector identified in
-design 14 S10 (an operator with /status patch RBAC could otherwise mass-ack
-and silence detection).
+an SA explicitly. Closes a privilege-escalation vector: an operator
+with /status patch RBAC could otherwise mass-ack and silence detection.
 */ -}}
 {{- $authorized := .Values.ackAuthorizedSAs | default list -}}
 apiVersion: admissionregistration.k8s.io/v1

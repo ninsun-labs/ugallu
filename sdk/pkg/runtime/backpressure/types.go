@@ -9,7 +9,7 @@ package backpressure
 // their token bucket / severity gate accordingly.
 type Level string
 
-// Level constants mirror the spec in design 16 §Layer 4.
+// Level constants.
 const (
 	// LevelGreen — etcd is well below the saturation threshold and
 	// every emitter runs at full configured rate.
@@ -41,7 +41,7 @@ const (
 )
 
 // DefaultConfigMapName is the canonical ConfigMap consumed by every
-// emitter (design 16 §Layer 4).
+// emitter.
 const DefaultConfigMapName = "ugallu-backpressure"
 
 // DefaultNamespace is the conventional control-plane namespace that

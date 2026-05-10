@@ -3,7 +3,7 @@
 ugallu-forensics RBAC.
 
 The forensics operator runs leader-elected in the privileged
-namespace. Its mandate (design 20 §F1-§F7) is:
+namespace. Its mandate:
 
   - watch SecurityEvents cluster-wide and start IR pipelines
     against the suspect Pod;

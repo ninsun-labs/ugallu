@@ -184,8 +184,8 @@ type ConfidentialAttestationResultStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // ConfidentialAttestationResult is the verifier's per-run report.
-// Retained 7d per design (W4-D7) by ugallu-ttl; the linked
-// AttestationBundle captures the long-term signed snapshot.
+// Retained 7d by ugallu-ttl; the linked AttestationBundle captures
+// the long-term signed snapshot.
 type ConfidentialAttestationResult struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

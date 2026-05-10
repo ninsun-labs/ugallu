@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-dns-detect — Wave 3 Sprint 3 close gate.
+# E2E lab smoke for ugallu-dns-detect.
 #
 # Assumes:
 #   - kubectl context already pointed at the lab
@@ -7,11 +7,11 @@
 #     lab values overlay, real binary loaded on every node)
 #   - DNSDetectConfig 'default' singleton present (chart-shipped)
 #   - blocklist ConfigMap ugallu-dns-blocklists/default present
-#   - Lab CoreDNS configured with the ugallu plugin (Wave 3 Sprint 3
-#     prereq — the smoke skips scenarios that require the plugin
-#     payload when source.status reports "tetragon_kprobe").
+#   - Lab CoreDNS configured with the ugallu plugin (the smoke skips
+#     scenarios that require the plugin payload when source.status
+#     reports "tetragon_kprobe").
 #
-# What it covers (7 scenari — Phase 3 close per design 21 §VIII):
+# What it covers (7 scenarios):
 #   1. DNSDetectConfig surfaces Status.source via cfg-status reconciler
 #   2. AnomalousPort: pod query to udp://...:5353 → DNSAnomalousPort
 #   3. ToBlocklistedFQDN: pod query for *.bit suffix → DNSToBlocklistedFQDN

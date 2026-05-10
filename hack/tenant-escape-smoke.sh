@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-tenant-escape — Wave 3 Sprint 4 close gate.
+# E2E lab smoke for ugallu-tenant-escape.
 #
 # Assumes:
 #   - kubectl context already pointed at the lab
@@ -10,7 +10,7 @@
 #     tenant-escape)
 #   - admission policy 11 (ugallu.tenant-boundary-spec) bound
 #
-# What it covers (5 scenari per design 21 §T):
+# What it covers (5 scenarios):
 #   1. Admission policy 11: empty NamespaceSelector → 4xx denied
 #   2. CrossTenantSecretAccess fires when team-a SA reads a Secret
 #      in team-b
@@ -20,9 +20,9 @@
 #   5. TenantBoundaryOverlap meta-event fires when two CRs claim
 #      the same namespace
 #
-# CrossTenantExec is NOT exercised here — Tetragon source is a stub
-# in Wave 3 (real impl lives in ninsun-labs/tetragon-bridge per
-# design 21 §T8).
+# CrossTenantExec is NOT exercised here: the Tetragon source is a
+# stub in this release (the real impl lives in
+# ninsun-labs/tetragon-bridge).
 #
 # Run with:
 #   bash hack/tenant-escape-smoke.sh
@@ -252,7 +252,7 @@ EOF
 if wait_for_se TenantBoundaryOverlap 60; then
   pass "TenantBoundaryOverlap SE emitted"
 else
-  skip "TenantBoundaryOverlap not emitted (operator may surface via Status only — see design 21 §T2)"
+  skip "TenantBoundaryOverlap not emitted (operator may surface via Status only)"
 fi
 
 echo

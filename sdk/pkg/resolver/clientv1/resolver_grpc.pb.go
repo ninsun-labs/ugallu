@@ -7,17 +7,18 @@
 // - protoc             v3.19.6
 // source: resolver/v1/resolver.proto
 
-// Package ugallu.resolver.v1 is the gRPC contract for ugallu-resolver
-// (design 03 R6). The service is exposed on a Unix socket (per-node, fast
-// path) and on a ClusterIP Service (cluster-wide). Clients are detection
-// sources, reasoners, and responders that need to map low-level identifiers
-// (cgroup ID, PID, IP, container ID, SA username) into a SubjectTier1
-// snapshot suitable for embedding in a SecurityEvent.
+// Package ugallu.resolver.v1 is the gRPC contract for ugallu-resolver.
+// The service is exposed on a Unix socket (per-node, fast path) and
+// on a ClusterIP Service (cluster-wide). Clients are detection
+// sources, reasoners, and responders that need to map low-level
+// identifiers (cgroup ID, PID, IP, container ID, SA username) into a
+// SubjectTier1 snapshot suitable for embedding in a SecurityEvent.
 
 package resolverv1
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

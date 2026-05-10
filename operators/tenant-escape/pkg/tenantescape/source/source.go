@@ -32,8 +32,8 @@ type AuditSource interface {
 }
 
 // ExecSource produces a stream of normalised exec events that drive
-// the CrossTenantExec detector. Wave 3 ships a stub; the real
-// Tetragon-bridge consumer lands in the satellite repo.
+// the CrossTenantExec detector. The current implementation ships a
+// stub; the real Tetragon-bridge consumer lands in the satellite repo.
 type ExecSource interface {
 	Name() string
 	Run(ctx context.Context) (<-chan *detector.ExecInput, error)

@@ -37,7 +37,7 @@ type AuditBusConfig struct {
 	ReconnectBase time.Duration
 }
 
-// AuditBusSource is the primary backend (design 21 §S2). Subscribes
+// AuditBusSource is the primary backend. Subscribes
 // to the audit-detection event bus and translates protobuf
 // AuditEvent into the source-agnostic detector.AuditInput shape.
 type AuditBusSource struct {

@@ -87,8 +87,8 @@ spec:
                       type: object
                     kind:
                       description: |-
-                        Kind is the K8s kind of the decoy. Wave 3 ships Secret +
-                        ServiceAccount; ConfigMap and Namespace land in Wave 4.
+                        Kind is the K8s kind of the decoy. Currently supports Secret
+                        and ServiceAccount; ConfigMap and Namespace will be added later.
                       enum:
                       - Secret
                       - ServiceAccount

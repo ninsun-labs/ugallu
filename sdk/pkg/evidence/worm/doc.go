@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package worm abstracts WORM (write-once-read-many) storage of
-// evidence blobs (design 07).
+// evidence blobs.
 //
 // Current implementations:
 //   - StubUploader   filesystem-backed; dev/test default.

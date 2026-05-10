@@ -9,7 +9,7 @@ import (
 )
 
 // AttestationBundleSpec is the immutable signing assignment.
-// One bundle attests one primary fact (design 05 A1: per-fact, not per-incident).
+// One bundle attests one primary fact (per-fact, not per-incident).
 type AttestationBundleSpec struct {
 	// AttestedFor points at the SecurityEvent or EventResponse being signed.
 	AttestedFor corev1.ObjectReference `json:"attestedFor"`

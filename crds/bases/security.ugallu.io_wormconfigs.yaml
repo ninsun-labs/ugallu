@@ -52,13 +52,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: WORMConfigSpec is the runtime config for the WORM adapter
-              (design 07 W10).
+            description: WORMConfigSpec is the runtime config for the WORM adapter.
             properties:
               backend:
                 default: seaweedfs
-                description: WORMBackend identifies the S3-compatible backend (design
-                  07 W1).
+                description: WORMBackend identifies the S3-compatible backend.
                 enum:
                 - seaweedfs
                 - aws-s3
@@ -89,8 +87,7 @@ spec:
                     type: string
                   mode:
                     default: sse-kms
-                    description: EncryptionMode is the WORM at-rest encryption mode
-                      (design 07 W6).
+                    description: EncryptionMode is the WORM at-rest encryption mode.
                     enum:
                     - sse-kms
                     - sse-s3

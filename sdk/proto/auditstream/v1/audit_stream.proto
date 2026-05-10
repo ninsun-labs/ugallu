@@ -4,11 +4,10 @@
 syntax = "proto3";
 
 // Package ugallu.auditstream.v1 is the gRPC contract for the
-// audit-detection event bus (design 21 §S2). audit-detection
-// re-emits every consumed apiserver audit event on a streaming
-// channel so other operators (tenant-escape Wave 3, future
-// reasoners) can subscribe without independently tailing the
-// apiserver audit log.
+// audit-detection event bus. audit-detection re-emits every consumed
+// apiserver audit event on a streaming channel so other operators
+// (tenant-escape, future reasoners) can subscribe without
+// independently tailing the apiserver audit log.
 //
 // The bus runs only when AuditDetectionConfig.spec.eventBus.enabled
 // is true.

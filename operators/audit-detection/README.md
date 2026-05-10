@@ -1,6 +1,6 @@
 # audit-detection
 
-Wave 2 §A operator. Consumes the Kubernetes apiserver audit log,
+Audit-stream detection operator. Consumes the Kubernetes apiserver audit log,
 evaluates user-supplied [SigmaRule](../../sdk/pkg/api/v1alpha1/sigmarule_types.go)
 CRs against each event, and emits [SecurityEvent](../../sdk/pkg/api/v1alpha1/securityevent_types.go)
 CRs of class `Detection` (or `Audit` for low-severity matches) via
@@ -98,6 +98,6 @@ limit + disable + delete. Posts payloads via an in-cluster
 `alpine/curl` Job (the `--resolve` trick avoids round-tripping
 through the host's WARP TLS-inspection proxy).
 
-The Wave 2 final smoke at [hack/wave2-smoke.sh](../../hack/wave2-smoke.sh)
+The end-to-end smoke at [hack/wave2-smoke.sh](../../hack/wave2-smoke.sh)
 exercises this operator as the head of the
 audit-detection → attestor → forensics chain.

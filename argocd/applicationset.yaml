@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # ApplicationSet that generates one Application per ugallu component, with
-# argocd.argoproj.io/sync-wave annotations for install ordering (design 17).
+# argocd.argoproj.io/sync-wave annotations for install ordering.
 #
-# Wave plan:
+# sync-wave plan:
 #   -2  namespaces, rbac          (cluster prerequisites)
 #   -1  crds, admission-policies  (API spine + invariant enforcement)
 #    0  external deps             (SeaweedFS / OpenBao / SPIRE / sigstore-policy-controller)
 #    1  ugallu-resolver / attestor / ttl
 #    2  audit-detection / forensics
-#    3+ Wave 2-4 operators
+#    3+ extension detection operators
 #
 # Source-type detection: ArgoCD inspects the path. Chart.yaml -> Helm,
 # kustomization.yaml -> Kustomize, neither -> directory recurse. Each of
@@ -46,7 +46,7 @@ spec:
             path: charts/ugallu/charts/admission-policies
             component: admission-policies
 
-          # === Wave 1: SDK runtime singletons ===
+          # === sync-wave 1: SDK runtime singletons ===
           # Subcharts ship with PLACEHOLDER busybox images for deploy-contract
           # validation. Replace image.repository/tag once binaries are
           # implemented and published to ghcr.io/ninsun-labs/ugallu/*.
@@ -71,7 +71,7 @@ spec:
             path: charts/ugallu/charts/backpressure
             component: backpressure
 
-          # === Wave 2: detection / response operators ===
+          # === sync-wave 2: detection / response operators ===
           - name: ugallu-audit-detection
             wave: "2"
             path: charts/ugallu/charts/audit-detection
@@ -85,7 +85,7 @@ spec:
             path: charts/ugallu/charts/monitoring
             component: monitoring
 
-          # === Wave 3: extension detection layer (design 21) ===
+          # === sync-wave 4: extension detection layer ===
           - name: ugallu-webhook-auditor
             wave: "4"
             path: charts/ugallu/charts/webhook-auditor
@@ -103,7 +103,7 @@ spec:
             path: charts/ugallu/charts/honeypot
             component: honeypot
 
-          # === Future Wave 0+ entries (uncomment when subcharts are ready) ===
+          # === Future sync-wave 0 entries (uncomment when subcharts are ready) ===
           # - name: ugallu-seaweedfs
           #   wave: "0"
           #   path: charts/ugallu/charts/seaweedfs
@@ -125,7 +125,7 @@ spec:
         targetRevision: main
       destination:
         server: https://kubernetes.default.svc
-        # Most resources in ugallu Wave 1 are cluster-scoped (CRD, VAP,
+        # Most resources in the ugallu core bundle are cluster-scoped (CRD, VAP,
         # ClusterRole, ClusterRoleBinding, Namespace) or carry an explicit
         # namespace in their manifest. The destination.namespace below is
         # only the fallback for namespaced resources without an explicit

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package attestor provides controller-runtime reconcilers for the
-// AttestationBundle pipeline (design 05).
+// AttestationBundle pipeline.
 //
 // Three reconcilers wire together:
 //

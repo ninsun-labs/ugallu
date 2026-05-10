@@ -38,8 +38,7 @@ const (
 )
 
 // BackupVerifyRunSpec is the runtime config the ugallu-backup-verify
-// operator reads to drive a verification cycle (design 21 §B —
-// Wave 4 §S4).
+// operator reads to drive a verification cycle.
 type BackupVerifyRunSpec struct {
 	// Backend selects the storage backend. v0.1.0 supports
 	// Velero (managed Backup CR) and etcd-snapshot (raw etcd dumps
@@ -194,7 +193,7 @@ type BackupVerifyResultStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // BackupVerifyResult is one run's per-finding report. Retained for
-// 30d per design (W4-D7) by the ugallu-ttl operator.
+// 30d by the ugallu-ttl operator.
 type BackupVerifyResult struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

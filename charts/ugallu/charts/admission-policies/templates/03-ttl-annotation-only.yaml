@@ -1,7 +1,7 @@
 {{- /*
 Policy 3 - ugallu-ttl is restricted to metadata.annotations patches.
 The TTL controller has UPDATE RBAC on SE/ER/AB to write postpone/freeze
-annotations (design 09 T8). This policy prevents that RBAC from being
+annotations. This policy prevents that RBAC from being
 abused to alter Spec, Status, labels, or ownerReferences.
 */ -}}
 {{- $ttlNs := .Values.ttlControllerNamespace | default "ugallu-system" -}}

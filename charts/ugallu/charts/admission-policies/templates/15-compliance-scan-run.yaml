@@ -1,5 +1,5 @@
 {{- /*
-Policy 15 - ComplianceScanRun spec invariants (Wave 4 §S5).
+Policy 15 - ComplianceScanRun spec invariants.
 
 Two safety bounds:
   - timeout <= 30m: a stuck scan must not pin operator workers

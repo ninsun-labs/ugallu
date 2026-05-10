@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package sigma is the audit-detection rule evaluator. It implements
-// the Sigma "subset" surface from design 20 §A3 (equality, glob,
-// AND/OR/NOT) and intentionally rejects the full Sigma language to
-// keep the engine stateless and ReDoS-free.
+// a Sigma subset (equality, glob, AND/OR/NOT) and intentionally
+// rejects the full Sigma language to keep the engine stateless and
+// ReDoS-free.
 package sigma
 
 import (
@@ -24,8 +24,8 @@ var ErrTooManyWildcards = errors.New("sigma: glob pattern exceeds MaxGlobWildcar
 
 // Glob matches s against pattern using shell-style wildcards: `*`
 // expands to any (possibly empty) substring, `?` matches exactly one
-// character. There is no character-class support — the design 20 §A3
-// subset omits POSIX brackets to avoid pulling in a regex engine.
+// character. There is no character-class support: the subset omits
+// POSIX brackets to avoid pulling in a regex engine.
 //
 // Patterns must satisfy ValidatePattern; passing an unvalidated
 // pattern still works (Glob doesn't allocate beyond the input

@@ -3,7 +3,7 @@
 
 package v1alpha1
 
-// Class is the top-level classification of a SecurityEvent (design D1, locked enum).
+// Class is the top-level classification of a SecurityEvent (locked enum).
 // +kubebuilder:validation:Enum=Detection;Anomaly;PolicyViolation;Forensic;Compliance;Audit
 type Class string
 
@@ -17,7 +17,7 @@ const (
 	ClassAudit           Class = "Audit"
 )
 
-// Severity is the 5-grade severity scale (design D7).
+// Severity is the 5-grade severity scale.
 // +kubebuilder:validation:Enum=critical;high;medium;low;info
 type Severity string
 
@@ -30,8 +30,8 @@ const (
 	SeverityInfo     Severity = "info"
 )
 
-// SecurityEventPhase is the lifecycle phase of a SecurityEvent (design 02 lifecycle).
-// Pending is intentionally absent in v1alpha1 (review H3).
+// SecurityEventPhase is the lifecycle phase of a SecurityEvent.
+// Pending is intentionally absent in v1alpha1.
 // +kubebuilder:validation:Enum=Active;Attested;Archived
 type SecurityEventPhase string
 
@@ -42,7 +42,7 @@ const (
 	SecurityEventPhaseArchived SecurityEventPhase = "Archived"
 )
 
-// EventResponsePhase is the lifecycle phase of an EventResponse (design 04 Q2).
+// EventResponsePhase is the lifecycle phase of an EventResponse.
 // +kubebuilder:validation:Enum=Pending;Running;Succeeded;Failed;Cancelled
 type EventResponsePhase string
 
@@ -55,7 +55,7 @@ const (
 	EventResponsePhaseCancelled EventResponsePhase = "Cancelled"
 )
 
-// AttestationBundlePhase is the lifecycle phase of an AttestationBundle (design 05).
+// AttestationBundlePhase is the lifecycle phase of an AttestationBundle.
 // +kubebuilder:validation:Enum=Pending;Signed;Logged;Sealed;Failed
 type AttestationBundlePhase string
 
@@ -68,7 +68,7 @@ const (
 	AttestationBundlePhaseFailed  AttestationBundlePhase = "Failed"
 )
 
-// ActionType is the kind of action an EventResponse takes (design 04 Q4).
+// ActionType is the kind of action an EventResponse takes.
 // Adding values requires a CRD bump and an admission policy update.
 // +kubebuilder:validation:Enum=PodFreeze;PodUnfreeze;NetworkDeny;FilesystemSnapshot;MemorySnapshot;EvidenceUpload;GitOpsChange;RBACRevoke;NodeIsolate;ImageQuarantine;WebhookDisable;TokenRevoke;NotificationSend
 type ActionType string
@@ -102,7 +102,7 @@ const (
 	OutcomeErrored        OutcomeType = "Errored"
 )
 
-// ErrorCategory classifies an EventResponse error for retry decisioning (design 04 Q11).
+// ErrorCategory classifies an EventResponse error for retry decisioning.
 // +kubebuilder:validation:Enum=Transient;Permanent;Conflicting;Unauthorized
 type ErrorCategory string
 
@@ -125,7 +125,7 @@ const (
 	BackoffNone        BackoffStrategy = "None"
 )
 
-// SigningMode is the cryptographic mode used by the attestor (design 06).
+// SigningMode is the cryptographic mode used by the attestor.
 // ed25519-dev is an in-process keypair for dev / test only; production
 // deployments must use fulcio-keyless or openbao-transit.
 // +kubebuilder:validation:Enum=fulcio-keyless;openbao-transit;dual;ed25519-dev
@@ -139,7 +139,7 @@ const (
 	SigningModeEd25519Dev     SigningMode = "ed25519-dev"
 )
 
-// EncryptionMode is the WORM at-rest encryption mode (design 07 W6).
+// EncryptionMode is the WORM at-rest encryption mode.
 // +kubebuilder:validation:Enum=sse-kms;sse-s3;none
 type EncryptionMode string
 
@@ -150,7 +150,7 @@ const (
 	EncryptionNone   EncryptionMode = "none"
 )
 
-// WORMBackend identifies the S3-compatible backend (design 07 W1).
+// WORMBackend identifies the S3-compatible backend.
 // +kubebuilder:validation:Enum=seaweedfs;aws-s3;rustfs
 type WORMBackend string
 
@@ -161,7 +161,7 @@ const (
 	WORMBackendRustFS    WORMBackend = "rustfs"
 )
 
-// GitProviderType is the kind of git host (design 08 G2).
+// GitProviderType is the kind of git host.
 // +kubebuilder:validation:Enum=github;gitlab;forgejo
 type GitProviderType string
 
@@ -185,7 +185,7 @@ const (
 	GitAuthSSHDeployKey GitAuthMode = "ssh-deploy-key"
 )
 
-// ConflictBehavior is the GitOps responder conflict policy (design 08 G5).
+// ConflictBehavior is the GitOps responder conflict policy.
 // +kubebuilder:validation:Enum=abort;force;merge
 type ConflictBehavior string
 
@@ -196,11 +196,11 @@ const (
 	ConflictMerge ConflictBehavior = "merge"
 )
 
-// SubjectKind enumerates the supported K8s kinds for SecurityEvent.Subject (design 10).
+// SubjectKind enumerates the supported K8s kinds for SecurityEvent.Subject.
 // +kubebuilder:validation:Enum=Pod;Container;Node;ServiceAccount;Secret;ConfigMap;Namespace;Service;EndpointSlice;Deployment;StatefulSet;DaemonSet;Job;CronJob;Role;ClusterRole;RoleBinding;ClusterRoleBinding;NetworkPolicy;CiliumNetworkPolicy;Ingress;Gateway;MutatingWebhookConfiguration;ValidatingWebhookConfiguration;CustomResourceDefinition;APIService;CertificateSigningRequest;Cluster;External
 type SubjectKind string
 
-// Type constants — curated catalog per design 11 (Wave 1 + operational anomalies).
+// Type constants: curated catalog (detection + operational anomalies).
 // Adding values requires a PR to this file plus the admission policy.
 const (
 	// Audit (audit-detection raw observations).
@@ -236,7 +236,7 @@ const (
 	TypeLongLivedSecretToken         = "LongLivedSecretToken"
 	TypeNamespacePSAWeakened         = "NamespacePSAWeakened"
 
-	// Detection (webhook-auditor — design 21 §W5).
+	// Detection (webhook-auditor).
 	TypeMutatingWebhookHighRisk    = "MutatingWebhookHighRisk"
 	TypeValidatingWebhookHighRisk  = "ValidatingWebhookHighRisk"
 	TypeWebhookCAUntrusted         = "WebhookCAUntrusted"
@@ -244,20 +244,20 @@ const (
 	TypeWebhookSecretAccess        = "WebhookSecretAccess"
 	TypeWebhookConfigDeleted       = "WebhookConfigDeleted"
 
-	// Detection (dns-detect — design 21 §D3).
+	// Detection (dns-detect).
 	TypeDNSExfiltration      = "DNSExfiltration"
 	TypeDNSTunneling         = "DNSTunneling"
 	TypeDNSToBlocklistedFQDN = "DNSToBlocklistedFQDN"
 	TypeDNSToYoungDomain     = "DNSToYoungDomain"
 	TypeDNSAnomalousPort     = "DNSAnomalousPort"
 
-	// Detection (tenant-escape — design 21 §T4).
+	// Detection (tenant-escape).
 	TypeCrossTenantSecretAccess    = "CrossTenantSecretAccess"
 	TypeCrossTenantHostPathOverlap = "CrossTenantHostPathOverlap"
 	TypeCrossTenantNetworkPolicy   = "CrossTenantNetworkPolicy"
 	TypeCrossTenantExec            = "CrossTenantExec"
 
-	// Detection (honeypot — design 21 §H4).
+	// Detection (honeypot).
 	TypeHoneypotTriggered = "HoneypotTriggered"
 	TypeHoneypotMisplaced = "HoneypotMisplaced"
 
@@ -288,41 +288,41 @@ const (
 	TypeImageRevocation           = "ImageRevocation"
 	TypeAttestorRecovered         = "AttestorRecovered"
 
-	// Anomaly (webhook-auditor operational — design 21 §W7).
+	// Anomaly (webhook-auditor operational).
 	TypeWebhookEvalFailed = "WebhookEvalFailed"
 
-	// Anomaly (dns-detect operational — design 21 §D6).
+	// Anomaly (dns-detect operational).
 	TypeDNSSourceSilent     = "DNSSourceSilent"
 	TypeDNSConfigMissing    = "DNSConfigMissing"
 	TypeDNSDetectorDegraded = "DNSDetectorDegraded"
 
-	// Anomaly (tenant-escape operational — design 21 §T5).
+	// Anomaly (tenant-escape operational).
 	TypeAuditBridgeSilent        = "AuditBridgeSilent"
 	TypeTenantBoundaryEmpty      = "TenantBoundaryEmpty"
 	TypeTenantBoundaryOverlap    = "TenantBoundaryOverlap"
 	TypeTenantEscapeSourceLagged = "TenantEscapeSourceLagged"
 
-	// Anomaly (honeypot operational — design 21 §H5).
+	// Anomaly (honeypot operational).
 	TypeHoneypotConfigInvalid = "HoneypotConfigInvalid"
 	TypeHoneypotDecoyMissing  = "HoneypotDecoyMissing"
 
-	// PolicyViolation (seccomp-gen — design 21 §G / Wave 4 §S3).
+	// PolicyViolation (seccomp-gen).
 	TypeSeccompTrainingStarted   = "SeccompTrainingStarted"
 	TypeSeccompTrainingCompleted = "SeccompTrainingCompleted"
 	TypeSeccompTrainingFailed    = "SeccompTrainingFailed"
 
-	// Compliance + Detection (backup-verify — design 21 §B / Wave 4 §S4).
+	// Compliance + Detection (backup-verify).
 	TypeBackupVerifyStarted   = "BackupVerifyStarted"
 	TypeBackupVerifyCompleted = "BackupVerifyCompleted"
 	TypeBackupVerifyMismatch  = "BackupVerifyMismatch"
 	TypeBackupVerifyFailed    = "BackupVerifyFailed"
 
-	// Compliance (compliance-scan — design 21 §C / Wave 4 §S5).
+	// Compliance (compliance-scan).
 	TypeComplianceScanStarted   = "ComplianceScanStarted"
 	TypeComplianceScanCompleted = "ComplianceScanCompleted"
 	TypeComplianceScanFailed    = "ComplianceScanFailed"
 
-	// Compliance + Detection (confidential-attestation — Wave 4 §S6).
+	// Compliance + Detection (confidential-attestation).
 	TypeAttestationStarted  = "AttestationStarted"
 	TypeAttestationVerified = "AttestationVerified"
 	TypeAttestationFailed   = "AttestationFailed"

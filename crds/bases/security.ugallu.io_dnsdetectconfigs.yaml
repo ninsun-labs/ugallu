@@ -53,7 +53,7 @@ spec:
           spec:
             description: |-
               DNSDetectConfigSpec is the runtime config the ugallu-dns-detect
-              operator reads (design 21 §D4).
+              operator reads.
             properties:
               detectors:
                 description: Detectors toggles + tunes the 5 anomaly detectors.
@@ -247,8 +247,8 @@ spec:
                         type: string
                       tokenSecret:
                         description: |-
-                          TokenSecret references the bearer-token Secret used during
-                          Wave 3 (mTLS lands in a follow-up).
+                          TokenSecret references the bearer-token Secret used to
+                          authenticate to the plugin (mTLS lands in a follow-up).
                         properties:
                           key:
                             description: The key of the secret to select from.  Must
@@ -277,8 +277,8 @@ spec:
                   primary:
                     default: coredns_plugin
                     description: |-
-                      Primary is the default source. coredns_plugin is the Wave 3
-                      production default — full payload, mTLS gRPC stream.
+                      Primary is the default source. coredns_plugin is the production
+                      default: full payload, mTLS gRPC stream.
                     enum:
                     - coredns_plugin
                     - tetragon_kprobe

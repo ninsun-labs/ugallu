@@ -6,7 +6,7 @@ clusterIdentity:
   clusterID: ""
   clusterName: ""
 
-# audit-detection event bus consumer config (Wave 3 §S2). The bus is
+# audit-detection event bus consumer config. The bus is
 # enabled by setting AuditDetectionConfig.spec.eventBus.enabled=true
 # in the audit-detection subchart values; the endpoint here matches
 # the audit-detection bus Service.
@@ -27,9 +27,9 @@ image:
   tag: "v0.0.1-alpha.1"
   pullPolicy: IfNotPresent
 
-# Cluster-wide leader-elect Deployment (design 21 §T1). Cross-tenant
-# correlation requires a global view (a SA in one ns touching a
-# Secret in another) — a DaemonSet wouldn't help.
+# Cluster-wide leader-elect Deployment. Cross-tenant correlation
+# requires a global view (a SA in one ns touching a Secret in
+# another); a DaemonSet wouldn't help.
 replicas: 2
 
 resources:

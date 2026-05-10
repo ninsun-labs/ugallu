@@ -57,7 +57,7 @@ spec:
             description: |-
               ForensicsConfigSpec is the runtime config the ugallu-forensics
               operator reads to decide which SecurityEvents trigger an incident
-              capture and how the snapshot pipeline behaves (design 20 §F2).
+              capture and how the snapshot pipeline behaves.
             properties:
               cleanup:
                 description: |-
@@ -164,7 +164,7 @@ spec:
                         - Compliance
                         - Audit
                       description: Class is the top-level classification of a SecurityEvent
-                        (design D1, locked enum).
+                        (locked enum).
                       type: string
                     type: array
                   minSeverities:
@@ -186,8 +186,7 @@ spec:
                         - medium
                         - low
                         - info
-                      description: Severity is the 5-grade severity scale (design
-                        D7).
+                      description: Severity is the 5-grade severity scale.
                       type: string
                     type: array
                   namespaceAllowlist:

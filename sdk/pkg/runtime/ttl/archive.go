@@ -18,7 +18,7 @@ import (
 	"github.com/ninsun-labs/ugallu/sdk/pkg/evidence/worm"
 )
 
-// Annotation keys recognised by the TTL controller (design 09 T8).
+// Annotation keys recognised by the TTL controller.
 const (
 	AnnotationTTL              = "ugallu.io/ttl"
 	AnnotationTTLPostponeUntil = "ugallu.io/ttl-postpone-until"
@@ -30,8 +30,8 @@ const (
 // SnapshotMediaType is the WORM mediaType for archived CR YAML.
 const SnapshotMediaType = "application/vnd.k8s.cr+yaml"
 
-// defaultSeverityTTL returns the design 09 T3 default TTL for a SE
-// severity; unknown severities fall back to medium (24h).
+// defaultSeverityTTL returns the default TTL for a SE severity;
+// unknown severities fall back to medium (24h).
 func defaultSeverityTTL(s securityv1alpha1.Severity) time.Duration {
 	switch s {
 	case securityv1alpha1.SeverityCritical:
@@ -49,7 +49,7 @@ func defaultSeverityTTL(s securityv1alpha1.Severity) time.Duration {
 }
 
 // defaultBundleGrace is the AttestationBundle retention beyond its
-// parent CR (design 09 T3: parent TTL + 7d).
+// parent CR (parent TTL + 7d).
 const defaultBundleGrace = 7 * 24 * time.Hour
 
 // annotationOverrideTTL parses `ugallu.io/ttl: <duration>` if present.
@@ -86,8 +86,7 @@ func postponedUntil(annos map[string]string) time.Time {
 	return t
 }
 
-// snapshotKey is the WORM object key for a CR snapshot. Layout per
-// design 09 T2bis:
+// snapshotKey is the WORM object key for a CR snapshot. Layout:
 //
 //	cr-snapshots/<clusterID>/<YYYY>/<MM>/<crUID>.yaml
 //

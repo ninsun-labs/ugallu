@@ -36,7 +36,7 @@ type CABundleResolver struct {
 	// pre-loading every Secret in the cluster into the controller-runtime
 	// cache. Each lookup is one apiserver round-trip; the operator
 	// only calls it on webhooks with empty caBundle, which is rare in
-	// healthy clusters (Wave 3 §W3.1).
+	// healthy clusters.
 	Reader client.Reader
 
 	// AllowedNamespaces is the trustedCASources allowlist from

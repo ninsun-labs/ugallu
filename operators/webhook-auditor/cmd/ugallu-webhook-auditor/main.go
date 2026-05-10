@@ -4,11 +4,11 @@
 // Command ugallu-webhook-auditor scores admission webhook
 // configurations (MutatingWebhookConfiguration / ValidatingWebhookConfiguration)
 // and emits SecurityEvent CRs when a webhook crosses the configured
-// risk threshold (design 21 §W).
+// risk threshold.
 //
 // Scaffold commit: the manager boots, registers /healthz + /readyz,
-// validates Options, and exits cleanly. Real reconcilers ship in the
-// next commit (Wave 3 Sprint 1, commit 2).
+// validates Options, and exits cleanly. Real reconcilers ship in
+// the next commit.
 package main
 
 import (

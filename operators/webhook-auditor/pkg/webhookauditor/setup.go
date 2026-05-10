@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package webhookauditor exposes the controller-runtime wiring for the
-// ugallu-webhook-auditor operator (design 21 §W).
+// ugallu-webhook-auditor operator.
 package webhookauditor
 
 import (
@@ -39,8 +39,7 @@ type Options struct {
 // SetupWithManager wires the MWC + VWC reconcilers + emit pipeline.
 // Reads WebhookAuditorConfig once at startup to seed the evaluator
 // and ignore matcher; subsequent updates are picked up on the
-// 30s reconcile cadence (design 21 §W3 — config CR mutations are
-// rare in practice).
+// 30s reconcile cadence (config CR mutations are rare in practice).
 func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 	if opts == nil {
 		return errors.New("webhookauditor.SetupWithManager: nil Options")

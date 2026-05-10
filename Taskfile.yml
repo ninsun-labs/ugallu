@@ -121,12 +121,12 @@ tasks:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/dns-detect-bin ./operators/dns-detect/cmd/ugallu-dns-detect
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/tenant-escape-bin ./operators/tenant-escape/cmd/ugallu-tenant-escape
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/honeypot-bin ./operators/honeypot/cmd/ugallu-honeypot
-      # Wave 4 operators.
+      # Compliance / attestation operators.
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/seccomp-gen-bin ./operators/seccomp-gen/cmd/ugallu-seccomp-gen
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/backup-verify-bin ./operators/backup-verify/cmd/ugallu-backup-verify
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/compliance-scan-bin ./operators/compliance-scan/cmd/ugallu-compliance-scan
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/confidential-attestation-bin ./operators/confidential-attestation/cmd/ugallu-confidential-attestation
-      # Tetragon bridge — sibling repo. Build from inside the bridge
+      # Tetragon bridge: sibling repo. Build from inside the bridge
       # module so its own go.mod/go.sum drive the resolution, then
       # copy the resulting binary into the ugallu artifact dir.
       - |
@@ -138,7 +138,7 @@ tasks:
         fi
         out="$(pwd)/build/_artifacts/tetragon-bridge-bin"
         (cd "$bridge" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o "$out" ./cmd/tetragon-bridge)
-      # Wave 5 ugallu-ui: BFF binary + SvelteKit static bundle.
+      # ugallu-ui: BFF binary + SvelteKit static bundle.
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o build/_artifacts/ugallu-bff-bin ./cmd/ugallu-bff
       - task: build:ui-spa
 

@@ -114,8 +114,8 @@ func run() error {
 		log.Warn("AUTH DISABLED",
 			"hint", "every API call is accepted as a synthetic lab-user; apiserver impersonation is also disabled.",
 			"do_not_use_in", "production")
-		// Apiserver impersonation requires a stable subject; we don't
-		// have one when auth is bypassed.
+		// Apiserver impersonation requires a stable subject; auth-
+		// disabled mode does not produce one, so disable it.
 		opts.Impersonate = false
 	} else {
 		if oidcIssuer == "" {
@@ -134,9 +134,9 @@ func run() error {
 			return fmt.Errorf("env %s must be at least 32 bytes (got %d)", cookieSecretEnv, len(cookieSecret))
 		}
 
-		provider, err := oidc.NewProvider(ctx, oidcIssuer)
-		if err != nil {
-			return fmt.Errorf("oidc provider %q: %w", oidcIssuer, err)
+		provider, providerErr := oidc.NewProvider(ctx, oidcIssuer)
+		if providerErr != nil {
+			return fmt.Errorf("oidc provider %q: %w", oidcIssuer, providerErr)
 		}
 		verifier := provider.Verifier(&oidc.Config{ClientID: oidcClientID})
 		opts.OIDCConfig = &oauth2.Config{
@@ -151,7 +151,7 @@ func run() error {
 		opts.CookieDomain = cookieDomain
 	}
 
-	srv, err := server.New(opts)
+	srv, err := server.New(&opts)
 	if err != nil {
 		return fmt.Errorf("server: %w", err)
 	}

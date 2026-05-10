@@ -13,8 +13,7 @@ import (
 // CriticalAPIResources is the set of resource names whose admission
 // path is high-impact (credentials material). A webhook that touches
 // these gates the platform's authn/authz layer; failurePolicy=Ignore
-// or unscoped match on these resources is the heart of the risk
-// score (design 21 §W3).
+// or unscoped match on these resources is the heart of the risk score.
 var CriticalAPIResources = map[string]struct{}{
 	"secrets":              {},
 	"serviceaccounts":      {},
@@ -26,10 +25,9 @@ var CriticalAPIResources = map[string]struct{}{
 	"rolebindings":         {},
 }
 
-// SubScoreWeights pins design 21 §W3 weights as code. The order in
-// the map literal is the order they're applied in Score(); breakdown
-// keys land on the SE Signals so a dashboard can show the same
-// breakdown as the design.
+// SubScoreWeights pins the weights as code. The order in the map
+// literal is the order they're applied in Score(); breakdown keys
+// land on the SE Signals so a dashboard can show the same breakdown.
 const (
 	WeightFailurePolicy        = 30
 	WeightSideEffects          = 15
@@ -48,7 +46,7 @@ type RiskBreakdown struct {
 }
 
 // Has reports whether sub-score key was triggered (non-zero weight).
-// Convenient for the per-component SE emit decisions in §W5.
+// Convenient for the per-component SE emit decisions.
 func (b RiskBreakdown) Has(key string) bool {
 	return b.Breakdown[key] > 0
 }
@@ -64,7 +62,7 @@ const (
 	SubScoreReinvocationIfNeeded = "reinvocation_if_needed"
 )
 
-// EvaluatorOptions configures Evaluator. See design 21 §W3-W4.
+// EvaluatorOptions configures Evaluator.
 type EvaluatorOptions struct {
 	// TrustedSubjectDNs is the canonical RFC 4514 DN allowlist for
 	// caBundle CAs. Pre-canonicalised at construction; matching is

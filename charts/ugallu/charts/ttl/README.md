@@ -1,6 +1,6 @@
 # ttl
 
-Wave 1 subchart for `ugallu-ttl` (Deployment singleton via leader-election).
+Subchart for `ugallu-ttl` (Deployment singleton via leader-election).
 
 ## Status
 

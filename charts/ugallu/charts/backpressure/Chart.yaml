@@ -1,6 +1,6 @@
 apiVersion: v2
 name: backpressure
-description: ugallu-backpressure controller (etcd-pressure ConfigMap reconciler, design 16)
+description: ugallu-backpressure controller (etcd-pressure ConfigMap reconciler)
 type: application
 version: 0.0.1-alpha.1
 appVersion: "0.0.1-alpha.1"

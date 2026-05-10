@@ -3,11 +3,11 @@
 
 // Command ugallu-dns-detect consumes DNS events from CoreDNS plugin
 // (primary) or Tetragon kprobe (fallback) and emits SecurityEvent CRs
-// when one of the 5 detectors fires (design 21 §D).
+// when one of the 5 detectors fires.
 //
 // Scaffold commit: manager boots, /healthz + /readyz registered,
 // Options validated. Source + detector wiring lands in subsequent
-// commits of Wave 3 Sprint 3.
+// commits.
 package main
 
 import (

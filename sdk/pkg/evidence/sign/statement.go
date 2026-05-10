@@ -15,8 +15,7 @@ import (
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 )
 
-// Spec constants for the in-toto Statement and the ugallu predicates
-// (design 05 A3).
+// Spec constants for the in-toto Statement and the ugallu predicates.
 const (
 	StatementType = "https://in-toto.io/Statement/v1"
 

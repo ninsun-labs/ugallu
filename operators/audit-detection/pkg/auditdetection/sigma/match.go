@@ -85,8 +85,7 @@ func Compile(rule *securityv1alpha1.SigmaRule) (*CompiledRule, error) {
 
 // compileMatch compiles the top-level SigmaMatch: the inline leaf
 // fields plus AnyOf/Not. The split between SigmaMatch and
-// SigmaMatchLeaf caps recursion at depth 1 (no nested AnyOf/Not),
-// matching design 20 §A3.
+// SigmaMatchLeaf caps recursion at depth 1 (no nested AnyOf/Not).
 func compileMatch(m *securityv1alpha1.SigmaMatch) (*compiledMatch, error) {
 	if m == nil {
 		return nil, nil

@@ -7,24 +7,24 @@ ArgoCD bootstrap manifests for the ugallu platform. Designed for the companion r
 | File | Purpose |
 |---|---|
 | `appproject.yaml` | `AppProject` scoping permissions for the ugallu ApplicationSet |
-| `applicationset.yaml` | `ApplicationSet` generating one Application per component, sync-wave-ordered (design 17) |
+| `applicationset.yaml` | `ApplicationSet` generating one Application per component, ordered by ArgoCD sync-wave |
 
-## Wave plan (active in this commit)
+## Sync-wave plan (active in this commit)
 
-| Wave | Component | Path |
+| sync-wave | Component | Path |
 |---|---|---|
 | -2 | `ugallu-namespaces` | `charts/ugallu/charts/namespaces` |
 | -2 | `ugallu-rbac` | `charts/ugallu/charts/rbac` |
 | -1 | `ugallu-crds` | `crds` (kustomize) |
 | -1 | `ugallu-admission-policies` | `charts/ugallu/charts/admission-policies` |
 
-## Wave plan (planned, commented in `applicationset.yaml`)
+## Sync-wave plan (planned, commented in `applicationset.yaml`)
 
-| Wave | Component | When |
+| sync-wave | Component | When |
 |---|---|---|
 | 0 | seaweedfs, openbao, spire | when external deps subcharts land |
 | 1 | resolver, attestor, ttl | when SDK runtime singletons subcharts land |
-| 2 | audit-detection, forensics | when Wave 1 operators are deployable |
+| 2 | audit-detection, forensics | when SDK runtime operators are deployable |
 
 ## Bootstrap
 

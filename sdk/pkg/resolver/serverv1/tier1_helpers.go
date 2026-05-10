@@ -210,7 +210,7 @@ func buildVolumeInfos(in []corev1.Volume) []securityv1alpha1.VolumeInfo {
 }
 
 // volumeKind identifies the volume source family. Order follows the
-// design 10 F11 priorities: hostPath / projected / secret / configMap
+// security-audit priority: hostPath / projected / secret / configMap
 // first, then PVC, then in-tree types.
 func volumeKind(v *corev1.Volume) string {
 	switch {

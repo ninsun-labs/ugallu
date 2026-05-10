@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package honeypot wires the controller-runtime spine for the
-// ugallu-honeypot operator (design 21 §H). It assembles:
+// ugallu-honeypot operator. It assembles:
 //   - the HoneypotConfig reconciler (materialises declared decoys
 //   - maintains the in-memory decoy index);
 //   - the audit-bus source backend that drives detector evaluation

@@ -8,10 +8,10 @@ import (
 )
 
 // TenantBoundarySpec defines the namespaces, hostPath whitelist, and
-// SA + namespace allowlists that constitute one tenant's blast radius
-// (design 21 §T2). Multi-instance, cluster-scoped — each
-// TenantBoundary names a tenant; cross-CR namespaceSelector overlap
-// is reported via Status + meta-event but never silently merged.
+// SA + namespace allowlists that constitute one tenant's blast radius.
+// Multi-instance, cluster-scoped: each TenantBoundary names a tenant;
+// cross-CR namespaceSelector overlap is reported via Status and a
+// meta-event but never silently merged.
 type TenantBoundarySpec struct {
 	// NamespaceSelector picks the namespaces that belong to this
 	// tenant. Empty selector = match-none (defensive default; the

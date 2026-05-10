@@ -17,8 +17,8 @@ import (
 const DefaultTTLConfigNamespace = "ugallu-system"
 
 // effectiveTTLConfig wraps a (possibly nil) TTLConfigSpec and exposes
-// helpers that fall back to design 09 T3 defaults when the spec is
-// unavailable. nil spec is the "TTLConfig missing" path (T10).
+// helpers that fall back to baked-in defaults when the spec is
+// unavailable. nil spec is the "TTLConfig missing" path.
 type effectiveTTLConfig struct {
 	spec *securityv1alpha1.TTLConfigSpec
 }
@@ -46,7 +46,7 @@ func loadEffectiveTTLConfig(ctx context.Context, c client.Client, namespace stri
 }
 
 // severityTTL returns the TTL for the given severity, honouring the
-// loaded TTLConfig and falling back to design 09 T3 defaults when
+// loaded TTLConfig and falling back to baked-in defaults when
 // either the config or the specific field is unset.
 func (e effectiveTTLConfig) severityTTL(s securityv1alpha1.Severity) time.Duration {
 	if e.spec == nil {

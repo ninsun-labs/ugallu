@@ -1,6 +1,6 @@
 # admission-policies
 
-ValidatingAdmissionPolicy (CEL native, K8s >= 1.30) rules enforcing the security invariants of the `security.ugallu.io/v1alpha1` API group. Closes review issue H1 (design 15).
+ValidatingAdmissionPolicy (CEL native, K8s >= 1.30) rules enforcing the security invariants of the `security.ugallu.io/v1alpha1` API group.
 
 Deployed at sync-wave `-1` of the umbrella chart so the policies are active before any ugallu CR can be created.
 

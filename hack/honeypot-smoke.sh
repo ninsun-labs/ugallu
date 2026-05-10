@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-honeypot — Wave 3 Sprint 5 close gate.
+# E2E lab smoke for ugallu-honeypot.
 #
 # Assumes:
 #   - kubectl context already pointed at the lab

@@ -1,7 +1,7 @@
 // Copyright 2026 The ninsun-labs Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package ttl implements the lifecycle GC for ugallu CRs (design 09).
+// Package ttl implements the lifecycle GC for ugallu CRs.
 //
 // Three reconcilers, one per Kind, run in the ugallu-ttl Deployment
 // (cluster-scoped, leader-elected):
@@ -21,5 +21,5 @@
 //  5. Deletes the CR via the K8s API (idempotent).
 //
 // TTLConfig CRD-driven configuration and the attestor watchdog land in
-// the next iteration; defaults from design 09 T3 are baked in for now.
+// the next iteration; severity-based defaults are baked in for now.
 package ttl

@@ -1,10 +1,11 @@
-# CRD bundle for ugallu Wave 1.
+# CRD bundle for ugallu.
 # Sources are generated from sdk/pkg/api/v1alpha1 via:
 #   task generate
 # (which runs `controller-gen crd paths=./pkg/api/v1alpha1/... output:crd:dir=../crds/bases`)
 #
 # This kustomization is consumed by the umbrella Helm subchart `crds/`
-# (see charts/ugallu/charts/crds/) which deploys these CRDs in Wave -1.
+# (see charts/ugallu/charts/crds/) which deploys these CRDs early in the
+# sync-wave order.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

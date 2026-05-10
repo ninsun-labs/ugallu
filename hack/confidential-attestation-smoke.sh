@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-confidential-attestation — Wave 4 Sprint 7
-# close gate.
+# E2E lab smoke for ugallu-confidential-attestation.
 #
 # Scenarios (4):
 #   1. Admission policy 16 rejects nonce shorter than 16 chars.

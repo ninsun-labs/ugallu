@@ -1,5 +1,5 @@
 {{- /*
-Two ugallu namespaces with PSA labels (design 18 M2):
+Two ugallu namespaces with PSA labels:
   - ugallu-system            : restricted (default for non-privileged operators)
   - ugallu-system-privileged : privileged (resolver eBPF, forensics, dns-detect)
 

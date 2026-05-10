@@ -9,19 +9,19 @@ import (
 )
 
 // AuditDetectionConfigSpec is the runtime config the
-// ugallu-audit-detection operator reads. Wave 2 shipped the operator
-// without a config CR (everything via cmd flags); Wave 3 §S2 adds
-// the event-bus gRPC stream so other operators (tenant-escape, future
-// reasoners) can subscribe to the AuditEvent stream the sigma engine
-// already consumes.
+// ugallu-audit-detection operator reads. The CR is optional: the
+// operator originally shipped without it (everything via cmd flags).
+// The event-bus gRPC stream lets other operators (tenant-escape,
+// future reasoners) subscribe to the AuditEvent stream the sigma
+// engine already consumes.
 //
 // Backwards-compatible: when the CR is absent, audit-detection runs
-// in Wave-2 mode (no gRPC bus). When present with EventBus.Enabled
-// false, same. When EventBus.Enabled=true, the operator exposes the
-// stream + applies the per-consumer filter + rate limit.
+// without the gRPC bus. When present with EventBus.Enabled false,
+// same. When EventBus.Enabled=true, the operator exposes the stream
+// and applies the per-consumer filter and rate limit.
 type AuditDetectionConfigSpec struct {
 	// EventBus exposes the audit-event stream as a server-streaming
-	// gRPC. Disabled by default (Wave 2 retrocompat).
+	// gRPC. Disabled by default for backwards compatibility.
 	// +optional
 	EventBus AuditDetectionEventBus `json:"eventBus,omitempty"`
 
@@ -41,9 +41,9 @@ type AuditDetectionEventBus struct {
 	// +kubebuilder:default=":8444"
 	ListenAddr string `json:"listenAddr,omitempty"`
 
-	// TokenSecret references the bearer-token Secret used during
-	// Wave 3 (mTLS lands as a follow-up). When unset, the bus runs
-	// without auth (lab-only).
+	// TokenSecret references the bearer-token Secret used for
+	// consumer auth (mTLS lands as a follow-up). When unset, the bus
+	// runs without auth (lab-only).
 	// +optional
 	TokenSecret *corev1.SecretKeySelector `json:"tokenSecret,omitempty"`
 }

@@ -12,8 +12,8 @@ import (
 
 // CrossTenantHostPathOverlapDetector flags Pod create requests
 // where the spec carries a hostPath volume that lies inside ANOTHER
-// tenant's HostPathPolicy.Allow set (design 21 §T4.2). Fires
-// critical because filesystem isolation breach is hard-failure.
+// tenant's HostPathPolicy.Allow set. Fires critical because
+// filesystem isolation breach is hard-failure.
 type CrossTenantHostPathOverlapDetector struct{}
 
 // NewCrossTenantHostPathOverlapDetector returns a ready detector.

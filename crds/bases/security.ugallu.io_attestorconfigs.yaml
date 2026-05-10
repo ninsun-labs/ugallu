@@ -49,8 +49,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AttestorConfigSpec is the runtime config for the attestor
-              (design 06 S8).
+            description: AttestorConfigSpec is the runtime config for the attestor.
             properties:
               dualMode:
                 description: DualMode tunes dual-sign verification semantics.
@@ -171,7 +170,7 @@ spec:
                 type: object
               rekor:
                 description: Rekor configures the transparency log endpoint (always
-                  uploaded, design 06).
+                  uploaded).
                 properties:
                   enabled:
                     default: true

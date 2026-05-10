@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Integration tests for the webhook-auditor reconciler against a real
-// apiserver via envtest. Three scenarios cover the Phase 1 close gate
-// (design 21 §VIII roadmap):
+// apiserver via envtest. Three scenarios cover the Phase 1 close gate:
 //
 //   1. MWC threshold cross emits MutatingWebhookHighRisk SE
 //   2. VWC below threshold but with active sub-score emits the

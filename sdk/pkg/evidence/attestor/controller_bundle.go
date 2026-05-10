@@ -27,7 +27,7 @@ import (
 )
 
 // wormKeyFor returns the WORM object key used for the DSSE envelope of
-// the given bundle. Layout per design 07 W3:
+// the given bundle. Layout:
 //
 //	<clusterID>/<YYYY>/<MM>/<bundleUID>.intoto.jsonl
 //
@@ -54,8 +54,8 @@ func wormKeyFor(bundle *securityv1alpha1.AttestationBundle, clusterID string, wh
 
 // AttestationBundleReconciler drives the Pending -> Sealed lifecycle.
 //
-// Iteration 4 (this commit): pipeline telescopes the three real stages
-// of design 05 in a single Reconcile, all with stub backends:
+// Iteration 4 (this commit): pipeline telescopes the three real
+// attestation stages in a single Reconcile, all with stub backends:
 //
 //	Pending  -- Signer.Sign ------> envelope        (Conditions: Signed=True)
 //	         -- Logger.Log -------> log entry       (Conditions: Logged=True)

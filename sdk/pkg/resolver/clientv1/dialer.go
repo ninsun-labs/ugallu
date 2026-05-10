@@ -25,11 +25,11 @@ const DefaultUnixSocket = "/var/run/ugallu/resolver.sock"
 // the resolver — used as TCP fallback when the local UDS isn't
 // available (e.g. a non-DaemonSet workload that still needs lookups).
 // Port matches the resolver chart's grpcPort (plain HTTP/2; TLS lands
-// in a follow-up SPIRE-issued cert path post-Wave-4).
+// in a follow-up SPIRE-issued cert path).
 const DefaultClusterEndpoint = "ugallu-resolver.ugallu-system-privileged.svc:9000"
 
-// DialerOpts configures Dialer. Defaults match the Wave-2 design 20
-// §S2 numbers (50ms UDS connect, 200ms TCP connect).
+// DialerOpts configures Dialer. Defaults: 50ms UDS connect, 200ms
+// TCP connect.
 type DialerOpts struct {
 	// UnixSocket overrides the local-node UDS path. Empty falls back
 	// to DefaultUnixSocket.

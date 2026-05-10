@@ -10,13 +10,13 @@ import (
 
 // SecurityEventSpec is the immutable description of a security-relevant fact.
 // All fields are set at emit and never modified post-creation (enforced by
-// admission policy, design 15).
+// admission policy).
 type SecurityEventSpec struct {
 	// Class is the closed taxonomy class (D1).
 	Class Class `json:"class"`
 
-	// Type is the curated catalog type (design 11). Validated by admission
-	// policy against the SDK constants list, with override label for experiments.
+	// Type is the curated catalog type. Validated by admission policy
+	// against the SDK constants list, with override label for experiments.
 	Type string `json:"type"`
 
 	// Severity is the 5-grade scale (D7).
@@ -28,7 +28,7 @@ type SecurityEventSpec struct {
 	// Source identifies the controller that emitted the event.
 	Source SourceRef `json:"source"`
 
-	// Subject is the K8s object snapshot (Tier-1, design 10) that the event is about.
+	// Subject is the K8s object snapshot (Tier-1) that the event is about.
 	Subject SubjectTier1 `json:"subject"`
 
 	// DetectedAt is the wall-clock observation timestamp from the source.

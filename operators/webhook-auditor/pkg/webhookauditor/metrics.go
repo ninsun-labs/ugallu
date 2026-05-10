@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
-// Telemetry contract — design 21 §VI (webhook-auditor block).
+// Telemetry contract for the webhook-auditor.
 var (
 	scoreEmitTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "ugallu_webhook_score_total",
