@@ -30,8 +30,8 @@ webhookAuditorConfig:
 # `placeholder=false` + `image.*` to point at a real image.
 placeholder: true
 image:
-  repository: busybox
-  tag: "1.37"
+  repository: ghcr.io/ninsun-labs/ugallu/webhook-auditor
+  tag: "v0.1.0-alpha.2"
   pullPolicy: IfNotPresent
 
 # When placeholder=true the container runs sleep so the pod stays alive

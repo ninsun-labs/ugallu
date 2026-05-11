@@ -2,8 +2,8 @@ apiVersion: v2
 name: ugallu-ui
 description: ugallu UI - SvelteKit SPA + Go BFF, served from a single Pod with an nginx-distroless front
 type: application
-version: 0.0.1-alpha.1
-appVersion: "0.0.1-alpha.1"
+version: 0.1.0-alpha.2
+appVersion: "0.1.0-alpha.2"
 kubeVersion: ">=1.30.0-0"
 
 home: https://ninsun.io/ugallu

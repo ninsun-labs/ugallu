@@ -85,25 +85,42 @@ docs/               architecture + deploy + reference notes
 
 ## Install
 
+Published as a cosign-signed OCI artifact on GHCR:
+
 ```bash
-helm install ugallu charts/ugallu \
+helm install ugallu oci://ghcr.io/ninsun-labs/charts/ugallu \
+  --version 0.1.0-alpha.2 \
   --create-namespace \
-  --namespace default \
+  --namespace ugallu-system \
   --set hardening.strict=true
 ```
+
+To install from a checkout instead, use `helm install ugallu charts/ugallu`
+with the same flags.
 
 For the full quickstart (Cilium + Tetragon + cert-manager + an OIDC
 issuer for the UI) see [ugallu.io/start/quickstart](https://ugallu.io/start/quickstart/).
 
 ## Verifying a release
 
-Every image is signed via GitHub OIDC + Fulcio + Rekor. To verify:
+<a id="cosign-keyless"></a>
+
+Every operator image, the umbrella chart, and every attestation
+bundle is signed via GitHub OIDC + Fulcio + Rekor. To verify any
+of them:
 
 ```bash
+# An operator image
 cosign verify \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp 'https://github.com/ninsun-labs/ugallu/.+' \
-  ghcr.io/ninsun-labs/ugallu/audit-detection:v0.1.0-alpha.1
+  ghcr.io/ninsun-labs/ugallu/audit-detection:v0.1.0-alpha.2
+
+# The umbrella chart (OCI artifact)
+cosign verify \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp 'https://github.com/ninsun-labs/ugallu/.+' \
+  ghcr.io/ninsun-labs/charts/ugallu:0.1.0-alpha.2
 ```
 
 The SBOM ships as a separate cosign attestation; see

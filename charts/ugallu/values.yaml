@@ -127,21 +127,30 @@ tetragon-bridge:
 # syscall surface. SeccompTrainingRun + SeccompTrainingProfile CRDs
 # in the security.ugallu.io/v1alpha1 group.
 seccomp-gen:
-  enabled: true
+  # Placeholder for v0.1.0-alpha.2: the chart renders a busybox
+  # no-op pod. Real binary lands in a future Wave; flip to true
+  # only when the operator image is published.
+  enabled: false
 
 # backup-verify subchart: verifies Velero / etcd-snapshot backups
 # via checksum + (optional) sandbox restore. Out of scope:
 # Restic and S3-raw - verifying raw blobs doesn't compose with K8s
 # object semantics.
 backup-verify:
-  enabled: true
+  # Placeholder for v0.1.0-alpha.2: the chart renders a busybox
+  # no-op pod. Real binary lands in a future Wave; flip to true
+  # only when the operator image is published.
+  enabled: false
 
 # compliance-scan subchart: drives scan cycles via
 # kube-bench (CIS K8s) / Falco runtime rules / CEL-custom in-tree
 # checks. The initial release ships the CEL-custom backend
 # functional and stubs kube-bench + Falco; the CRD surface is stable.
 compliance-scan:
-  enabled: true
+  # Placeholder for v0.1.0-alpha.2: the chart renders a busybox
+  # no-op pod. Real binary lands in a future Wave; flip to true
+  # only when the operator image is published.
+  enabled: false
 
 # confidential-attestation subchart: hardware-backed node attestation.
 # Multi-backend from v1: TPM 2.0 (PCR 0-7), AMD SEV-SNP attestation
@@ -150,7 +159,10 @@ compliance-scan:
 # lab clusters without confidential-computing hardware - the
 # operator emits indeterminate verdicts in that case.
 confidential-attestation:
-  enabled: true
+  # Placeholder for v0.1.0-alpha.2: the chart renders a busybox
+  # no-op pod. Real binary lands in a future Wave; flip to true
+  # only when the operator image is published.
+  enabled: false
 
 # ugallu-ui subchart: the SOC view. SvelteKit SPA + Go BFF, served
 # from a single Pod with an nginx-distroless front. Disabled by

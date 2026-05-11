@@ -6,7 +6,7 @@ global:
 # air-gapped registries.
 image:
   repository: ghcr.io/ninsun-labs/tetragon-bridge
-  tag: "v0.1.0"
+  tag: "v0.1.1"
   pullPolicy: IfNotPresent
 
 # Source toggles whether the bridge talks to a real Tetragon

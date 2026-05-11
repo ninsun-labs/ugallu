@@ -5,8 +5,8 @@ global:
 placeholder: true
 
 image:
-  repository: busybox
-  tag: "1.37"
+  repository: ghcr.io/ninsun-labs/ugallu/attestor
+  tag: "v0.1.0-alpha.2"
   pullPolicy: IfNotPresent
 
 command: ["/bin/sleep", "infinity"]

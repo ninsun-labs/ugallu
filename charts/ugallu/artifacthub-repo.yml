@@ -1,0 +1,7 @@
+# ArtifactHub repository metadata.
+# After registering the OCI repo on artifacthub.io, paste the
+# repositoryID that ArtifactHub assigns to claim verified
+# ownership; until then this file is informational.
+owners:
+  - name: ninsun-labs
+    email: opensource@vargroup.com

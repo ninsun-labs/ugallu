@@ -1,0 +1,107 @@
+name: Release (chart OCI + cosign keyless)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Chart tag to publish (defaults to ref tag)'
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io/ninsun-labs/charts
+  COSIGN_VERSION: v2.6.1
+  HELM_VERSION: v3.18.3
+  HELM_EXPERIMENTAL_OCI: '1'
+
+jobs:
+  publish-chart:
+    name: Package + sign + push umbrella chart
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Compute chart tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="$(git rev-parse --short HEAD)"
+          fi
+          # Helm chart versions strip the leading "v" per SemVer.
+          CHART_VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "chart_version=${CHART_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Chart.yaml matches release tag
+        run: |
+          declared="$(grep '^version:' charts/ugallu/Chart.yaml | awk '{print $2}')"
+          expected="${{ steps.tag.outputs.chart_version }}"
+          if [ "${declared}" != "${expected}" ]; then
+            echo "::error::Chart.yaml version (${declared}) != release tag (${expected})"
+            exit 1
+          fi
+
+      - name: Helm registry login (GHCR)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Package umbrella chart
+        id: package
+        run: |
+          helm dependency update charts/ugallu
+          mkdir -p dist
+          helm package charts/ugallu --destination dist
+          PKG="dist/ugallu-${{ steps.tag.outputs.chart_version }}.tgz"
+          test -f "${PKG}"
+          echo "pkg=${PKG}" >> "$GITHUB_OUTPUT"
+
+      - name: Push chart to OCI registry
+        id: push
+        run: |
+          # helm push prints "Digest: sha256:..." on the last line; capture it
+          # so cosign can sign the exact OCI artifact we just pushed.
+          OUT="$(helm push '${{ steps.package.outputs.pkg }}' 'oci://${{ env.REGISTRY }}' 2>&1)"
+          echo "${OUT}"
+          DIGEST="$(echo "${OUT}" | awk '/^Digest:/ {print $2}')"
+          if [ -z "${DIGEST}" ]; then
+            echo "::error::Could not parse Digest from helm push output"
+            exit 1
+          fi
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: ${{ env.COSIGN_VERSION }}
+
+      - name: Sign chart (keyless via GitHub OIDC)
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          cosign sign --yes \
+            --oidc-issuer https://token.actions.githubusercontent.com \
+            '${{ env.REGISTRY }}/ugallu@${{ steps.push.outputs.digest }}'
+
+      - name: Verify signature roundtrip
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp 'https://github.com/ninsun-labs/ugallu/.+' \
+            '${{ env.REGISTRY }}/ugallu@${{ steps.push.outputs.digest }}'

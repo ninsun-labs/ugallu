@@ -43,8 +43,8 @@ clusterIdentity:
 # Placeholder until the real binary lands at ghcr.io/ninsun-labs/ugallu/audit-detection.
 placeholder: true
 image:
-  repository: busybox
-  tag: "1.37"
+  repository: ghcr.io/ninsun-labs/ugallu/audit-detection
+  tag: "v0.1.0-alpha.2"
   pullPolicy: IfNotPresent
 
 # When placeholder=true the container runs sleep so the pod stays alive

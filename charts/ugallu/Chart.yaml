@@ -2,8 +2,8 @@ apiVersion: v2
 name: ugallu
 description: Kubernetes security platform - apotropaic guardian for cluster ingress and runtime
 type: application
-version: 0.0.1-alpha.1
-appVersion: "0.0.1-alpha.1"
+version: 0.1.0-alpha.2
+appVersion: "0.1.0-alpha.2"
 kubeVersion: ">=1.30.0-0"
 
 home: https://ninsun.io/ugallu
@@ -21,88 +21,101 @@ keywords:
   - attestation
   - forensics
 
+annotations:
+  # ArtifactHub metadata; consumed when the OCI artifact is
+  # indexed at artifacthub.io.
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: keyless (sigstore / Fulcio via GitHub OIDC)
+    url: https://github.com/ninsun-labs/ugallu/blob/main/README.md#cosign-keyless
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://ugallu.io
+    - name: Source
+      url: https://github.com/ninsun-labs/ugallu
+
 dependencies:
   - name: namespaces
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/namespaces
     condition: namespaces.enabled
   - name: rbac
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/rbac
     condition: rbac.enabled
   - name: admission-policies
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/admission-policies
     condition: admission-policies.enabled
   - name: resolver
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/resolver
     condition: resolver.enabled
   - name: attestor
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/attestor
     condition: attestor.enabled
   - name: ttl
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/ttl
     condition: ttl.enabled
   - name: gitops-responder
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/gitops-responder
     condition: gitops-responder.enabled
   - name: backpressure
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/backpressure
     condition: backpressure.enabled
   - name: audit-detection
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/audit-detection
     condition: audit-detection.enabled
   - name: forensics
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/forensics
     condition: forensics.enabled
   - name: monitoring
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/monitoring
     condition: monitoring.enabled
   - name: webhook-auditor
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/webhook-auditor
     condition: webhook-auditor.enabled
   - name: dns-detect
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/dns-detect
     condition: dns-detect.enabled
   - name: tenant-escape
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/tenant-escape
     condition: tenant-escape.enabled
   - name: honeypot
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/honeypot
     condition: honeypot.enabled
   - name: tetragon-bridge
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/tetragon-bridge
     condition: tetragon-bridge.enabled
   - name: seccomp-gen
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/seccomp-gen
     condition: seccomp-gen.enabled
   - name: backup-verify
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/backup-verify
     condition: backup-verify.enabled
   - name: compliance-scan
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/compliance-scan
     condition: compliance-scan.enabled
   - name: confidential-attestation
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/confidential-attestation
     condition: confidential-attestation.enabled
   - name: ugallu-ui
-    version: 0.0.1-alpha.1
+    version: 0.1.0-alpha.2
     repository: file://charts/ugallu-ui
     condition: ugallu-ui.enabled

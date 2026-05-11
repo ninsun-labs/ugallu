@@ -1,66 +1,66 @@
 dependencies:
 - name: namespaces
   repository: file://charts/namespaces
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: rbac
   repository: file://charts/rbac
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: admission-policies
   repository: file://charts/admission-policies
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: resolver
   repository: file://charts/resolver
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: attestor
   repository: file://charts/attestor
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: ttl
   repository: file://charts/ttl
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: gitops-responder
   repository: file://charts/gitops-responder
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: backpressure
   repository: file://charts/backpressure
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: audit-detection
   repository: file://charts/audit-detection
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: forensics
   repository: file://charts/forensics
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: monitoring
   repository: file://charts/monitoring
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: webhook-auditor
   repository: file://charts/webhook-auditor
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: dns-detect
   repository: file://charts/dns-detect
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: tenant-escape
   repository: file://charts/tenant-escape
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: honeypot
   repository: file://charts/honeypot
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: tetragon-bridge
   repository: file://charts/tetragon-bridge
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: seccomp-gen
   repository: file://charts/seccomp-gen
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: backup-verify
   repository: file://charts/backup-verify
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: compliance-scan
   repository: file://charts/compliance-scan
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: confidential-attestation
   repository: file://charts/confidential-attestation
-  version: 0.0.1-alpha.1
+  version: 0.1.0-alpha.2
 - name: ugallu-ui
   repository: file://charts/ugallu-ui
-  version: 0.0.1-alpha.1
-digest: sha256:f12a74ed391993b95e3b3a492d43856ac9b34f603f2ae28e59eef4336e847c24
-generated: "2026-04-30T08:24:19.557077968+02:00"
+  version: 0.1.0-alpha.2
+digest: sha256:f5bba15ede8da4d6a683f6638bff942013e2ea9afa06f98b78b7b13f2b461a71
+generated: "2026-05-11T11:49:54.269646241+02:00"

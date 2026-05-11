@@ -2,8 +2,8 @@ apiVersion: v2
 name: attestor
 description: ugallu-attestor Deployment singleton (in-toto signing pipeline cosign + Rekor + WORM)
 type: application
-version: 0.0.1-alpha.1
-appVersion: "0.0.1-alpha.1"
+version: 0.1.0-alpha.2
+appVersion: "0.1.0-alpha.2"
 kubeVersion: ">=1.30.0-0"
 
 home: https://ninsun.io/ugallu

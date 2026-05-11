@@ -7,8 +7,39 @@ for public releases.
 
 ## [Unreleased]
 
+## [v0.1.0-alpha.2]
+
+Patch release that wires the umbrella chart to the v0.1.0-alpha.1
+images and publishes the chart itself as a cosign-keyless signed
+OCI artifact on GHCR.
+
 ### Added
 
+- Chart published at
+  `oci://ghcr.io/ninsun-labs/charts/ugallu:0.1.0-alpha.2`,
+  cosign-keyless signed.
+- `.github/workflows/release-chart.yml` packages and pushes the
+  umbrella chart on every `v*` tag.
+- `charts/ugallu/artifacthub-repo.yml` + ArtifactHub annotations
+  on `Chart.yaml` for the upcoming artifacthub.io listing.
+
+### Changed
+
+- Eleven sub-chart `values.yaml` files now point to the real GHCR
+  images published at v0.1.0-alpha.2 (was: `busybox:1.37`
+  placeholder for everything except `honeypot` /
+  `tenant-escape` / `tetragon-bridge`).
+- `tetragon-bridge` sub-chart image pinned to the satellite
+  release `v0.1.1`.
+- Four operator sub-charts (`backup-verify`, `compliance-scan`,
+  `confidential-attestation`, `seccomp-gen`) flipped to
+  `enabled: false` by default. They still ship as scaffolds
+  because the real binaries land in a future Wave; flip the
+  enable flag once their images are published.
+- Quickstart on [ugallu.io](https://ugallu.io) rewritten around
+  `helm install oci://...` (the classic `helm repo add` path
+  isn't implemented). Release / SBOM / chart verification
+  snippets re-pinned to v0.1.0-alpha.2.
 - README + CHANGELOG aligned with the public docs site at
   [ugallu.io](https://ugallu.io).
 
@@ -95,5 +126,6 @@ release entry.
 - The Linux kernel must be >= 5.8 for modern-eBPF features
   (Falco / Tetragon).
 
-[Unreleased]: https://github.com/ninsun-labs/ugallu/compare/v0.1.0-alpha.1...HEAD
+[Unreleased]: https://github.com/ninsun-labs/ugallu/compare/v0.1.0-alpha.2...HEAD
+[v0.1.0-alpha.2]: https://github.com/ninsun-labs/ugallu/releases/tag/v0.1.0-alpha.2
 [v0.1.0-alpha.1]: https://github.com/ninsun-labs/ugallu/releases/tag/v0.1.0-alpha.1

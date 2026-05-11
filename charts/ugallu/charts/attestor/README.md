@@ -19,7 +19,7 @@ attestor:
   placeholder: false
   image:
     repository: ghcr.io/ninsun-labs/ugallu/ugallu-attestor
-    tag: v0.0.1-alpha.1
+    tag: v0.1.0-alpha.2
   command: []
   replicas: 2
 ```

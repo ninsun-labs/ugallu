@@ -24,7 +24,7 @@ auditBus:
 placeholder: true
 image:
   repository: ghcr.io/ninsun-labs/ugallu/tenant-escape
-  tag: "v0.0.1-alpha.1"
+  tag: "v0.1.0-alpha.2"
   pullPolicy: IfNotPresent
 
 # Cluster-wide leader-elect Deployment. Cross-tenant correlation

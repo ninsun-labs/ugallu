@@ -10,8 +10,8 @@ global:
 placeholder: true
 
 image:
-  repository: busybox
-  tag: "1.37"
+  repository: ghcr.io/ninsun-labs/ugallu/resolver
+  tag: "v0.1.0-alpha.2"
   pullPolicy: IfNotPresent
 
 # When placeholder=true, the pod sleeps forever with no probes. With the
