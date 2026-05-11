@@ -5,8 +5,8 @@
 # slows the local cycle without buying anything.
 #
 # Build args:
-#   BINARY     — short name (audit-detection, forensics, ...).
-#   BIN_FILE   — pre-built binary path relative to the build
+#   BINARY     - short name (audit-detection, forensics, ...).
+#   BIN_FILE   - pre-built binary path relative to the build
 #                context. Defaults to "<BINARY>-bin".
 #
 # Build context expects:
@@ -35,7 +35,7 @@ COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 # name, not the entrypoint string.
 COPY ${BIN_FILE} /app/ugallu
 
-# OCI metadata — picked up by GHCR + supply-chain scanners. The
+# OCI metadata - picked up by GHCR + supply-chain scanners. The
 # `org.opencontainers.image.revision` lands per-build via the CI
 # label flag.
 LABEL org.opencontainers.image.title="ugallu-${BINARY}" \

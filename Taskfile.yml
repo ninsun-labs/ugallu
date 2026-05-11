@@ -133,7 +133,7 @@ tasks:
         set -e
         bridge=../tetragon-bridge
         if [ ! -d "$bridge" ]; then
-          echo "tetragon-bridge sibling repo missing at $bridge — clone it next to ugallu" >&2
+          echo "tetragon-bridge sibling repo missing at $bridge - clone it next to ugallu" >&2
           exit 1
         fi
         out="$(pwd)/build/_artifacts/tetragon-bridge-bin"

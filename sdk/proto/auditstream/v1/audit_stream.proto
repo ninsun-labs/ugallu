@@ -29,7 +29,7 @@ service AuditStream {
 // start of the stream.
 message SubscribeRequest {
   // ConsumerName is the human-readable consumer id (must match an
-  // entry in AuditDetectionConfig.spec.consumers — events are
+  // entry in AuditDetectionConfig.spec.consumers - events are
   // filtered + rate-limited per the matching consumer entry).
   string consumer_name = 1;
 }

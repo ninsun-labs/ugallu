@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://github.com/ninsun-labs/ugallu/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ninsun-labs/ugallu/ci.yml?branch=main&label=ci&logo=github&style=flat-square"></a>
   <a href="https://github.com/ninsun-labs/ugallu/releases"><img alt="Release" src="https://img.shields.io/github/v/release/ninsun-labs/ugallu?include_prereleases&label=release&style=flat-square&color=00e5ff"></a>
-  <a href="https://github.com/ninsun-labs/ugallu/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/ninsun-labs/ugallu?style=flat-square"></a>
+  <a href="https://github.com/ninsun-labs/ugallu/blob/main/LICENSE.md"><img alt="License" src="https://img.shields.io/github/license/ninsun-labs/ugallu?style=flat-square"></a>
   <a href="https://goreportcard.com/report/github.com/ninsun-labs/ugallu/sdk"><img alt="Go Report" src="https://goreportcard.com/badge/github.com/ninsun-labs/ugallu/sdk?style=flat-square"></a>
   <a href="https://pkg.go.dev/github.com/ninsun-labs/ugallu/sdk"><img alt="Go Reference" src="https://pkg.go.dev/badge/github.com/ninsun-labs/ugallu/sdk.svg"></a>
   <a href="https://ugallu.io"><img alt="Docs" src="https://img.shields.io/badge/docs-ugallu.io-00e5ff?style=flat-square"></a>
@@ -112,7 +112,7 @@ full verification flow.
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE). All commits require the
+Apache-2.0. See [LICENSE.md](LICENSE.md). All commits require the
 Developer Certificate of Origin sign-off (`git commit -s`).
 
 ## Contributing

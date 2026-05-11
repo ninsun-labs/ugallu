@@ -56,7 +56,7 @@ jobs:
       - name: Render and apply chart
         # The monitoring subchart renders PrometheusRule +
         # ServiceMonitor resources whose CRDs ship with
-        # kube-prometheus-stack — not installed on a vanilla kind
+        # kube-prometheus-stack - not installed on a vanilla kind
         # node. Disable it in e2e: the smoke validates the core
         # ugallu pipeline, the monitoring extension is exercised
         # in the lab e2e (where kps lives).
