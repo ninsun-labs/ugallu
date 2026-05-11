@@ -84,7 +84,10 @@ func reconcile(t *testing.T, r *engine.SigmaRuleReconciler, name string) {
 
 func waitFor(ctx context.Context, t *testing.T, predicate func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
+	// 5s tolerates GitHub Actions runner variance; envtest apiserver
+	// + controller-runtime reconcile loop occasionally overshoots a
+	// 2s budget on cold caches.
+	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		if predicate() {
 			return
@@ -95,7 +98,7 @@ func waitFor(ctx context.Context, t *testing.T, predicate func() bool) {
 		case <-time.After(20 * time.Millisecond):
 		}
 	}
-	t.Fatal("predicate never returned true within 2s")
+	t.Fatal("predicate never returned true within 5s")
 }
 
 func deleteAllSigmaRules(t *testing.T) {

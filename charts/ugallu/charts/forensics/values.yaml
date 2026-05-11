@@ -66,7 +66,7 @@ image:
 # Schedulable for kubectl/Argo health checks. Override to
 # `["/bin/ugallu-forensics"]` in the lab values when the real
 # binary is loaded onto the nodes.
-command: ["/bin/sleep", "infinity"]
+command: ["/app/ugallu"]
 args: []
 
 # Singleton with leader election. 2 replicas is the design default

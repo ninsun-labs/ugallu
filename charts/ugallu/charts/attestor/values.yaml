@@ -9,7 +9,7 @@ image:
   tag: "v0.1.0-alpha.2"
   pullPolicy: IfNotPresent
 
-command: ["/bin/sleep", "infinity"]
+command: ["/app/ugallu"]
 args: []
 
 # Replicas for HA. The leader-elect Lease ensures only one is active.

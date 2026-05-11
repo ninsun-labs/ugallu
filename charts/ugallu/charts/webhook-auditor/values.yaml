@@ -37,7 +37,7 @@ image:
 # When placeholder=true the container runs sleep so the pod stays alive
 # for kubectl/Argo health checks. Replace with the real argv when the
 # binary image is published.
-command: ["/bin/sleep", "infinity"]
+command: ["/app/ugallu"]
 args: []
 
 # Singleton with leader election. 2 replicas is the design default.

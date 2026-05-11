@@ -17,7 +17,7 @@ image:
 # When placeholder=true, the pod sleeps forever with no probes. With the
 # real binary, set placeholder=false and the chart wires liveness +
 # readiness on /healthz.
-command: ["/bin/sleep", "infinity"]
+command: ["/app/ugallu"]
 args: []
 
 resources:

@@ -114,3 +114,18 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp 'https://github.com/ninsun-labs/ugallu/.+' \
             '${{ env.REGISTRY }}/ugallu@${{ steps.push.outputs.digest }}'
+
+      # ArtifactHub uses this OCI artifact to claim verified ownership
+      # of the repository at the same namespace. Push it on every
+      # release so the repositoryID stays in sync if it ever rotates.
+      - name: Install oras
+        uses: oras-project/setup-oras@v1
+        with:
+          version: '1.2.3'
+
+      - name: Push ArtifactHub repo metadata
+        run: |
+          oras push \
+            '${{ env.REGISTRY }}/artifacthub-repo:latest' \
+            --artifact-type application/vnd.cncf.artifacthub.config.v1+yaml \
+            charts/ugallu/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
