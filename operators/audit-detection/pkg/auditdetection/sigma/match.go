@@ -111,7 +111,7 @@ func compileMatch(m *securityv1alpha1.SigmaMatch) (*compiledMatch, error) {
 	return cm, nil
 }
 
-// compileLeaf compiles the primitive predicates only — no AnyOf/Not.
+// compileLeaf compiles the primitive predicates only - no AnyOf/Not.
 // Reused for the inline portion of SigmaMatch and for each AnyOf/Not
 // entry.
 func compileLeaf(m *securityv1alpha1.SigmaMatchLeaf) (*compiledMatch, error) {

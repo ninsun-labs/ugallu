@@ -12,7 +12,7 @@ import (
 type SeccompTrainingRunSpec struct {
 	// TargetSelector picks the Pods whose syscall surface is recorded
 	// during the training window. Empty selector matches every Pod
-	// in the target namespace — discouraged.
+	// in the target namespace - discouraged.
 	TargetSelector metav1.LabelSelector `json:"targetSelector"`
 
 	// TargetNamespace scopes the selector. Required.
@@ -26,7 +26,7 @@ type SeccompTrainingRunSpec struct {
 
 	// ReplicaRatio is the fraction of matching Pods that participate
 	// in the training (0.0..1.0, expressed as percentage 0..100).
-	// Production-friendly default is 50% — half the replicas continue
+	// Production-friendly default is 50% - half the replicas continue
 	// serving traffic with the existing profile while the other half
 	// run the training. Admission policy 13 rejects ratios > 100 OR
 	// configurations that would leave fewer than 1 untrained Pod

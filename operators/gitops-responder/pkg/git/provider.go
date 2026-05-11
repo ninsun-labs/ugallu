@@ -47,7 +47,7 @@ type ChangeRequest struct {
 
 // FileChange is one path-level mutation. Add the path or replace its
 // contents (the responder always operates in a "set the file to this"
-// mode — incremental diffs are the caller's responsibility).
+// mode - incremental diffs are the caller's responsibility).
 type FileChange struct {
 	Path     string
 	Contents []byte

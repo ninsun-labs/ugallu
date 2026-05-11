@@ -17,7 +17,7 @@ import (
 // Dispatcher fans every DNSEvent through the registered detector
 // chain and forwards a Finding (when one fires) to the emitter.
 //
-// Detectors are evaluated in order — short-circuit not used: every
+// Detectors are evaluated in order - short-circuit not used: every
 // detector sees every event so per-detector counters stay accurate.
 // The detector slice is set at construction; runtime updates are
 // not supported (a config change goes through Stop+New).

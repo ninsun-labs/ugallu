@@ -170,7 +170,7 @@ func (e *Engine) emit(ctx context.Context, cr *sigma.CompiledRule, ev *auditdete
 // RuleSet is the engine's hot-swappable rule store. Reconcile writes,
 // dispatch reads. Each entry carries the compiled matcher plus the
 // per-rule mutable state (rate limiter, counters) so a SigmaRule
-// re-compile preserves nothing — it's a fresh slot.
+// re-compile preserves nothing - it's a fresh slot.
 type RuleSet struct {
 	mu       sync.RWMutex
 	entries  map[string]*RuleEntry
@@ -247,7 +247,7 @@ func (r *RuleSet) Get(name string) *RuleEntry {
 }
 
 // Snapshot returns the current set of entries as a flat slice. The
-// underlying slice is owned by RuleSet — callers must not mutate it.
+// underlying slice is owned by RuleSet - callers must not mutate it.
 // dispatch() relies on this being a single atomic load.
 func (r *RuleSet) Snapshot() []*RuleEntry {
 	return *r.snapshot.Load()
@@ -275,7 +275,7 @@ func subjectFrom(ref *auditdetection.ObjectReference) (kind securityv1alpha1.Sub
 }
 
 // resourceToKind covers the resources audit-detection rules typically
-// target. It is intentionally not exhaustive — additions only when a
+// target. It is intentionally not exhaustive - additions only when a
 // rule needs a new mapping.
 func resourceToKind(resource string) securityv1alpha1.SubjectKind {
 	switch strings.ToLower(resource) {

@@ -123,7 +123,7 @@ func (f *fakeS3) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// pn formats a part number — kept tiny to keep ETag deterministic.
+// pn formats a part number - kept tiny to keep ETag deterministic.
 func pn(n int) string {
 	if n < 10 {
 		return string(rune('0' + n))
@@ -302,7 +302,7 @@ func TestRunner_TruncatesAtMaxBytes(t *testing.T) {
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	// 4 MiB of cryptographically-random bytes — gzip cannot compress
+	// 4 MiB of cryptographically-random bytes - gzip cannot compress
 	// noise, so the gzip-output stream stays close to 4 MiB and
 	// trips the 64 KiB MaxBytes cap on the gzip-writer side.
 	noise := make([]byte, 4<<20)

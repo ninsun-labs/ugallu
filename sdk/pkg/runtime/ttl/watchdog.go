@@ -80,7 +80,7 @@ func (r *AttestorWatchdogReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	case err == nil:
 		// fall through
 	case apierrors.IsNotFound(err):
-		// No Lease yet — attestor never came up. Treat as stale.
+		// No Lease yet - attestor never came up. Treat as stale.
 		return r.handleStale(ctx, time.Time{})
 	default:
 		return ctrl.Result{}, fmt.Errorf("get attestor Lease: %w", err)

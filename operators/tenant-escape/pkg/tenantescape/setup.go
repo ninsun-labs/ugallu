@@ -113,7 +113,7 @@ func SetupWithManager(mgr ctrl.Manager, opts *Options) error {
 		}
 		execSrc = bridgeSrc
 	} else {
-		// No bridge endpoint configured — keep the stub so the
+		// No bridge endpoint configured - keep the stub so the
 		// dispatcher exits cleanly. CrossTenantExec is dormant in
 		// this mode (audit-bus detectors still run).
 		execSrc = source.NewTetragonStubSource()

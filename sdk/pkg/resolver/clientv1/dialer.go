@@ -22,7 +22,7 @@ import (
 const DefaultUnixSocket = "/var/run/ugallu/resolver.sock"
 
 // DefaultClusterEndpoint is the in-cluster ClusterIP service backing
-// the resolver — used as TCP fallback when the local UDS isn't
+// the resolver - used as TCP fallback when the local UDS isn't
 // available (e.g. a non-DaemonSet workload that still needs lookups).
 // Port matches the resolver chart's grpcPort (plain HTTP/2; TLS lands
 // in a follow-up SPIRE-issued cert path).
@@ -45,7 +45,7 @@ type DialerOpts struct {
 	// TCPConnectTimeout caps the cluster fallback dial; default 200ms.
 	TCPConnectTimeout time.Duration
 
-	// Insecure skips TLS on the cluster endpoint (lab/dev only — in
+	// Insecure skips TLS on the cluster endpoint (lab/dev only - in
 	// prod the resolver Service should expose a cert via SPIRE).
 	Insecure bool
 
@@ -129,7 +129,7 @@ func (d *Dialer) Dial(ctx context.Context) (ResolverClient, error) {
 }
 
 // Transport reports which transport satisfied the last successful
-// Dial — useful for telemetry and integration tests.
+// Dial - useful for telemetry and integration tests.
 func (d *Dialer) Transport() string {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -178,7 +178,7 @@ func (d *Dialer) dialUDS(ctx context.Context) (*grpc.ClientConn, error) {
 }
 
 // dialTCP connects via the in-cluster ClusterIP. Insecure flag toggles
-// TLS — production is always TLS-on. The TLS branch hands the
+// TLS - production is always TLS-on. The TLS branch hands the
 // connection to the system root CA pool; callers that need a custom
 // trust anchor (SPIRE-issued, project CA, …) plug it in via
 // ExtraDialOpts.

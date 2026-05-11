@@ -22,7 +22,7 @@ type debouncedEntry struct {
 }
 
 // DebounceCache is a tiny in-memory LRU-ish map keyed on UID. No TTL
-// expiry sweep — entries are evicted on Forget(uid) at delete time
+// expiry sweep - entries are evicted on Forget(uid) at delete time
 // and on package shutdown. A 24h-cap is enforced via Touch.
 type DebounceCache struct {
 	mu sync.Mutex
@@ -41,7 +41,7 @@ func NewDebounceCacheForTest() *DebounceCache {
 }
 
 // Decide returns (emit bool, firstObserved bool). emit is true when
-// the (score, specHash) tuple differs from the cached entry — first
+// the (score, specHash) tuple differs from the cached entry - first
 // reconcile of a UID always emits. The cache is updated atomically.
 func (c *DebounceCache) Decide(uid types.UID, score int, specHash string) (emit, firstObserved bool) {
 	c.mu.Lock()
@@ -71,7 +71,7 @@ func (c *DebounceCache) Forget(uid types.UID) {
 }
 
 // Hash returns the canonical sha256-hex of the JSON-marshalled value.
-// Stable iff json.Marshal is stable for v's concrete type — true for
+// Stable iff json.Marshal is stable for v's concrete type - true for
 // admissionregistrationv1 webhook structs because they have no maps
 // in user-visible spec fields.
 func Hash(v any) (string, error) {

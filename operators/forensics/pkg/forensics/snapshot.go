@@ -203,7 +203,7 @@ func (s *Snapshotter) injectEphemeralContainer(ctx context.Context, pod *corev1.
 	updated.Spec.EphemeralContainers = append(updated.Spec.EphemeralContainers, corev1.EphemeralContainer{
 		EphemeralContainerCommon: corev1.EphemeralContainerCommon{
 			// Kubelet rejects Resources on ephemeral containers
-			// (spec.ephemeralContainers[].resources: Forbidden) — the
+			// (spec.ephemeralContainers[].resources: Forbidden) - the
 			// kubelet allocates them off the Pod's existing budget.
 			// Memory ceiling is enforced inside the snapshot binary
 			// via the multipart-uploader part-size budget instead.
@@ -345,7 +345,7 @@ func parseSnapshotResult(logs string) (*SnapshotResult, error) {
 		return nil, errors.New("snapshotter: empty container logs")
 	}
 
-	// Failure path first — discriminator is the `failure` top-level
+	// Failure path first - discriminator is the `failure` top-level
 	// key; the success path's Result has `url` etc.
 	var fw struct {
 		Failure *snapshot.Failure `json:"failure,omitempty"`

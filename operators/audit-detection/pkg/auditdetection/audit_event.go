@@ -111,14 +111,14 @@ type ResponseStatus struct {
 //     from the apiserver's webhook backend (Phase 2).
 //
 // Implementations MUST be safe for a single goroutine to call Run on
-// — concurrent calls are undefined. Run blocks until ctx is
+// - concurrent calls are undefined. Run blocks until ctx is
 // cancelled or a fatal source error occurs; the returned channel is
 // closed before Run returns so consumers can detect shutdown.
 type Source interface {
 	// Run drives the source. Events are pushed on the returned
 	// channel; closing the channel signals normal shutdown. The
 	// channel is buffered (capacity is implementation-defined) and a
-	// slow consumer eventually applies backpressure on the source —
+	// slow consumer eventually applies backpressure on the source -
 	// the FileSource pauses inotify drain, the WebhookSource returns
 	// 503 on the next POST.
 	Run(ctx context.Context) (<-chan *AuditEvent, error)

@@ -145,7 +145,7 @@ func (s *Server) ResolveByPID(_ context.Context, req *resolverv1.PIDRequest) (*r
 	// Fallback: parse the cgroup path directly to extract the Pod UID
 	// and look it up in the primary index. This works even for pods
 	// created after the cold-walk because the path itself encodes the
-	// UID — at the cost of not exposing the cgroup ID to the caller.
+	// UID - at the cost of not exposing the cgroup ID to the caller.
 	info, err := PodInfoForPID(s.ProcRoot, pid)
 	if err != nil {
 		recordResolve(methodPID, outcomeMiss, start)
@@ -163,7 +163,7 @@ func (s *Server) ResolveByPID(_ context.Context, req *resolverv1.PIDRequest) (*r
 // snapshots mutate; the server forwards them through the gRPC
 // stream until the client cancels or the subscription overflows.
 //
-// Filter is best-effort — empty Kind / Namespace match anything;
+// Filter is best-effort - empty Kind / Namespace match anything;
 // non-empty values are checked at the cache fan-out before the event
 // reaches the stream.
 func (s *Server) Watch(req *resolverv1.WatchRequest, stream resolverv1.Resolver_WatchServer) error {

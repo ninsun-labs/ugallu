@@ -52,7 +52,7 @@ func (r *TrainingRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	switch run.Status.Phase {
 	case "":
-		// First touch — kick off the training engine.
+		// First touch - kick off the training engine.
 		return r.start(ctx, &run)
 	case "Running":
 		// In-flight; wait for the engine to finish. The engine drives
@@ -64,7 +64,7 @@ func (r *TrainingRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	default:
-		// Succeeded / Failed — nothing left to do.
+		// Succeeded / Failed - nothing left to do.
 		return ctrl.Result{}, nil
 	}
 }
@@ -94,7 +94,7 @@ func (r *TrainingRunReconciler) start(ctx context.Context, run *securityv1alpha1
 
 	r.emitSE(ctx, run, securityv1alpha1.TypeSeccompTrainingStarted, "", securityv1alpha1.SeverityInfo)
 
-	// Detach the engine from the request ctx — Reconcile returns
+	// Detach the engine from the request ctx - Reconcile returns
 	// quickly while the training keeps running for run.Spec.Duration.
 	// The engine internally bounds the lifetime via its own
 	// context.WithTimeout.

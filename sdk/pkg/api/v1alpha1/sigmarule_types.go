@@ -58,7 +58,7 @@ type SigmaMatch struct {
 	Not *SigmaMatchLeaf `json:"not,omitempty"`
 }
 
-// SigmaMatchLeaf is the leaf shape — every primitive predicate but
+// SigmaMatchLeaf is the leaf shape - every primitive predicate but
 // neither AnyOf nor Not. The split keeps the CRD schema finite while
 // the Go runtime compiles SigmaMatch + SigmaMatchLeaf into the same
 // internal tree.

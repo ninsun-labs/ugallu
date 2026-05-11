@@ -71,7 +71,7 @@ func NewRecoverer(c client.Client, cs kubernetes.Interface, freezer *Freezer, sn
 
 // Recover walks every forensics-managed ER in Pending/Running and
 // applies the per-step recovery policy (see classifyAndRecover).
-// Errors per-ER are logged but never abort the whole sweep — the
+// Errors per-ER are logged but never abort the whole sweep - the
 // goal is to make as much progress as possible at boot.
 func (r *Recoverer) Recover(ctx context.Context) error {
 	list := &securityv1alpha1.EventResponseList{}
@@ -88,7 +88,7 @@ func (r *Recoverer) Recover(ctx context.Context) error {
 			continue
 		}
 		if er.CreationTimestamp.After(cutoff) {
-			// Still inside the grace window — owned by the live
+			// Still inside the grace window - owned by the live
 			// pipeline goroutine. Skip; subsequent sweeps catch
 			// any ER that stays Pending past the window.
 			recoveryTotal.WithLabelValues("skip_grace_window").Inc()
@@ -148,7 +148,7 @@ func (r *Recoverer) recoverPodFreeze(ctx context.Context, er *securityv1alpha1.E
 func (r *Recoverer) recoverPodUnfreeze(ctx context.Context, er *securityv1alpha1.EventResponse) {
 	pod, ok := r.fetchTargetPod(ctx, er)
 	if !ok {
-		// Pod gone is fine — unfreeze is implicitly satisfied.
+		// Pod gone is fine - unfreeze is implicitly satisfied.
 		r.markSucceeded(ctx, er)
 		recoveryTotal.WithLabelValues("unfreeze_target_gone").Inc()
 		return
@@ -190,7 +190,7 @@ func (r *Recoverer) recoverFilesystemSnapshot(ctx context.Context, er *securityv
 		}
 		switch {
 		case st.State.Running != nil:
-			// Still running — leave it alone, the next reconcile
+			// Still running - leave it alone, the next reconcile
 			// pass picks it up.
 			recoveryTotal.WithLabelValues("snapshot_still_running").Inc()
 			return
@@ -210,7 +210,7 @@ func (r *Recoverer) recoverFilesystemSnapshot(ctx context.Context, er *securityv
 			return
 		}
 	}
-	// Container was never injected — operator died before adding
+	// Container was never injected - operator died before adding
 	// it. The freeze is in place but no snapshot ran. Mark
 	// Permanent so the human + IR review can decide whether to
 	// open a new incident.
@@ -219,7 +219,7 @@ func (r *Recoverer) recoverFilesystemSnapshot(ctx context.Context, er *securityv
 }
 
 // recoverEvidenceUpload rebuilds the manifest from the Succeeded
-// upstream ERs of the same incident and re-uploads. Idempotent —
+// upstream ERs of the same incident and re-uploads. Idempotent -
 // the manifest body is content-addressed so an identical re-run
 // produces the same key + same blob; an attempted overwrite of
 // existing content is Object-Lock-rejected and the recoverer

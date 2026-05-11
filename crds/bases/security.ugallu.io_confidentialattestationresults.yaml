@@ -104,7 +104,7 @@ spec:
                 type: string
               nonce:
                 description: |-
-                  Nonce is the same value the run requested — recorded for
+                  Nonce is the same value the run requested - recorded for
                   audit trail.
                 type: string
               quote:

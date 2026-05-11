@@ -44,7 +44,7 @@ metricsPort: 9090
 healthProbePort: 8081
 
 # Clusters running CiliumNetworkPolicy. Disabling drops the
-# CrossTenantNetworkPolicy detector's ciliumnetworkpolicies arm —
+# CrossTenantNetworkPolicy detector's ciliumnetworkpolicies arm -
 # the kube-native NetworkPolicy arm keeps firing.
 ciliumNetworkPolicies: true
 

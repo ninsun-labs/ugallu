@@ -20,7 +20,7 @@ import (
 
 // ConfigStatusReconciler periodically refreshes the singleton
 // WebhookAuditorConfig.Status fields with operator-observed counts.
-// Cadence is fixed at 30s via RequeueAfter — config CR mutations are
+// Cadence is fixed at 30s via RequeueAfter - config CR mutations are
 // rare enough that the cost of a list+patch every 30s is negligible
 // (a few KB of apiserver traffic).
 type ConfigStatusReconciler struct {
@@ -70,7 +70,7 @@ func (r *ConfigStatusReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // SetupWithManager wires the reconciler. Watches the
-// WebhookAuditorConfig CRD only — MWC/VWC events are the score
+// WebhookAuditorConfig CRD only - MWC/VWC events are the score
 // reconciler's domain; here the count is recomputed on the 30s tick.
 func (r *ConfigStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).

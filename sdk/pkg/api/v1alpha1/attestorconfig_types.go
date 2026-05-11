@@ -45,7 +45,7 @@ type FulcioConfig struct {
 	// store (the default for the public Sigstore Fulcio).
 	CABundleSecret *SecretReference `json:"caBundleSecret,omitempty"`
 
-	// InsecureSkipVerify disables TLS verification toward Fulcio —
+	// InsecureSkipVerify disables TLS verification toward Fulcio -
 	// dev/lab only.
 	// +kubebuilder:default=false
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
@@ -90,7 +90,7 @@ type OpenBaoConfig struct {
 	// uses the system CA store.
 	CABundleSecret *SecretReference `json:"caBundleSecret,omitempty"`
 
-	// InsecureSkipVerify disables TLS verification — dev/lab only.
+	// InsecureSkipVerify disables TLS verification - dev/lab only.
 	// +kubebuilder:default=false
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 }

@@ -12,7 +12,7 @@ import (
 // +kubebuilder:validation:Enum=tpm;sev-snp;tdx
 type ConfidentialAttestationBackend string
 
-// ConfidentialAttestationBackend constants — all 3 supported from v1.
+// ConfidentialAttestationBackend constants - all 3 supported from v1.
 const (
 	// ConfidentialAttestationBackendTPM uses the TPM 2.0 PCR quote
 	// over PCRs 0-7 (firmware + bootloader + kernel measurements).
@@ -33,13 +33,13 @@ type ConfidentialAttestationVerdict string
 
 // ConfidentialAttestationVerdict constants.
 const (
-	// ConfidentialAttestationVerdictVerified — quote signature
+	// ConfidentialAttestationVerdictVerified - quote signature
 	// chained to a trusted root + measurements match the policy.
 	ConfidentialAttestationVerdictVerified ConfidentialAttestationVerdict = "verified"
-	// ConfidentialAttestationVerdictFailed — chain or measurement
+	// ConfidentialAttestationVerdictFailed - chain or measurement
 	// check failed; treat the node as untrusted.
 	ConfidentialAttestationVerdictFailed ConfidentialAttestationVerdict = "failed"
-	// ConfidentialAttestationVerdictIndeterminate — backend is
+	// ConfidentialAttestationVerdictIndeterminate - backend is
 	// missing on the node (e.g. no TPM device); status is reported
 	// without an enforcement decision.
 	ConfidentialAttestationVerdictIndeterminate ConfidentialAttestationVerdict = "indeterminate"
@@ -52,7 +52,7 @@ type ConfidentialAttestationRunSpec struct {
 	Backend ConfidentialAttestationBackend `json:"backend"`
 
 	// TargetNodeName pins the node the attester DaemonSet must
-	// answer from. Required — a cluster-wide attestation cycle is
+	// answer from. Required - a cluster-wide attestation cycle is
 	// modelled as N runs, one per node.
 	TargetNodeName string `json:"targetNodeName"`
 
@@ -136,7 +136,7 @@ type ConfidentialAttestationResultSpec struct {
 	// NodeName is the node the attester answered from.
 	NodeName string `json:"nodeName"`
 
-	// Nonce is the same value the run requested — recorded for
+	// Nonce is the same value the run requested - recorded for
 	// audit trail.
 	Nonce string `json:"nonce"`
 

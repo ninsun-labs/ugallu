@@ -17,7 +17,7 @@ const DefaultCgroupRescanInterval = 60 * time.Second
 
 // RunCgroupRescan re-runs the cgroup walker periodically until ctx is
 // cancelled. Each pass refreshes podByCgroupID for newly-started pods
-// (the index is additive — old entries survive until the pod is
+// (the index is additive - old entries survive until the pod is
 // tombstoned and PurgeExpired evicts them via cgroupIDsByPod).
 //
 // interval <= 0 disables the loop entirely so callers can opt out.

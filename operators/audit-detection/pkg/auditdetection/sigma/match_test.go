@@ -107,7 +107,7 @@ func TestMatch_ObjectRefAndUserAnded(t *testing.T) {
 	ev := sampleEvent()
 	ev.User.Username = "alice@corp"
 	if r.Match(ev) {
-		t.Error("expected no match — user glob fails")
+		t.Error("expected no match - user glob fails")
 	}
 }
 
@@ -269,7 +269,7 @@ func TestCompileJSONPath_RejectsBadInputs(t *testing.T) {
 func TestMatch_DisabledNoOpAfterCompile(t *testing.T) {
 	// Even Enabled=false rules should compile cleanly; the engine
 	// (commit C) decides whether to run them. The Match itself
-	// should still work — Enabled is policy, not predicate.
+	// should still work - Enabled is policy, not predicate.
 	r := compile(t, securityv1alpha1.SigmaRuleSpec{
 		Enabled: false,
 		Match:   securityv1alpha1.SigmaMatch{SigmaMatchLeaf: securityv1alpha1.SigmaMatchLeaf{Verb: []string{"create"}}},

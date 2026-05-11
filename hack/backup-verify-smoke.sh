@@ -149,7 +149,7 @@ spec:
   timeout: 3m
 EOF
   # Watch the async pipeline up to 3m. The Restore CR will fail with
-  # backup-not-found (the smoke doesn't seed a real Velero Backup —
+  # backup-not-found (the smoke doesn't seed a real Velero Backup -
   # that's S6 territory). We assert the pipeline completes + the
   # cleanup tears the sandbox + Restore CR down.
   deadline=$(( $(date +%s) + 180 ))
@@ -170,7 +170,7 @@ EOF
   [ -n "$worst" ] || fail "S5: status.worstSeverity not populated"
   pass "S5: result has worstSeverity=$worst"
 
-  # Cleanup invariants — sandbox NS gone, Restore CR gone.
+  # Cleanup invariants - sandbox NS gone, Restore CR gone.
   if kubectl get ns "$SANDBOX_NS" >/dev/null 2>&1; then
     fail "S5: sandbox namespace $SANDBOX_NS not cleaned up"
   fi

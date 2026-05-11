@@ -2,7 +2,7 @@
 # End-to-end real-chain smoke.
 #
 # Exercises the FULL pipeline with no manual Status.Phase=Attested
-# patch — everything is driven by the live operators:
+# patch - everything is driven by the live operators:
 #
 #   audit-detection (Sigma engine + webhook)
 #       ⇣ POST audit event
@@ -92,7 +92,7 @@ INCIDENT_UID="(unset)"
 trap cleanup EXIT
 
 # webhook_post: ship the audit event payload through a one-shot
-# alpine/curl Job. Mirrors hack/audit-detection-smoke.sh — the
+# alpine/curl Job. Mirrors hack/audit-detection-smoke.sh - the
 # payload travels via a ConfigMap so JSON quoting doesn't fight the
 # YAML block scalar for the curl command, and the in-cluster Job
 # bypasses the WARP TLS-inspect proxy that breaks host-side curl.
@@ -215,7 +215,7 @@ POD_UID=$(kubectl -n "$NS_TEST" get pod "$SUSPECT_POD" -o jsonpath='{.metadata.u
 [ -n "$POD_UID" ] || fail "could not read suspect Pod UID"
 pass "suspect Pod ready (uid=$POD_UID)"
 
-# Mark t0 — every stage budget is measured from here.
+# Mark t0 - every stage budget is measured from here.
 T0=$(date +%s)
 
 # --- stage 1: POST audit event → SE created -------------------------------

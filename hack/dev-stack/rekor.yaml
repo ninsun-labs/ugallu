@@ -3,7 +3,7 @@
 # NOT for production: emptyDir storage, no TLS, single replica per
 # component, no resource quotas tuned for shared nodes.
 #
-# The Trillian MySQL schema ConfigMap is NOT inlined here — `up.sh`
+# The Trillian MySQL schema ConfigMap is NOT inlined here - `up.sh`
 # fetches the live schema from google/trillian master and creates the
 # ConfigMap so the deployment manifest stays readable.
 apiVersion: v1

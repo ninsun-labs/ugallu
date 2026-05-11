@@ -24,7 +24,7 @@ the rule surface is source-agnostic.
 ## Sigma engine
 
 `pkg/auditdetection/sigma` implements a deliberately small subset of
-the Sigma matching language — the parts that matter against K8s
+the Sigma matching language - the parts that matter against K8s
 audit events:
 
 - `objectRef` filters: `apiGroup`, `apiVersion`, `resource`,
@@ -41,7 +41,7 @@ enforced by `golang.org/x/time/rate` (configurable `burst` +
 counted in `Status.DroppedRateLimit`.
 
 The `SigmaRule` reconciler hot-swaps the in-memory `RuleSet` on
-every CR write — counters (`MatchCount`, `DroppedRateLimit`,
+every CR write - counters (`MatchCount`, `DroppedRateLimit`,
 `LastMatchedAt`) survive a re-compile so an edit does not erase
 history; only the limiter is rebuilt with the new budget. Compile
 errors land on `Status.ParseError` and disable the rule.
@@ -91,7 +91,7 @@ ApplicationSet wave `2`. The chart provisions:
 
 ## Lab smoke
 
-[hack/audit-detection-smoke.sh](../../hack/audit-detection-smoke.sh) —
+[hack/audit-detection-smoke.sh](../../hack/audit-detection-smoke.sh) -
 seven end-to-end scenarios covering rule compile + bad-JSONPath
 ParseError + matching emit + non-match negative + per-rule rate
 limit + disable + delete. Posts payloads via an in-cluster

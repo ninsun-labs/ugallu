@@ -6,7 +6,7 @@ When forensics decides to capture an incident it patches the suspect
 Pod with `metadata.labels[ugallu.io/frozen] = <pod-uid>` and applies
 a (Cilium)NetworkPolicy that selects on that label. Without this
 admission gate, any user with `pods/update` RBAC could remove the
-label and silently un-isolate the suspect — defeating the freeze.
+label and silently un-isolate the suspect - defeating the freeze.
 
 The policy denies UPDATE/PATCH on Pods that change the label value
 unless the request comes from the forensics SA (which lives in the

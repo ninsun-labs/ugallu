@@ -4,7 +4,7 @@ Policy 13 - SeccompTrainingRun spec invariants.
 Training a seccomp profile attaches a privileged Tetragon TracingPolicy
 to a subset of production Pods for the configured duration. Two limits
 matter:
-  - duration must not exceed 24h — the TracingPolicy keeps a kprobe
+  - duration must not exceed 24h - the TracingPolicy keeps a kprobe
     attached to every syscall, which is expensive; ops policy bounds
     the lifetime so a forgotten run doesn't burn cluster CPU forever.
   - replicaRatio must leave at least one Pod *untrained* when the

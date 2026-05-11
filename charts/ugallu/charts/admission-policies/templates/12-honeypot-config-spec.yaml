@@ -2,7 +2,7 @@
 Policy 12 - HoneypotConfig spec invariants.
 
 Honeypots only work if every decoy lives in the cluster as a
-plausible target — empty Decoys list = no traps, defeating the
+plausible target - empty Decoys list = no traps, defeating the
 operator's purpose. The policy enforces three spec invariants on
 CREATE/UPDATE:
   - spec.decoys must be set with at least one entry.
@@ -13,7 +13,7 @@ CREATE/UPDATE:
     "system:serviceaccount:<ns>:<name>".
 
 Cross-CR namespace+name uniqueness (two CRs declaring the same
-decoy) is necessarily a runtime check — VAP CEL has no list-other-
+decoy) is necessarily a runtime check - VAP CEL has no list-other-
 resources primitive. The operator surfaces collisions via the
 HoneypotConfigInvalid meta-event.
 */ -}}

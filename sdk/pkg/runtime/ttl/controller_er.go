@@ -21,7 +21,7 @@ import (
 
 // EventResponseTTLReconciler garbage-collects EventResponse CRs.
 //
-// TTL strategy: matchParent — the ER inherits the parent SE's severity
+// TTL strategy: matchParent - the ER inherits the parent SE's severity
 // TTL. When the parent SE is gone (already archived), the ER falls
 // back to the medium-severity default (24h) anchored to its own
 // CreationTimestamp.

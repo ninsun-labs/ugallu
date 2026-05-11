@@ -11,7 +11,7 @@ import (
 // +kubebuilder:validation:Enum=velero;etcd-snapshot
 type BackupVerifyBackend string
 
-// BackupVerifyBackend constants — the v0.1.0 supported set.
+// BackupVerifyBackend constants - the v0.1.0 supported set.
 const (
 	// BackupVerifyBackendVelero targets a Velero Backup CR.
 	BackupVerifyBackendVelero BackupVerifyBackend = "velero"
@@ -56,7 +56,7 @@ type BackupVerifyRunSpec struct {
 
 	// SandboxNamespace is the (cluster-local) namespace into which
 	// full-restore mode replays the backup. Must NOT be a production
-	// namespace — admission policy 14 enforces a name suffix
+	// namespace - admission policy 14 enforces a name suffix
 	// "-bvsandbox" for safety. Required when Mode=full-restore.
 	// +optional
 	SandboxNamespace string `json:"sandboxNamespace,omitempty"`

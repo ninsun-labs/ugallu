@@ -53,7 +53,7 @@ func (d *TunnelingDetector) Name() string { return "tunneling" }
 // Evaluate runs the heuristic. Returns at most one Finding per
 // (Pod-or-SrcIP, ratelimitPerPod) window. Falls back to a SrcIP-
 // derived synthetic UID when the source layer's resolver lookup
-// missed (resolver outage / unknown cgroup/IP) — the detector still
+// missed (resolver outage / unknown cgroup/IP) - the detector still
 // fires on unresolved sources rather than dropping the signal.
 func (d *TunnelingDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if ev == nil {

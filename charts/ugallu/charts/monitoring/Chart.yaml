@@ -1,6 +1,6 @@
 apiVersion: v2
 name: monitoring
-description: "ugallu telemetry contract — Prometheus alert rules + Grafana dashboards"
+description: "ugallu telemetry contract - Prometheus alert rules + Grafana dashboards"
 type: application
 version: 0.0.1-alpha.1
 appVersion: "0.0.1-alpha.1"

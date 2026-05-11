@@ -69,7 +69,7 @@ func TestAnalyzeCABundle_ChainAndMatch(t *testing.T) {
 	}
 
 	// Trusted whitelist symmetric on canonical form.
-	if !MatchTrustedDN(a, []string{"cn=" + cn}) { // lowercase input — canonicalised
+	if !MatchTrustedDN(a, []string{"cn=" + cn}) { // lowercase input - canonicalised
 		t.Errorf("MatchTrustedDN should match case-insensitively after canonicalisation")
 	}
 	if MatchTrustedDN(a, []string{"CN=other.example"}) {

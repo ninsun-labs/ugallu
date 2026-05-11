@@ -53,7 +53,7 @@ func (v *realVeleroVerifier) Verify(spec *securityv1alpha1.BackupVerifyRunSpec) 
 	// Phase mapping: anything not Completed counts as a finding.
 	switch backup.Status.Phase {
 	case velerov1.BackupPhaseCompleted:
-		// Healthy backup — no finding to surface.
+		// Healthy backup - no finding to surface.
 	case velerov1.BackupPhasePartiallyFailed:
 		out.Findings = append(out.Findings, securityv1alpha1.BackupVerifyFinding{
 			Code:     "velero-backup-partially-failed",
@@ -68,7 +68,7 @@ func (v *realVeleroVerifier) Verify(spec *securityv1alpha1.BackupVerifyRunSpec) 
 			Detail:   fmt.Sprintf("Velero Backup phase=%s, errors=%d", backup.Status.Phase, backup.Status.Errors),
 		})
 	default:
-		// In-flight phase (New / FinalizingPartiallyFailed / etc.) —
+		// In-flight phase (New / FinalizingPartiallyFailed / etc.) -
 		// surface as info so ops can re-run when the backup settles.
 		out.Findings = append(out.Findings, securityv1alpha1.BackupVerifyFinding{
 			Code:     "velero-backup-not-final",
@@ -77,7 +77,7 @@ func (v *realVeleroVerifier) Verify(spec *securityv1alpha1.BackupVerifyRunSpec) 
 		})
 	}
 
-	// BackupStorageLocation reachability surface — Velero records
+	// BackupStorageLocation reachability surface - Velero records
 	// "Available" / "Unavailable" on the BSL CR; bubble it up so
 	// drift between Backup metadata + BSL state shows up.
 	bslName := backup.Spec.StorageLocation

@@ -37,7 +37,7 @@ var errNotKubepods = errors.New("not a kubepods cgroup path")
 // every kubepods slice it finds into c.IndexCgroup. The cgroup ID is
 // the inode of the directory; the pod UID and container ID are
 // extracted from the directory name. Errors on individual entries are
-// not fatal — Walk continues so a single weird path can't blind the
+// not fatal - Walk continues so a single weird path can't blind the
 // whole index.
 //
 // Returns the number of entries indexed and any walk error.
@@ -113,7 +113,7 @@ func CgroupIDForPID(procRoot, sysfsRoot string, pid int32) (cgroupID uint64, cgr
 // PodInfoForPID reads /proc/<pid>/cgroup and parses the unified cgroup
 // path directly into a CgroupPathInfo (no /sys/fs/cgroup access). When
 // the PID belongs to a kubepods cgroup this is enough to resolve the
-// pod without the cgroup ID index — useful when the index hasn't seen
+// pod without the cgroup ID index - useful when the index hasn't seen
 // the cgroup yet (e.g. pod started after cold-walk and Phase 3 eBPF
 // isn't running).
 func PodInfoForPID(procRoot string, pid int32) (CgroupPathInfo, error) {

@@ -59,7 +59,7 @@ spec:
                 description: Detectors toggles + tunes the 5 anomaly detectors.
                 properties:
                   anomalousPort:
-                    description: AnomalousPortDetectorConfig — flag DNS queries to
+                    description: AnomalousPortDetectorConfig - flag DNS queries to
                       a non-53 port.
                     properties:
                       enabled:
@@ -69,7 +69,7 @@ spec:
                     - enabled
                     type: object
                   blocklist:
-                    description: BlocklistDetectorConfig — match against admin-curated
+                    description: BlocklistDetectorConfig - match against admin-curated
                       FQDN list(s).
                     properties:
                       configMaps:
@@ -98,7 +98,7 @@ spec:
                     type: object
                   exfiltration:
                     description: |-
-                      ExfiltrationDetectorConfig — heuristics for entropy + length
+                      ExfiltrationDetectorConfig - heuristics for entropy + length
                       anomaly on TXT/A queries.
                     properties:
                       consecutiveTriggers:
@@ -135,7 +135,7 @@ spec:
                     - enabled
                     type: object
                   tunneling:
-                    description: TunnelingDetectorConfig — base64-in-subdomain heuristic.
+                    description: TunnelingDetectorConfig - base64-in-subdomain heuristic.
                     properties:
                       enabled:
                         default: true
@@ -149,7 +149,7 @@ spec:
                     - enabled
                     type: object
                   youngDomain:
-                    description: YoungDomainDetectorConfig — RDAP / WHOIS lookup gated
+                    description: YoungDomainDetectorConfig - RDAP / WHOIS lookup gated
                       by domain age.
                     properties:
                       enabled:

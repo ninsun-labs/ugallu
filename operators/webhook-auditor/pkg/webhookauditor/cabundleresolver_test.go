@@ -178,5 +178,5 @@ func TestResolveOrEmpty(t *testing.T) {
 	})
 }
 
-// silence unused — fake client import
+// silence unused - fake client import
 var _ = client.Object(&corev1.Secret{})

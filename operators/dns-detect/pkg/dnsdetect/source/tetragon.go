@@ -30,7 +30,7 @@ import (
 //     section), so the exfiltration detector falls back to qname
 //     length only.
 //   - ResponseRR is empty.
-//   - Latency is zero — the kprobe fires on the request, not the
+//   - Latency is zero - the kprobe fires on the request, not the
 //     matched response.
 //
 // Detectors that need those fields emit `Class=Anomaly
@@ -148,7 +148,7 @@ func (s *TetragonKprobeSource) runOnce(ctx context.Context, out chan<- *dnsevent
 
 // bridgeToInternal translates the bridge DNSQuery into the
 // dispatcher-facing dnsevent. Pod attribution comes straight from
-// the bridge — no second resolver hop is needed.
+// the bridge - no second resolver hop is needed.
 func bridgeToInternal(ev *bridgev1.DNSQuery) *dnsevent.DNSEvent {
 	if ev == nil {
 		return nil

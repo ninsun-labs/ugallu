@@ -77,7 +77,7 @@ func NewCNIDetector(disco discovery.DiscoveryInterface, refresh time.Duration) (
 }
 
 // Backend returns the currently-cached freeze backend. Defaults to
-// CoreV1 when no probe has run yet — the safer fallback if Cilium
+// CoreV1 when no probe has run yet - the safer fallback if Cilium
 // isn't on this cluster.
 func (d *CNIDetector) Backend() FreezeBackend {
 	if v, ok := d.backend.Load().(FreezeBackend); ok && v != "" {

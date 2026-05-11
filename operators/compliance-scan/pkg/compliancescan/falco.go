@@ -82,7 +82,7 @@ func (s *realFalcoScanner) Scan(ctx context.Context, _ client.Client, _ *securit
 	}
 
 	if len(out.Checks) == 0 {
-		// Empty scan window — record a pass so the run is non-empty
+		// Empty scan window - record a pass so the run is non-empty
 		// and ops can confirm Falco itself was reachable.
 		out.Checks = append(out.Checks, securityv1alpha1.ComplianceCheckResult{
 			CheckID:  "ugallu.falco.no-events",

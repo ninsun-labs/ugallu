@@ -6,9 +6,9 @@
 // Three reconcilers, one per Kind, run in the ugallu-ttl Deployment
 // (cluster-scoped, leader-elected):
 //
-//   - SecurityEventTTLReconciler      — archives + deletes SE at TTL
-//   - EventResponseTTLReconciler      — archives + deletes ER at TTL
-//   - AttestationBundleTTLReconciler  — archives + deletes AB at TTL+grace
+//   - SecurityEventTTLReconciler      - archives + deletes SE at TTL
+//   - EventResponseTTLReconciler      - archives + deletes ER at TTL
+//   - AttestationBundleTTLReconciler  - archives + deletes AB at TTL+grace
 //
 // Each reconciler:
 //  1. Computes the expiry from ObjectMeta.CreationTimestamp + the

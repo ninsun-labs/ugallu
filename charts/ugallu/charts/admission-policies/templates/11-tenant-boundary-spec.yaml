@@ -10,7 +10,7 @@ The policy enforces three spec invariants at admit time:
     matchLabels entry OR one matchExpressions entry. Empty
     selector = match-none (the operator's defensive default),
     but admins shipping an empty CR almost always meant
-    match-all — fail loudly here.
+    match-all - fail loudly here.
   - spec.hostPathPolicy.allow[*] entries MUST start with "/" so
     HasPrefix lookups in the operator's BoundarySet match the
     canonical absolute-path form.
@@ -18,7 +18,7 @@ The policy enforces three spec invariants at admit time:
     "system:serviceaccount:<ns>:<name>".
 
 Cross-CR overlap detection (the same namespace claimed by two
-TenantBoundary CRs) is necessarily a runtime check — VAP CEL has
+TenantBoundary CRs) is necessarily a runtime check - VAP CEL has
 no list-other-resources primitive. The operator surfaces overlap
 via the TenantBoundaryOverlap meta-event published by the
 reconciler.

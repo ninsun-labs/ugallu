@@ -2,7 +2,7 @@
 {{- /*
 ugallu-honeypot RBAC.
 
-Singleton Deployment in ugallu-system with leader-elect — the
+Singleton Deployment in ugallu-system with leader-elect - the
 deployer must be a single writer to avoid two replicas creating
 duplicate decoys. Cluster-wide CRUD on Secret + ServiceAccount
 backs the deployer; cluster-wide read on the other resource kinds

@@ -71,7 +71,7 @@ spec:
           annotations:
             summary: "audit-detection rule emit failures on {{`{{ $labels.rule }}`}}"
             description: |
-              Per-rule SE create errors persist for 5m+ — likely an
+              Per-rule SE create errors persist for 5m+ - likely an
               admission policy block or RBAC drift. Check audit-
               detection logs for the underlying error.
 
@@ -150,7 +150,7 @@ spec:
               The discovery probe that picks Cilium-vs-CoreV1 keeps
               failing. The operator falls back to the cached
               backend, so freezes still work, but the auto-refresh
-              is dead — investigate apiserver discovery RBAC.
+              is dead - investigate apiserver discovery RBAC.
 
         - alert: UgalluForensicsQueuePressure
           expr: |
@@ -181,7 +181,7 @@ spec:
           annotations:
             summary: "emitter SDK dropping events: {{`{{ $labels.reason }}`}}"
             description: |
-              SE emit drops >0.05/s — buffer_full / permanent /
+              SE emit drops >0.05/s - buffer_full / permanent /
               ratelimit_ctx_cancel each surface a distinct issue.
               Check the originating component's logs.
 

@@ -83,7 +83,7 @@ spec:
               targetNodeName:
                 description: |-
                   TargetNodeName pins the node the attester DaemonSet must
-                  answer from. Required — a cluster-wide attestation cycle is
+                  answer from. Required - a cluster-wide attestation cycle is
                   modelled as N runs, one per node.
                 type: string
               timeout:

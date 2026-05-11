@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# E2E lab smoke for ugallu-forensics — Sprint 3 scope.
+# E2E smoke for ugallu-forensics.
 #
 # Assumes:
-#   - kubectl context already pointed at the lab (rke2-lab in our case)
+#   - kubectl context already pointed at the target cluster
 #   - ugallu-forensics deployed via the chart in ugallu-system-privileged
 #   - SeaweedFS (ugallu-evidence) reachable for WORM uploads with
 #     Object Lock enabled
@@ -10,21 +10,21 @@
 #     ugallu-system-privileged (mirrored from ugallu-system; the
 #     operator's chart wires WORM_ACCESS_KEY/WORM_SECRET_KEY from it)
 #
-# What it covers (10 scenarios, 100% Sprint 3 surface):
+# What it covers (10 scenarios):
 #
-#   Sprint 2 carry-overs (still required):
+#   Baseline:
 #     1. ForensicsConfig 'default' is present + Status surfaces
-#        FreezeBackend (Sprint 3 ConfigReconciler).
+#        FreezeBackend via the ConfigReconciler.
 #     2. SE outside the predicate (Audit / low) does NOT trigger
 #        a pipeline.
 #     3. Matching SE freezes the suspect Pod: `ugallu.io/frozen`
 #        label + CiliumNetworkPolicy.
 #
-#   Sprint 3 IR-as-code:
-#     4. Per-step ER chain — three EventResponses created
+#   IR-as-code:
+#     4. Per-step ER chain - three EventResponses created
 #        (PodFreeze, FilesystemSnapshot, EvidenceUpload), all in
 #        Phase=Succeeded, with `ugallu.io/incident-uid` labels.
-#     5. ER parent-chain — every step ER (except the first)
+#     5. ER parent-chain - every step ER (except the first)
 #        references the previous step's UID via
 #        `ugallu.io/parent-er`.
 #     6. Manifest blob exists in WORM at the content-addressed
@@ -33,12 +33,12 @@
 #     7. Manifest body validates: schema header, chunks count,
 #        snapshot chunk references the snapshot tar+gzip URL.
 #
-#   Sprint 3 lifecycle / policy:
+#   Lifecycle / policy:
 #     8. Manual unfreeze with authorized SA ack succeeds (CNP +
 #        label removed, PodUnfreeze ER created).
 #     9. Auto-unfreeze fires after the configured grace window.
-#    10. Admission policy 8 denies an ack from a non-allowlisted
-#        SA (the unfreeze does NOT happen).
+#    10. The forensics-ack admission policy denies an ack from a
+#        non-allowlisted SA (the unfreeze does NOT happen).
 #
 # Run with:
 #   bash hack/forensics-smoke.sh
@@ -116,7 +116,7 @@ spec:
   class: $cls
   type: $type
   severity: $sev
-  clusterIdentity: { clusterID: rke2-lab, clusterName: rke2-lab }
+  clusterIdentity: { clusterID: smoke-cluster, clusterName: smoke-cluster }
   source: { kind: Controller, name: forensics-smoke }
   subject:
     kind: Pod
@@ -209,9 +209,9 @@ CHUNKS=$(kubectl -n ugallu-evidence exec aws-cli -- cat /tmp/manifest.json | pyt
 pass "manifest schema=$SCHEMA chunks=$CHUNKS"
 
 # --- Test 8: manual unfreeze with authorized SA --------------------------
-info "Test 8: manual unfreeze succeeds with authorized SA (policy 8 allow path)"
+info "Test 8: manual unfreeze succeeds with authorized SA"
 kubectl -n "$NS_TEST" create sa "$ACKER_SA" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-# Production grants the acker SA a narrow ClusterRole — get +
+# Production grants the acker SA a narrow ClusterRole; get +
 # patch on securityevents is enough for the kubectl annotate
 # round-trip.
 cat <<EOF | kubectl apply -f - >/dev/null

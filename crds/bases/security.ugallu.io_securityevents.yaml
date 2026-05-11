@@ -250,7 +250,7 @@ spec:
                         type: string
                     type: object
                   configMap:
-                    description: ConfigMapSubject — never carries data (S10.2).
+                    description: ConfigMapSubject - never carries data (S10.2).
                     properties:
                       binaryDataKeys:
                         items:
@@ -5169,7 +5169,7 @@ spec:
                     - roleRef
                     type: object
                   secret:
-                    description: SecretSubject — never carries data (S10.2).
+                    description: SecretSubject - never carries data (S10.2).
                     properties:
                       dataKeys:
                         items:

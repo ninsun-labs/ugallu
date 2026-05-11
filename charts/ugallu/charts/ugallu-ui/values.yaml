@@ -71,7 +71,7 @@ routing:
 # managed by the cluster operator (it owns the TLS listener +
 # certificate ref); the chart only owns the route attached to it.
 gateway:
-  host: ui.ugallu.lab
+  host: ui.example.internal
   parentRef:
     name: ugallu-gateway
     namespace: ugallu-system

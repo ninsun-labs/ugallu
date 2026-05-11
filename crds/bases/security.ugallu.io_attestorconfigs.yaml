@@ -82,7 +82,7 @@ spec:
                   insecureSkipVerify:
                     default: false
                     description: |-
-                      InsecureSkipVerify disables TLS verification toward Fulcio —
+                      InsecureSkipVerify disables TLS verification toward Fulcio -
                       dev/lab only.
                     type: boolean
                   issuer:
@@ -136,7 +136,7 @@ spec:
                     type: object
                   insecureSkipVerify:
                     default: false
-                    description: InsecureSkipVerify disables TLS verification — dev/lab
+                    description: InsecureSkipVerify disables TLS verification - dev/lab
                       only.
                     type: boolean
                   keyName:

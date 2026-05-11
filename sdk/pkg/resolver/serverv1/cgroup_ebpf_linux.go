@@ -75,7 +75,7 @@ func LoadCgroupTracker(c *Cache, log *slog.Logger) (*CgroupTracker, error) {
 	// RLIMIT_MEMLOCK is no longer consulted; the call here is a
 	// no-op precaution for older kernels. Failures are logged and
 	// ignored rather than treated as fatal because the typical cause
-	// is "container has CAP_BPF but not CAP_SYS_RESOURCE" — a
+	// is "container has CAP_BPF but not CAP_SYS_RESOURCE" - a
 	// configuration that works fine on every supported kernel.
 	if err := rlimit.RemoveMemlock(); err != nil {
 		log.Debug("rlimit RLIMIT_MEMLOCK adjust failed (kernel ≥ 5.11 doesn't need it)", "err", err.Error())

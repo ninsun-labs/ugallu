@@ -70,7 +70,7 @@ func runMain() error {
 	flag.StringVar(&auditBusConsumerName, "audit-bus-consumer-name", "tenant-escape",
 		"audit-bus consumer name; must match an entry in AuditDetectionConfig.spec.consumers")
 	flag.StringVar(&bridgeEndpoint, "bridge-endpoint", "",
-		"tetragon-bridge gRPC endpoint (empty disables CrossTenantExec — operator runs audit-bus detectors only)")
+		"tetragon-bridge gRPC endpoint (empty disables CrossTenantExec - operator runs audit-bus detectors only)")
 	flag.StringVar(&bridgeToken, "bridge-token", os.Getenv("BRIDGE_TOKEN"),
 		"bearer token for the tetragon-bridge (default reads $BRIDGE_TOKEN)")
 	flag.Parse()

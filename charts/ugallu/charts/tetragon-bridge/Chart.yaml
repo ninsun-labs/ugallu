@@ -1,6 +1,6 @@
 apiVersion: v2
 name: tetragon-bridge
-description: ugallu tetragon-bridge — typed gRPC fan-out from Tetragon GetEvents
+description: ugallu tetragon-bridge - typed gRPC fan-out from Tetragon GetEvents
 type: application
 version: 0.0.1-alpha.1
 appVersion: "0.1.0"

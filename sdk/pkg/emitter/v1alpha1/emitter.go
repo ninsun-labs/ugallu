@@ -59,7 +59,7 @@ type EmitterOpts struct {
 	EnrichTimeout time.Duration
 }
 
-// Emitter is the package's owner type — see package doc for the full
+// Emitter is the package's owner type - see package doc for the full
 // contract. It is safe for concurrent use; the worker goroutine
 // drains the retry ring under the same context the caller hands to
 // NewEmitter.
@@ -111,7 +111,7 @@ func NewEmitter(opts *EmitterOpts) (*Emitter, error) {
 
 // Start launches the retry worker. ctx cancellation drains the buffer
 // best-effort and returns. Safe to call once; multiple Start calls
-// race the worker — the second wins.
+// race the worker - the second wins.
 func (e *Emitter) Start(ctx context.Context) {
 	go e.runRetry(ctx)
 }

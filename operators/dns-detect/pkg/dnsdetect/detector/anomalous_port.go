@@ -12,7 +12,7 @@ import (
 )
 
 // AnomalousPortDetector flags DNS queries directed at a non-53 port.
-// Stateless — each event is independent.
+// Stateless - each event is independent.
 type AnomalousPortDetector struct{}
 
 // NewAnomalousPortDetector returns a ready detector.
@@ -22,7 +22,7 @@ func NewAnomalousPortDetector() *AnomalousPortDetector { return &AnomalousPortDe
 func (d *AnomalousPortDetector) Name() string { return "anomalous_port" }
 
 // Evaluate fires whenever DstPort != 53. Skips events with
-// DstPort=0 (the source backend didn't populate the field — rare,
+// DstPort=0 (the source backend didn't populate the field - rare,
 // but Tetragon kprobe sometimes elides).
 func (d *AnomalousPortDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 	if ev == nil || ev.DstPort == 0 || ev.DstPort == 53 {

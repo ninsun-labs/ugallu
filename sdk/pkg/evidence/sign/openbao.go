@@ -39,7 +39,7 @@ const DefaultOpenBaoAuthMount = "auth/kubernetes"
 // secrets engine.
 const DefaultOpenBaoTransitMount = "transit"
 
-// openBaoMaxBodyBytes caps the response body that gets fully read —
+// openBaoMaxBodyBytes caps the response body that gets fully read -
 // guards against runaway upstream errors / hostile servers.
 const openBaoMaxBodyBytes = 64 * 1024
 
@@ -81,7 +81,7 @@ type OpenBaoSignerOptions struct {
 	CABundle []byte
 
 	// InsecureSkipVerify disables TLS server cert verification.
-	// dev/lab only — never in production.
+	// dev/lab only - never in production.
 	InsecureSkipVerify bool
 }
 
@@ -268,7 +268,7 @@ func (s *OpenBaoSigner) fetchPublicKey(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("transit key %q has no version %s", s.opts.KeyName, versionKey)
 	}
 	// OpenBao returns the public key in different shapes per key type:
-	//   - ed25519: raw 32-byte key as base64 ("J3D8aPbo…=") — no PEM
+	//   - ed25519: raw 32-byte key as base64 ("J3D8aPbo…=") - no PEM
 	//   - rsa-*  : PEM block "PUBLIC KEY" already PKIX-encoded
 	//   - ecdsa-*: PEM block "PUBLIC KEY" already PKIX-encoded
 	// Downstream consumers (Rekor) need a PEM PUBLIC KEY block, so the

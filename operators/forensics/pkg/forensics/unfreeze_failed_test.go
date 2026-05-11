@@ -32,7 +32,7 @@ func newTestScheme(t *testing.T) *runtime.Scheme {
 // TestUnfreezeOnFailed_ManualPolicyKeepsFrozen asserts that an
 // IncidentCaptureFailed SE with failure-unfreeze-policy=manual
 // stays frozen until an explicit ack lands. The reconcile must
-// return early at the policy gate — without reaching the Freezer
+// return early at the policy gate - without reaching the Freezer
 // (left nil, which would panic if the gate failed open).
 func TestUnfreezeOnFailed_ManualPolicyKeepsFrozen(t *testing.T) {
 	se := &securityv1alpha1.SecurityEvent{
@@ -53,7 +53,7 @@ func TestUnfreezeOnFailed_ManualPolicyKeepsFrozen(t *testing.T) {
 	scheme := newTestScheme(t)
 	fc := fake.NewClientBuilder().WithScheme(scheme).WithObjects(se).Build()
 
-	r := &UnfreezeReconciler{Client: fc, Scheme: scheme} // Freezer nil — must not be reached.
+	r := &UnfreezeReconciler{Client: fc, Scheme: scheme} // Freezer nil - must not be reached.
 	res, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: client.ObjectKey{Name: se.Name}})
 	if err != nil {
 		t.Fatalf("Reconcile: %v", err)

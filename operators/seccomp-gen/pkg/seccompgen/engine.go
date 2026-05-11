@@ -32,7 +32,7 @@ func NewEngine() *Engine {
 	return &Engine{running: map[string]context.CancelFunc{}}
 }
 
-// runKey is the engine-internal identifier — namespace/name of the
+// runKey is the engine-internal identifier - namespace/name of the
 // SeccompTrainingRun.
 func runKey(namespace, name string) string { return namespace + "/" + name }
 

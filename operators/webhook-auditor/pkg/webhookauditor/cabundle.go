@@ -14,7 +14,7 @@ import (
 
 // CABundleAnalysis is the deterministic verdict the RiskEvaluator
 // reads. ChainSubjectDNs are RFC 4514 canonical DNs of every cert in
-// the bundle (root last by convention — matching is set-based, so
+// the bundle (root last by convention - matching is set-based, so
 // position-in-chain assumptions never apply).
 type CABundleAnalysis struct {
 	// Empty is true when the caBundle field on the webhook is unset
@@ -29,7 +29,7 @@ type CABundleAnalysis struct {
 	// ChainSubjectDNs lists every certificate's subject DN in RFC 4514
 	// canonical form (CN first, then O, then C, etc.). Use
 	// MatchTrustedDN to test against a whitelist. (DN here = X.509
-	// Distinguished Name, not Domain Name System — the linter doesn't
+	// Distinguished Name, not Domain Name System - the linter doesn't
 	// know the difference.)
 	ChainSubjectDNs []string //nolint:revive // DN is X.509 Distinguished Name
 }
@@ -39,7 +39,7 @@ type CABundleAnalysis struct {
 // returns ParseError when no certs decode (invalid PEM); else returns
 // the chain subject DNs in canonical form.
 //
-// The function is pure — no Secret reads, no API calls. Callers that
+// The function is pure - no Secret reads, no API calls. Callers that
 // follow indirect caBundle references (e.g. Secret-injected by
 // cert-manager) dereference upstream and pass the resolved bytes.
 func AnalyzeCABundle(bytes []byte) CABundleAnalysis {

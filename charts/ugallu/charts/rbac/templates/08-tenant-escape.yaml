@@ -8,7 +8,7 @@ Cluster-wide reads back the 4 cross-tenant detectors:
     audit-bus events with current cluster state.
   - networkpolicies: cross-tenant ingress detector source.
   - ciliumnetworkpolicies: same, on Cilium-CNI clusters
-    (gated by .Values.ciliumNetworkPolicies — disable when
+    (gated by .Values.ciliumNetworkPolicies - disable when
     Cilium is not in use).
   - tenantboundaries (read+status): the operator's own CRD.
   - leases: leader-election in ugallu-system.

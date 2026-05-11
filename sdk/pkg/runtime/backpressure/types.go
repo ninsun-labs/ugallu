@@ -11,15 +11,15 @@ type Level string
 
 // Level constants.
 const (
-	// LevelGreen — etcd is well below the saturation threshold and
+	// LevelGreen - etcd is well below the saturation threshold and
 	// every emitter runs at full configured rate.
 	LevelGreen Level = "Green"
 
-	// LevelYellow — etcd is past the warn threshold; emitters halve
+	// LevelYellow - etcd is past the warn threshold; emitters halve
 	// their effective rate while still accepting every severity tier.
 	LevelYellow Level = "Yellow"
 
-	// LevelRed — etcd is near saturation; emitters drop every event
+	// LevelRed - etcd is near saturation; emitters drop every event
 	// whose severity is below MinSeverityRed (default "high").
 	LevelRed Level = "Red"
 )

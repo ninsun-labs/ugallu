@@ -47,7 +47,7 @@ cleanup() {
   for vwc in "$CLEAN_VWC"; do
     kubectl delete validatingwebhookconfiguration "$vwc" --ignore-not-found >/dev/null 2>&1 || true
   done
-  # Belt-and-braces sweep on the run-id substring — catches any name
+  # Belt-and-braces sweep on the run-id substring - catches any name
   # variable that might have been clobbered before the trap fires.
   for w in $(kubectl get mutatingwebhookconfigurations -o name 2>/dev/null | grep -E "${RUN_ID}\$" || true); do
     kubectl delete "$w" --ignore-not-found >/dev/null 2>&1 || true
@@ -207,7 +207,7 @@ ca_pem=$(openssl req -x509 -nodes -newkey ec:<(openssl ecparam -name prime256v1)
 # Fallback: openssl varies; produce CA via kubectl-friendly path using a Secret literal we know works.
 # Create minimal valid cert via env-shipped tool path.
 tmp_dir=$(mktemp -d)
-# Compose with the cleanup trap installed at the top of the script —
+# Compose with the cleanup trap installed at the top of the script -
 # a bare `trap '...' EXIT` here would replace that one and leak the
 # webhook configurations, blocking every subsequent smoke test.
 trap '_rc=$?; rm -rf "$tmp_dir"; cleanup; exit $_rc' EXIT INT
@@ -226,7 +226,7 @@ apply_mwc_with_inject_annotation "$CA_DEREF_MWC" "${CA_BUNDLE_NS}/${CA_BUNDLE_SE
 # and the CA is now resolved-and-untrusted-against-empty-DN-list = still
 # untrusted unless trustedSubjectDNs includes our smoke CN. Since the
 # default WebhookAuditorConfig has no DN whitelist, this scenario only
-# tests that the resolver reads the Secret successfully — verified by
+# tests that the resolver reads the Secret successfully - verified by
 # the absence of `namespace_forbidden` / `resolve_error` reasons in
 # the metric.)
 sleep 5
@@ -236,7 +236,7 @@ fallback_metric=$(kubectl -n ugallu-system run -i --rm --restart=Never \
   | grep -E '^ugallu_webhook_ca_resolve_fallback_total\{reason="(namespace_forbidden|resolve_error)"\}' \
   || true)
 case "$fallback_metric" in
-  *) ;;  # don't hard-fail on the metric scrape — it's diagnostic, the resolver lookup is the real proof
+  *) ;;  # don't hard-fail on the metric scrape - it's diagnostic, the resolver lookup is the real proof
 esac
 pass "indirect deref Secret read attempted (CA Secret $CA_BUNDLE_NS/$CA_BUNDLE_SECRET valid PEM)"
 

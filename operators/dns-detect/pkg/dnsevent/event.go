@@ -5,7 +5,7 @@
 // backend produces and every detector consumes. It exists in its
 // own package to break the import cycle between
 // pkg/dnsdetect (dispatcher + reconciler) and pkg/dnsdetect/source
-// (CoreDNS plugin + Tetragon kprobe backends) — both need to refer
+// (CoreDNS plugin + Tetragon kprobe backends) - both need to refer
 // to the type.
 package dnsevent
 
@@ -18,7 +18,7 @@ import (
 
 // DNSEvent is the shape every source backend (CoreDNS plugin stream,
 // Tetragon kprobe fallback) hands to the detector pipeline. Fields
-// are nullable when the source can't populate them — the fallback
+// are nullable when the source can't populate them - the fallback
 // path leaves payload-heavy fields zero-valued.
 type DNSEvent struct {
 	Source     SourceKind
@@ -45,7 +45,7 @@ type DNSEvent struct {
 // SourceKind tags the backend that produced the event.
 type SourceKind string
 
-// Source kind discriminators — match
+// Source kind discriminators - match
 // DNSDetectConfig.spec.source.primary in the SDK CRD.
 const (
 	SourceCoreDNSPlugin  SourceKind = "coredns_plugin"

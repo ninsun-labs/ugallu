@@ -22,7 +22,7 @@ import (
 type Incident struct {
 	// UID is the deterministic incident identifier derived from the
 	// trigger SE UID. Re-running the pipeline against the same SE
-	// produces the same UID — so the snapshot S3 key, ephemeral
+	// produces the same UID - so the snapshot S3 key, ephemeral
 	// container name, and (Cilium)NetworkPolicy name all stay stable
 	// across recovery attempts.
 	UID string

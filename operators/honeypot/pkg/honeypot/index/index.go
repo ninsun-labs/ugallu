@@ -84,7 +84,7 @@ func (i *Index) Lookup(resource, namespace, name string) *Entry {
 }
 
 // LookupUID returns the entry whose materialised resource has the
-// given UID. Used when the audit event carries `objectRef.uid` —
+// given UID. Used when the audit event carries `objectRef.uid` -
 // more reliable than name-based matching when an actor races to
 // recreate the same name.
 func (i *Index) LookupUID(uid types.UID) *Entry {

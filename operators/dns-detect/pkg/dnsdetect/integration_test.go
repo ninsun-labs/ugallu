@@ -4,7 +4,7 @@
 // Integration tests for the dns-detect dispatcher against a real
 // apiserver via envtest. The plugin/Tetragon source backends are
 // stubs in Sprint 3, so the dispatcher is driven directly with
-// synthesised DNSEvent values — no real DNS in the loop. This
+// synthesised DNSEvent values - no real DNS in the loop. This
 // covers the SDK plumbing (config load → detector build → dispatch
 // → SE emit) end-to-end against an envtest control plane.
 

@@ -48,7 +48,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, err
 	}
 	// Each attester DaemonSet pod only handles runs targeting its
-	// node — the cluster-scope cycle is N runs in parallel, one per
+	// node - the cluster-scope cycle is N runs in parallel, one per
 	// node. Skip silently otherwise.
 	if run.Spec.TargetNodeName != "" && run.Spec.TargetNodeName != r.NodeName {
 		return ctrl.Result{}, nil
@@ -118,7 +118,7 @@ func (r *RunReconciler) execute(ctx context.Context, run *securityv1alpha1.Confi
 		r.emitSE(ctx, run, securityv1alpha1.TypeAttestationFailed, securityv1alpha1.SeverityCritical)
 	default:
 		// Indeterminate verdicts emit AttestationVerified with
-		// info severity — the result carries the missing-device or
+		// info severity - the result carries the missing-device or
 		// no-policy notes for human review.
 		r.emitSE(ctx, run, securityv1alpha1.TypeAttestationVerified, securityv1alpha1.SeverityInfo)
 	}

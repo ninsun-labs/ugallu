@@ -142,7 +142,7 @@ func (s *WebhookSource) Run(ctx context.Context) (<-chan *AuditEvent, error) {
 		case s.opts.CertFile != "":
 			err = srv.ListenAndServeTLS(s.opts.CertFile, s.opts.KeyFile)
 		default:
-			s.opts.Log.Warn("webhook source: running without TLS — dev/lab only")
+			s.opts.Log.Warn("webhook source: running without TLS - dev/lab only")
 			err = srv.ListenAndServe()
 		}
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -216,7 +216,7 @@ func (s *WebhookSource) handle(w http.ResponseWriter, r *http.Request) {
 		case s.out <- ev:
 			webhookSourceLines.Inc()
 		default:
-			// Channel full — refuse the rest of the batch and ask
+			// Channel full - refuse the rest of the batch and ask
 			// the apiserver to retry. Audit-webhook retries are
 			// ordered, so events are not lost under sustained load
 			// (the apiserver just slows down).

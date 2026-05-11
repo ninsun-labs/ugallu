@@ -13,7 +13,7 @@ import (
 	securityv1alpha1 "github.com/ninsun-labs/ugallu/sdk/pkg/api/v1alpha1"
 )
 
-// ScanOutcome is what a Scanner returns to the reconciler — the raw
+// ScanOutcome is what a Scanner returns to the reconciler - the raw
 // materials the run needs to write a ComplianceScanResult.
 type ScanOutcome struct {
 	Checks  []securityv1alpha1.ComplianceCheckResult
@@ -73,7 +73,7 @@ type ScannerOpts struct {
 
 // celCustomScanner is the v0.1.0 in-tree backend. It walks the
 // cluster and runs a small fixed set of CEL-equivalent checks
-// directly in Go (no CEL runtime dep yet — the rules are simple
+// directly in Go (no CEL runtime dep yet - the rules are simple
 // enough that a hand-rolled evaluator beats pulling in the full
 // k8s.io/apiserver/pkg/cel transitive tree).
 type celCustomScanner struct{}
@@ -147,7 +147,7 @@ func (s *celCustomScanner) Scan(ctx context.Context, c client.Client, _ *securit
 	return out, nil
 }
 
-// (kubeBenchScanner real implementation — Job runner — lives in
+// (kubeBenchScanner real implementation - Job runner - lives in
 // kubebench.go.)
 
 // falcoScanner queries a running Falco DaemonSet's gRPC output for

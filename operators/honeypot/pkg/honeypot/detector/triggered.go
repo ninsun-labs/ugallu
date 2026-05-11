@@ -14,7 +14,7 @@ import (
 // HoneypotConfig's allowlist (e.g. backup operator) or when the
 // verb is read-side AND the CR has EmitOnRead=false.
 //
-// Severity: critical — there is no legitimate reason for an actor
+// Severity: critical - there is no legitimate reason for an actor
 // to interact with a decoy resource.
 type HoneypotTriggeredDetector struct {
 	idx *index.Index

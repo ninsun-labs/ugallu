@@ -44,7 +44,7 @@ const fulcioMaxBodyBytes = 256 * 1024
 
 // FulcioSignerOptions configures a FulcioSigner.
 type FulcioSignerOptions struct {
-	// FulcioURL is the v2 API base URL — e.g. https://fulcio.sigstore.dev.
+	// FulcioURL is the v2 API base URL - e.g. https://fulcio.sigstore.dev.
 	// Required.
 	FulcioURL string
 
@@ -59,7 +59,7 @@ type FulcioSignerOptions struct {
 	// CABundle is PEM-encoded; empty uses the system trust store.
 	CABundle []byte
 
-	// InsecureSkipVerify disables TLS verification — dev only.
+	// InsecureSkipVerify disables TLS verification - dev only.
 	InsecureSkipVerify bool
 
 	// CertRefreshBefore is the lead time before cert NotAfter at which
@@ -95,7 +95,7 @@ type FulcioSigner struct {
 }
 
 // NewFulcioSigner builds a FulcioSigner. The constructor does not
-// perform any network IO — the first Sign call obtains the cert lazily.
+// perform any network IO - the first Sign call obtains the cert lazily.
 func NewFulcioSigner(_ context.Context, opts *FulcioSignerOptions) (*FulcioSigner, error) {
 	if opts == nil {
 		return nil, errors.New("opts is required")

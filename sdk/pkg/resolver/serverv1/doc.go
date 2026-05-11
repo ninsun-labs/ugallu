@@ -9,9 +9,9 @@
 //
 // Phase 1 (this iteration) wires four of the six lookup RPCs:
 //
-//   - ResolveByPodIP        — secondary index podByIP
-//   - ResolveByPodUID       — primary index podByUID
-//   - ResolveByContainerID  — secondary index podByContainerID
+//   - ResolveByPodIP        - secondary index podByIP
+//   - ResolveByPodUID       - primary index podByUID
+//   - ResolveByContainerID  - secondary index podByContainerID
 //   - ResolveBySAUsername   intelligent parsing of K8s SA usernames
 //
 // ResolveByCgroupID and ResolveByPID are kept as Unresolved fallbacks

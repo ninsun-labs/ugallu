@@ -32,7 +32,7 @@ type Options struct {
 	Emitter         *emitterv1alpha1.Emitter
 
 	// Resolver hydrates Pod attribution on every DNS event before the
-	// dispatcher fans it out. Nil disables enrichment — detectors
+	// dispatcher fans it out. Nil disables enrichment - detectors
 	// degrade to the SrcIP synthetic key.
 	Resolver source.Resolver
 }
@@ -139,7 +139,7 @@ func buildDetectors(cfg *securityv1alpha1.DNSDetectorsConfig) ([]detector.Detect
 }
 
 // buildSource picks the primary source from Spec.Source.Primary.
-// Fallback wiring is a follow-up — for now the operator runs on the
+// Fallback wiring is a follow-up - for now the operator runs on the
 // primary and emits DNSSourceSilent when it goes quiet.
 func buildSource(cfg securityv1alpha1.DNSSourceConfig, resolver source.Resolver) (source.Source, securityv1alpha1.DNSDetectSourceMode, error) {
 	switch cfg.Primary {
@@ -188,7 +188,7 @@ func loadConfig(ctx context.Context, reader client.Reader, name string) (*securi
 		if apierrors.IsNotFound(err) {
 			// Defaults: coredns_plugin source, all 5 detectors enabled
 			// with kubebuilder defaults. Empty plugin endpoint will
-			// fail buildSource — admin sees a clear "create the CR"
+			// fail buildSource - admin sees a clear "create the CR"
 			// error in the operator log.
 			return nil, fmt.Errorf("DNSDetectConfig %q not found; chart-shipped CR is required", name)
 		}

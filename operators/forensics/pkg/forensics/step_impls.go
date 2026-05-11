@@ -11,7 +11,7 @@ import (
 )
 
 // PodFreezeStep wraps Freezer for the IR pipeline. The Step itself
-// is just a thin adapter — Freezer carries the (Cilium)NetworkPolicy
+// is just a thin adapter - Freezer carries the (Cilium)NetworkPolicy
 // + Pod label logic and stays usable directly when the operator
 // (e.g. crash recovery in commit C) needs to bypass the ER chain.
 type PodFreezeStep struct {
@@ -23,7 +23,7 @@ func (s *PodFreezeStep) Type() securityv1alpha1.ActionType {
 	return securityv1alpha1.ActionPodFreeze
 }
 
-// Run isolates the suspect Pod. Idempotent — re-running on an
+// Run isolates the suspect Pod. Idempotent - re-running on an
 // already-frozen Pod is a no-op.
 func (s *PodFreezeStep) Run(ctx context.Context, exec *StepExecution) error {
 	if err := s.Freezer.Freeze(ctx, exec.Pod); err != nil {
@@ -47,7 +47,7 @@ func (s *PodUnfreezeStep) Type() securityv1alpha1.ActionType {
 	return securityv1alpha1.ActionPodUnfreeze
 }
 
-// Run reverses the freeze. Idempotent — both delete-if-exists
+// Run reverses the freeze. Idempotent - both delete-if-exists
 // (NetworkPolicy) and remove-if-present (Pod label).
 func (s *PodUnfreezeStep) Run(ctx context.Context, exec *StepExecution) error {
 	if err := s.Freezer.Unfreeze(ctx, exec.Pod); err != nil {

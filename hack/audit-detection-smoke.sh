@@ -44,7 +44,7 @@ RULE=audit-smoke-cabg
 BAD_RULE=audit-smoke-bad-jsonpath
 # Unique suffix per run so deterministic SE names from previous runs
 # don't collide with this run's events (the emitter derives SE.Name
-# from auditID + type + subject — same inputs ⇒ same SE name ⇒
+# from auditID + type + subject - same inputs ⇒ same SE name ⇒
 # idempotent Create returns AlreadyExists, masking new "matches").
 RUN_ID=$(date +%s)-$$
 TOKEN=$(kubectl -n "$NS" get secret "$WEBHOOK_SECRET_NAME" -o jsonpath='{.data.token}' | base64 -d)
@@ -52,7 +52,7 @@ WEBHOOK_SVC_NAME=${WEBHOOK_SVC_NAME:-ugallu-audit-detection-webhook}
 WEBHOOK_SVC_IP=$(kubectl -n "$NS" get svc "$WEBHOOK_SVC_NAME" -o jsonpath='{.spec.clusterIP}')
 [ -n "$WEBHOOK_SVC_IP" ] || fail "Service $WEBHOOK_SVC_NAME has no ClusterIP"
 
-# webhook_post(audit_json) — POSTs an EventList payload to the webhook
+# webhook_post(audit_json) - POSTs an EventList payload to the webhook
 # from a tiny one-shot Job. The payload travels via a ConfigMap so its
 # JSON indentation does not collide with the YAML block scalar that
 # carries the curl command.

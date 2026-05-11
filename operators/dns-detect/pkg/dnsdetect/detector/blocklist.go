@@ -42,7 +42,7 @@ func (d *BlocklistDetector) SetEntries(entries map[string]string) {
 			continue
 		}
 		if strings.HasPrefix(pattern, "*.") {
-			// Suffix match — store with leading dot for fast lookup.
+			// Suffix match - store with leading dot for fast lookup.
 			suffix["."+pattern[2:]] = src
 		} else {
 			exact[pattern] = src

@@ -3,7 +3,7 @@
 
 // Command ugallu-ttl is the leader-elected Deployment that GCs SE/ER/AB
 // CRs at TTL expiry (after WORM snapshot) and acts as the attestor
-// watchdog (T13 — next iteration).
+// watchdog (T13 - next iteration).
 package main
 
 import (

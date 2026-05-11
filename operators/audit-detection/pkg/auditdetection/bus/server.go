@@ -37,7 +37,7 @@ import (
 )
 
 // DefaultRingBuffer is the per-subscriber backlog when the consumer
-// declaration omits an explicit cap. Drop-oldest semantics — a full
+// declaration omits an explicit cap. Drop-oldest semantics - a full
 // buffer pops the head before pushing the tail.
 const DefaultRingBuffer = 512
 

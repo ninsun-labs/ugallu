@@ -18,7 +18,7 @@
 // Build: go build -trimpath -ldflags='-s -w' -o rdap-mock-bin .
 //
 // The image is intentionally separate from the multi-binary lab
-// image — this mock has no business shipping in production.
+// image - this mock has no business shipping in production.
 package main
 
 import (

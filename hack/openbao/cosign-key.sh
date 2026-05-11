@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bootstrap a dedicated OpenBao transit key for cosign image
-# signing. Idempotent — re-running keeps the existing key without
+# signing. Idempotent - re-running keeps the existing key without
 # rotating it; rotation is an explicit `bao write -force` op the
 # operator runs out-of-band when warranted.
 #
@@ -20,7 +20,7 @@
 #   - kubectl context pointed at the cluster running OpenBao
 #   - OpenBao initialized + unsealed
 #   - The `openbao-init` Secret in the `openbao` namespace
-#     (root_token field) — the rke2-lab bootstrap creates it.
+#     (root_token field), populated by the cluster bootstrap.
 
 set -euo pipefail
 

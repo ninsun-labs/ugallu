@@ -22,8 +22,8 @@ import (
 // Reconciler computes a RiskBreakdown for one webhook configuration
 // and emits the §W5 SE stream when the cache says the spec changed.
 //
-// Two reconcilers share the bulk of the logic — one watches
-// MutatingWebhookConfiguration, the other ValidatingWebhookConfiguration —
+// Two reconcilers share the bulk of the logic - one watches
+// MutatingWebhookConfiguration, the other ValidatingWebhookConfiguration -
 // they hand off through reconcileTarget.
 type Reconciler struct {
 	client.Client
@@ -203,7 +203,7 @@ func (r *Reconciler) resolveValidatingCABundles(ctx context.Context, vwc *admiss
 }
 
 func (r *Reconciler) handleDelete(ctx context.Context, name, kind string) (ctrl.Result, error) {
-	r.Cache.Forget(types.UID(name)) // not actual UID — best effort prune by name
+	r.Cache.Forget(types.UID(name)) // not actual UID - best effort prune by name
 	target := &EmitTarget{
 		Kind: securityv1alpha1.SubjectKind(kind),
 		Name: name,

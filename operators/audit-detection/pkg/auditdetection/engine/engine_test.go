@@ -219,7 +219,7 @@ func TestEngine_RateLimit_DropsExtraMatches(t *testing.T) {
 			Severity:          securityv1alpha1.SeverityHigh,
 		},
 	})
-	// burst=2, sustained=1 — first two events go through, the rest
+	// burst=2, sustained=1 - first two events go through, the rest
 	// land in the dropped bucket within the test window.
 	eng.Rules().AddOrUpdate("burst", true, cr, "", 2, 1)
 

@@ -2,7 +2,7 @@ global:
   namespaces:
     privileged: ugallu-system-privileged
 
-# Image — defaults to the upstream OCI release. Override for forks /
+# Image - defaults to the upstream OCI release. Override for forks /
 # air-gapped registries.
 image:
   repository: ghcr.io/ninsun-labs/tetragon-bridge
@@ -19,7 +19,7 @@ source:
   tetragon:
     # Endpoint can be UDS (unix:///path) or TCP (host:port).
     endpoint: "unix:///var/run/tetragon/tetragon.sock"
-    # hostPath of the Tetragon UDS dir — mounted into the bridge pod
+    # hostPath of the Tetragon UDS dir - mounted into the bridge pod
     # when endpoint starts with unix://.
     hostSocketDir: /var/run/tetragon
 
@@ -28,7 +28,7 @@ source:
     loopInterval: 5s
 
 # Bearer-token auth (optional). Subscribers must present
-# `authorization: Bearer <token>` to subscribe. Empty disables auth —
+# `authorization: Bearer <token>` to subscribe. Empty disables auth -
 # fine for in-cluster lab clusters with NetworkPolicy isolation.
 bearerToken:
   # When secretName is non-empty, the bridge mounts the secret at

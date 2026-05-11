@@ -304,7 +304,7 @@ type ServiceAccountSubject struct {
 	Secrets          []string `json:"secrets,omitempty"`
 }
 
-// SecretSubject — never carries data (S10.2).
+// SecretSubject - never carries data (S10.2).
 type SecretSubject struct {
 	Type      string   `json:"type,omitempty"`
 	DataKeys  []string `json:"dataKeys,omitempty"`
@@ -312,7 +312,7 @@ type SecretSubject struct {
 	SizeBytes int      `json:"sizeBytes,omitempty"`
 }
 
-// ConfigMapSubject — never carries data (S10.2).
+// ConfigMapSubject - never carries data (S10.2).
 type ConfigMapSubject struct {
 	DataKeys       []string `json:"dataKeys,omitempty"`
 	BinaryDataKeys []string `json:"binaryDataKeys,omitempty"`

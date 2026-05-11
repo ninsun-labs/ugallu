@@ -60,7 +60,7 @@ type TenantBoundaryStatus struct {
 	MatchedNamespaces []string `json:"matchedNamespaces,omitempty"`
 
 	// MatchedPods is the count of Pods currently running across the
-	// matched namespaces. Diagnostic — drift between this and the
+	// matched namespaces. Diagnostic - drift between this and the
 	// expected tenant size signals miss-labelled namespaces.
 	MatchedPods int32 `json:"matchedPods,omitempty"`
 

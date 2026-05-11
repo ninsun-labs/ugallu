@@ -71,7 +71,7 @@ type EvaluatorOptions struct {
 }
 
 // Evaluator computes a deterministic RiskBreakdown for an admission
-// webhook configuration. Stateless across calls — safe for concurrent
+// webhook configuration. Stateless across calls - safe for concurrent
 // use.
 type Evaluator struct {
 	trusted map[string]struct{}

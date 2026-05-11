@@ -101,7 +101,7 @@ func runMain() error {
 		LeaderElection:          true,
 		LeaderElectionID:        "ugallu-forensics-leader",
 		LeaderElectionNamespace: leaderElectionNS,
-		// Disable the controller-runtime cache for Secrets — the
+		// Disable the controller-runtime cache for Secrets - the
 		// CredentialsMirror does direct Get/Create only, and a
 		// cluster-wide Secret list/watch would require excessive
 		// RBAC + leak data through the in-memory cache.
@@ -252,7 +252,7 @@ func runMain() error {
 	// list every Pending/Running ER managed by forensics and apply
 	// the per-step recovery policy (idempotent retry where
 	// possible, mark Permanent where the step is non-recoverable).
-	// Runs once and exits — the live reconcilers take over from
+	// Runs once and exits - the live reconcilers take over from
 	// there.
 	recoverer, err := forensics.NewRecoverer(mgr.GetClient(), clientset, freezer, snap, evidenceUploader, stepRunner)
 	if err != nil {

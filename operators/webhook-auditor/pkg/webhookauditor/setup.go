@@ -99,7 +99,7 @@ func loadConfig(ctx context.Context, reader client.Reader, name string) (*securi
 		if apierrors.IsNotFound(err) {
 			// No CR present → defaults. Operator runs with the
 			// kubebuilder default threshold and empty trust list
-			// (everything will trigger ca_untrusted, by design — let
+			// (everything will trigger ca_untrusted, by design - let
 			// the admin notice and create the CR).
 			return &securityv1alpha1.WebhookAuditorConfig{
 				Spec: securityv1alpha1.WebhookAuditorConfigSpec{RiskThreshold: 60},

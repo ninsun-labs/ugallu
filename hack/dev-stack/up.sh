@@ -44,8 +44,8 @@ kubectl create configmap trillian-schema \
 info "Applying Rekor stack manifest"
 # The createtree Job has an immutable Spec template; delete + recreate.
 # Stale-tree recovery (rekor-config.treeID present but Trillian
-# already lost the tree) is handled AFTER trillian is up — see the
-# signer-log probe further down — because that's the only reliable
+# already lost the tree) is handled AFTER trillian is up - see the
+# signer-log probe further down - because that's the only reliable
 # signal that the tree is gone.
 kubectl -n ugallu-evidence delete job createtree --ignore-not-found --wait=true >/dev/null 2>&1 || true
 if [[ -z "$(kubectl -n ugallu-evidence get cm rekor-config -o jsonpath='{.data.treeID}' 2>/dev/null)" ]]; then
@@ -69,7 +69,7 @@ existing_tree="$(kubectl -n ugallu-evidence get cm rekor-config -o jsonpath='{.d
 if [[ -n "$existing_tree" ]]; then
   signer_log="$(kubectl -n ugallu-evidence logs deploy/trillian-log-signer --tail=50 2>/dev/null || true)"
   if echo "$signer_log" | grep -q "Acting as master for 0 / 0 active logs"; then
-    info "trillian holds no active logs but rekor-config.treeID=$existing_tree is set — recreating tree"
+    info "trillian holds no active logs but rekor-config.treeID=$existing_tree is set - recreating tree"
     kubectl -n ugallu-evidence delete cm rekor-config --ignore-not-found --wait=true >/dev/null
     kubectl -n ugallu-evidence delete job createtree --ignore-not-found --wait=true >/dev/null
     kubectl apply -f "${SCRIPT_DIR}/rekor.yaml" >/dev/null
@@ -96,7 +96,7 @@ kubectl -n ugallu-evidence wait --for=condition=Ready pod/aws-cli --timeout=120s
 # Ensure the bucket exists AND has Object Lock + default retention
 # enabled. Object Lock can only be enabled at create-time on
 # SeaweedFS, so a pre-existing bucket without it gets recreated
-# (the dev-stack is explicitly NOT for production — see README).
+# (the dev-stack is explicitly NOT for production - see README).
 info "Ensuring bucket 'ugallu' exists with Object Lock + COMPLIANCE retention"
 EP="--endpoint-url=http://seaweedfs:8333"
 if kubectl -n ugallu-evidence exec aws-cli -- \
@@ -105,7 +105,7 @@ if kubectl -n ugallu-evidence exec aws-cli -- \
        aws s3api get-object-lock-configuration --bucket ugallu $EP >/dev/null 2>&1; then
     ok "bucket already exists with Object Lock"
   else
-    info "bucket exists but Object Lock is disabled — recreating (dev-stack only)"
+    info "bucket exists but Object Lock is disabled - recreating (dev-stack only)"
     kubectl -n ugallu-evidence exec aws-cli -- \
       aws s3 rm s3://ugallu/ --recursive $EP >/dev/null 2>&1 || true
     kubectl -n ugallu-evidence exec aws-cli -- \

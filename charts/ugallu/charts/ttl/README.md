@@ -8,7 +8,7 @@ Subchart for `ugallu-ttl` (Deployment singleton via leader-election).
 
 ## Resources
 
-- `Deployment/ugallu-ttl` (replicas=1, Recreate strategy — singleton) in the system (non-privileged) namespace
+- `Deployment/ugallu-ttl` (replicas=1, Recreate strategy - singleton) in the system (non-privileged) namespace
 - Uses the `ugallu-ttl` SA from the `rbac` subchart
 - Restricted PSA
 

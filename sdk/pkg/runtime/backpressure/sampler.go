@@ -19,7 +19,7 @@ import (
 )
 
 // Sample is one observation of etcd storage usage. Either CapacityBytes
-// is supplied (preferred — the controller can compute the live ratio)
+// is supplied (preferred - the controller can compute the live ratio)
 // or the controller falls back to its configured EtcdCapacityBytes.
 type Sample struct {
 	UsedBytes     uint64
@@ -48,7 +48,7 @@ type Sampler interface {
 }
 
 // PrometheusSampler scrapes the kube-apiserver /metrics endpoint and
-// extracts apiserver_storage_size_bytes (K8s ≥1.28) — falling back to
+// extracts apiserver_storage_size_bytes (K8s ≥1.28) - falling back to
 // etcd_db_total_size_in_bytes for older surfaces.
 type PrometheusSampler struct {
 	URL string
@@ -64,7 +64,7 @@ type PrometheusSampler struct {
 	// CABundle is PEM-encoded; empty uses the system trust store.
 	CABundle []byte
 
-	// InsecureSkipVerify disables TLS verification — dev/lab only.
+	// InsecureSkipVerify disables TLS verification - dev/lab only.
 	InsecureSkipVerify bool
 
 	// HTTPClient is reused across requests when set. nil triggers a
@@ -82,7 +82,7 @@ var metricCandidates = []string{
 }
 
 // Sample scrapes the metrics endpoint and returns the first matching
-// gauge. CapacityBytes is left zero — kube-apiserver does not export
+// gauge. CapacityBytes is left zero - kube-apiserver does not export
 // the etcd cap; the controller's EtcdCapacityBytes field provides it.
 func (p *PrometheusSampler) Sample(ctx context.Context) (Sample, error) {
 	if p.URL == "" {
@@ -127,7 +127,7 @@ func (p *PrometheusSampler) Sample(ctx context.Context) (Sample, error) {
 // returning the value of the first matching metric. Lines starting
 // with '#' (HELP / TYPE) and labelled series are tolerated; the gauge
 // is selected by exact metric-name match (label sets are summed when
-// multiple series share the chosen name — matches the kube-apiserver
+// multiple series share the chosen name - matches the kube-apiserver
 // per-resource breakdown of apiserver_storage_size_bytes).
 func scanMetric(r io.Reader, names []string) (uint64, error) {
 	wantSet := make(map[string]struct{}, len(names))

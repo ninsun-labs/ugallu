@@ -41,13 +41,13 @@ type CABundleResolver struct {
 
 	// AllowedNamespaces is the trustedCASources allowlist from
 	// WebhookAuditorConfig.spec.trustedCASources. A reference outside
-	// this set is rejected — protects against a malicious MWC pointing
+	// this set is rejected - protects against a malicious MWC pointing
 	// at an attacker-controlled Secret.
 	AllowedNamespaces map[string]struct{}
 }
 
 // NewCABundleResolver builds a resolver from the WebhookAuditorConfig
-// spec values. Empty allowedNamespaces means "no indirect deref" —
+// spec values. Empty allowedNamespaces means "no indirect deref" -
 // every empty caBundle is treated as untrusted (the conservative
 // default the operator runs with when the admin hasn't configured
 // trustedCASources).

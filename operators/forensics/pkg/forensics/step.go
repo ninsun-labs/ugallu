@@ -50,7 +50,7 @@ const ResponderName = "ugallu-forensics"
 //     can stamp them on the ER status without the Step needing
 //     direct ER access.
 //   - Recover(ctx, *StepExecution): the crash-recovery entry
-//     point — Sprint 3 commit C will populate this; Sprint 3
+//     point - Sprint 3 commit C will populate this; Sprint 3
 //     commit A leaves a default no-op so the surface is stable.
 type Step interface {
 	Type() securityv1alpha1.ActionType
@@ -84,7 +84,7 @@ type StepExecution struct {
 
 // StepRunner owns the per-step ER lifecycle: build the ER, Create
 // it, invoke Step.Run, patch ER status. Sprint 3 commit C extends
-// it with crash-recovery entry points — Sprint 3 commit A keeps
+// it with crash-recovery entry points - Sprint 3 commit A keeps
 // the lifecycle simple and additive.
 type StepRunner struct {
 	// Client is the controller-runtime client with cluster-wide
@@ -133,7 +133,7 @@ func (r *StepRunner) Run(ctx context.Context, step Step, exec *StepExecution) er
 		// classifies recoverable / permanent based on its phase;
 		// commit A keeps the pre-existing object as-is and runs
 		// the step body again (idempotent for PodFreeze /
-		// PodUnfreeze — non-idempotent steps fall through and
+		// PodUnfreeze - non-idempotent steps fall through and
 		// the runner records the second attempt's outcome).
 		if err := r.Client.Get(ctx, client.ObjectKeyFromObject(er), er); err != nil {
 			return fmt.Errorf("steprunner: refetch existing ER %s: %w", er.Name, err)
@@ -157,7 +157,7 @@ func (r *StepRunner) Run(ctx context.Context, step Step, exec *StepExecution) er
 
 // buildER constructs the typed ER for a single Step. The name is
 // deterministic (`er-<incident-uid>-<step-type>`) so a re-run lands
-// on the same object — important for crash recovery in commit C.
+// on the same object - important for crash recovery in commit C.
 func (r *StepRunner) buildER(step Step, exec *StepExecution) *securityv1alpha1.EventResponse {
 	stepKey := stepKey(step.Type())
 	labels := map[string]string{
@@ -194,7 +194,7 @@ func (r *StepRunner) buildER(step Step, exec *StepExecution) *securityv1alpha1.E
 }
 
 // markStarted patches the ER status with Phase=InProgress and
-// StartedAt — the attestor still won't seal until Phase=Succeeded
+// StartedAt - the attestor still won't seal until Phase=Succeeded
 // or Phase=Failed.
 func (r *StepRunner) markStarted(ctx context.Context, er *securityv1alpha1.EventResponse, now metav1.Time) {
 	patch := er.DeepCopy()

@@ -61,7 +61,7 @@ type Options struct {
 	// QueueQPS optionally throttles the global rate at which items
 	// are pulled off the workqueue (events/sec). Zero consults the
 	// TTLConfig CR's spec.worker.queueRateLimit; zero on both sides
-	// means "no global throttle" — only the per-item exponential
+	// means "no global throttle" - only the per-item exponential
 	// backoff applies.
 	QueueQPS float64
 }

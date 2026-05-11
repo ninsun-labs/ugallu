@@ -74,7 +74,7 @@ func (r *HoneypotConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 // materialiseDecoys reconciles every Spec.Decoys entry to a live
-// resource. Idempotent — Server-Side-Apply via Patch with manager
+// resource. Idempotent - Server-Side-Apply via Patch with manager
 // `ugallu-honeypot-deployer` keeps the resource in sync.
 func (r *HoneypotConfigReconciler) materialiseDecoys(ctx context.Context, cfg *securityv1alpha1.HoneypotConfig) ([]securityv1alpha1.DeployedDecoy, error) {
 	out := make([]securityv1alpha1.DeployedDecoy, 0, len(cfg.Spec.Decoys))

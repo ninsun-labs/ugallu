@@ -9,7 +9,7 @@ threshold cross.
 Secret access: one Role + RoleBinding per namespace
 listed in .Values.webhookAuditor.trustedCASources, granting only
 get,list,watch on Secrets in that namespace. Scope is intentionally
-narrow — the operator follows cert-manager-style indirect caBundle
+narrow - the operator follows cert-manager-style indirect caBundle
 references (annotation cert-manager.io/inject-ca-from-secret) and
 needs to read the referenced Secret's ca.crt / tls.crt / ca.pem keys.
 The CABundleResolver enforces the same allowlist as defense-in-depth.

@@ -221,7 +221,7 @@ spec:
               matchedPods:
                 description: |-
                   MatchedPods is the count of Pods currently running across the
-                  matched namespaces. Diagnostic — drift between this and the
+                  matched namespaces. Diagnostic - drift between this and the
                   expected tenant size signals miss-labelled namespaces.
                 format: int32
                 type: integer

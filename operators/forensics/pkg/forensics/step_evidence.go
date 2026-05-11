@@ -154,15 +154,15 @@ func (s *EvidenceUploadStep) Run(ctx context.Context, exec *StepExecution) error
 	}
 	stepFor := func(ev securityv1alpha1.EvidenceRef) string {
 		// EvidenceRefs added by FilesystemSnapshotStep carry the
-		// "application/x-tar+gzip" MediaType — encode the step
+		// "application/x-tar+gzip" MediaType - encode the step
 		// name into the manifest chunk based on the MediaType so
 		// future steps (mem-snapshot) drop in cleanly.
 		switch ev.MediaType {
 		case "application/x-tar+gzip":
 			return "filesystem-snapshot"
 		case ManifestMediaType:
-			// Should never appear here — the manifest is built
-			// before being added to evidence — guard against
+			// Should never appear here - the manifest is built
+			// before being added to evidence - guard against
 			// recursive accidents.
 			return "evidence-upload"
 		default:

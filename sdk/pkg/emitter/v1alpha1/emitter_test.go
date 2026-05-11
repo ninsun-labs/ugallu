@@ -292,7 +292,7 @@ func TestEmit_TransientErrorEnqueuesForRetry(t *testing.T) {
 		t.Fatalf("Emit: %v", err)
 	}
 	// Either way the caller got a populated SE; the buffer takes the
-	// retry. With no Start() the buffer just holds it — only the
+	// retry. With no Start() the buffer just holds it - only the
 	// happy-path assertion (no error + populated name) is checked.
 	if se.Name == "" {
 		t.Error("se.Name should be set for transient enqueue")

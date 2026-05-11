@@ -178,7 +178,7 @@ func runMain() error {
 
 // buildBusServer reads the AuditDetectionConfig CR (when present)
 // and instantiates a bus.Server iff EventBus.Enabled=true. Returns
-// (nil, nil) when the bus is disabled or the CR is missing — that's
+// (nil, nil) when the bus is disabled or the CR is missing - that's
 // the Wave-2 retrocompat path. Bearer-token comes from env so it
 // never lands in process listings.
 func buildBusServer(mgr ctrl.Manager, configName, tokenEnv string) (*bus.Server, error) {

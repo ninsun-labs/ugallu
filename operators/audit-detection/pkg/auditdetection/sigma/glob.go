@@ -13,7 +13,7 @@ import (
 )
 
 // MaxGlobWildcards bounds the number of `*` wildcards a single glob
-// pattern may contain. Anything larger is rejected at compile time —
+// pattern may contain. Anything larger is rejected at compile time -
 // a defence against accidentally expensive matchers more than a
 // security limit.
 const MaxGlobWildcards = 8

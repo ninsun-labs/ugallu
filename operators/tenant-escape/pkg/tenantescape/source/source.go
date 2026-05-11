@@ -26,7 +26,7 @@ type AuditSource interface {
 	// Run dials the backend and forwards events on the returned
 	// channel. The channel closes when the source stops (ctx
 	// cancellation or fatal error). Transient errors are retried
-	// internally — Run returns nil on graceful shutdown, error on
+	// internally - Run returns nil on graceful shutdown, error on
 	// unrecoverable misconfiguration only.
 	Run(ctx context.Context) (<-chan *detector.AuditInput, error)
 }

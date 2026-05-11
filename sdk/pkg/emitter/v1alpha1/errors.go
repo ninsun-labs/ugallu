@@ -13,7 +13,7 @@ var ErrInvalidType = errors.New("emitter: type is not in the catalog (run go gen
 
 // ErrSubjectMissing means EmitOpts has neither a populated Subject
 // (Kind/Name/UID/IP) nor an EnrichVia hint. A SecurityEvent must
-// always carry a Subject — admission rejects the absence anyway.
+// always carry a Subject - admission rejects the absence anyway.
 var ErrSubjectMissing = errors.New("emitter: at least one Subject identity field or EnrichVia is required")
 
 // ErrBufferFull means the retry buffer overflowed: the apiserver has

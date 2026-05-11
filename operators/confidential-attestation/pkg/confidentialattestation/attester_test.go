@@ -26,7 +26,7 @@ func TestTPMAttester_DeviceMissing(t *testing.T) {
 }
 
 // (A "device-present-but-not-a-real-TPM" test would be ideal here
-// but go-tpm's OpenTPM is permissive on regular files — the real
+// but go-tpm's OpenTPM is permissive on regular files - the real
 // failure surfaces only later, on the first TPM2_Quote command,
 // which requires actual TPM IO. That path is exercised by the
 // reconciler converting the err into a Phase=Failed run; the
@@ -40,7 +40,7 @@ func TestStubOutcome_DifferentNoncesDifferentDigests(t *testing.T) {
 	b := stubOutcome(&securityv1alpha1.ConfidentialAttestationRunSpec{Nonce: "bbbbbbbbbbbbbbbb"}, "tpm", []string{"0", "1"})
 	for i := range a.Measurements {
 		if a.Measurements[i].Digest == b.Measurements[i].Digest {
-			t.Errorf("digest collision at slot %s — nonce binding broken", a.Measurements[i].Slot)
+			t.Errorf("digest collision at slot %s - nonce binding broken", a.Measurements[i].Slot)
 		}
 	}
 }

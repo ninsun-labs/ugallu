@@ -1,6 +1,6 @@
 apiVersion: v2
 name: dns-detect
-description: ugallu-dns-detect operator (DNS anomaly detection — 5 detectors)
+description: ugallu-dns-detect operator (DNS anomaly detection - 5 detectors)
 type: application
 version: 0.0.1-alpha.1
 appVersion: "0.0.1-alpha.1"

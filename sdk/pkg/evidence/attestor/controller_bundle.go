@@ -287,7 +287,7 @@ func (r *AttestationBundleReconciler) buildStatement(ctx context.Context, ref *c
 		b, err := stmt.MarshalCanonical()
 		// EventResponses inherit the parent SE's clusterID; fall back to
 		// the ER's own SecurityEventRef when present and look up its
-		// cluster — for v1alpha1 the propagation happens via the SE
+		// cluster - for v1alpha1 the propagation happens via the SE
 		// fetch in markParentAttested. Returning empty here triggers
 		// the "unknown" fallback in wormKeyFor for EventResponse
 		// bundles until the SE fetch is wired in.

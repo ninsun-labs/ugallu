@@ -11,7 +11,7 @@
 // Memory budget is bounded by the multipart part-size; no temp
 // files are written to disk. SIGTERM (sent by the kubelet on
 // snapshot timeout) cancels the context, which the manager
-// translates into a clean multipart-abort — no orphan parts.
+// translates into a clean multipart-abort - no orphan parts.
 package main
 
 import (
@@ -48,7 +48,7 @@ func main() {
 }
 
 // runMain returns (defaultStep, err). The defaultStep is used when
-// err is not already wrapped in a snapshot.StepError — it labels
+// err is not already wrapped in a snapshot.StepError - it labels
 // the early validation phase that produced the failure.
 func runMain() (string, error) {
 	var (

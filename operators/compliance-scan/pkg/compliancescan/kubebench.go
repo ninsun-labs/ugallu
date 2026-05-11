@@ -150,7 +150,7 @@ func (s *realKubeBenchScanner) buildJob(name, profile string) *batchv1.Job {
 // client doesn't expose Pod log streaming, so the scanner looks up
 // the Pod by job-name label and loads the latest log directly via
 // a typed list. The kubectl-logs-equivalent over the apiserver REST
-// log subresource is out of scope here — instead the scanner parses
+// log subresource is out of scope here - instead the scanner parses
 // the Pod's terminated container exit message, which carries the
 // last 80 KiB of the container's output.
 func (s *realKubeBenchScanner) fetchReport(ctx context.Context, jobName string) (string, error) {

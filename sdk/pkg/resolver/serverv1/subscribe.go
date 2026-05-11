@@ -46,7 +46,7 @@ type Filter struct {
 const DefaultSubscriberBuffer = 256
 
 // Subscription is the per-watcher handle returned by Cache.Subscribe.
-// Callers must Close it when done — the cache holds the subscription
+// Callers must Close it when done - the cache holds the subscription
 // in a list and drops it on Close.
 type Subscription struct {
 	id         uint64
@@ -85,7 +85,7 @@ func (s *Subscription) matches(_ Change) bool {
 }
 
 // matchesFilter is the effective predicate used by the cache when
-// fanning out — encapsulates filter.Kind / filter.Namespace checks.
+// fanning out - encapsulates filter.Kind / filter.Namespace checks.
 func (s *Subscription) matchesFilter(snap *PodSnapshot) bool {
 	if s.filter.Kind != "" && s.filter.Kind != "Pod" {
 		return false
@@ -156,7 +156,7 @@ func (c *Cache) Subscribe(filter Filter, buffer int) *Subscription {
 func (c *Cache) unsubscribe(id uint64) { c.subscribers.remove(id) }
 
 // publish fans out a Change to every subscriber whose filter matches.
-// Non-blocking send — if a subscriber's buffer is full the publisher
+// Non-blocking send - if a subscriber's buffer is full the publisher
 // flags it as overflowed and closes its channel; the Watch loop
 // surfaces this to the gRPC client.
 func (c *Cache) publish(change Change) {

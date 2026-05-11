@@ -26,7 +26,7 @@ type HoneypotConfigSpec struct {
 	// EmitOnRead controls whether the detector fires on read-side
 	// verbs (get/list/watch). Defaults to true; flip to false to
 	// limit firing to mutating verbs (create/update/patch/delete)
-	// — useful when the decoy lives in a high-traffic ns and read
+	// - useful when the decoy lives in a high-traffic ns and read
 	// noise overwhelms triage.
 	// +kubebuilder:default=true
 	// +optional
@@ -34,7 +34,7 @@ type HoneypotConfigSpec struct {
 
 	// AllowlistedActors enumerates SA usernames
 	// (`system:serviceaccount:<ns>:<name>`) that may legitimately
-	// touch decoys without firing — typically backup operators
+	// touch decoys without firing - typically backup operators
 	// or the honeypot operator itself for self-checks.
 	// +optional
 	AllowlistedActors []string `json:"allowlistedActors,omitempty"`
@@ -58,7 +58,7 @@ type HoneypotDecoy struct {
 	Namespace string `json:"namespace"`
 
 	// Data is the optional payload for Secret decoys (key→value).
-	// Stored verbatim — for plausibility populate with realistic-
+	// Stored verbatim - for plausibility populate with realistic-
 	// looking but fake credentials. Ignored for non-Secret kinds.
 	// +optional
 	Data map[string]string `json:"data,omitempty"`

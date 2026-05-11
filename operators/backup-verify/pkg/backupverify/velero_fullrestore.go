@@ -55,7 +55,7 @@ func runFullRestoreCycle(ctx context.Context, c client.Client, run *securityv1al
 	}
 	sandbox := run.Spec.SandboxNamespace
 	if sandbox == "" {
-		// Defensive: admission policy 14 enforces this — but a
+		// Defensive: admission policy 14 enforces this - but a
 		// bypass via dry-run should still produce a sane error.
 		return nil, fmt.Errorf("full-restore mode requires sandboxNamespace")
 	}
@@ -71,7 +71,7 @@ func runFullRestoreCycle(ctx context.Context, c client.Client, run *securityv1al
 		var backup velerov1.Backup
 		if err := c.Get(ctx, client.ObjectKey{Namespace: veleroNS, Name: run.Spec.BackupRef.Name}, &backup); err != nil {
 			if apierrors.IsNotFound(err) {
-				// Backup missing — short-circuit with a finding so
+				// Backup missing - short-circuit with a finding so
 				// the run produces a Result instead of erroring out.
 				return &FullRestoreOutcome{
 					Done: true,
@@ -98,7 +98,7 @@ func runFullRestoreCycle(ctx context.Context, c client.Client, run *securityv1al
 			Spec: velerov1.RestoreSpec{
 				BackupName:       run.Spec.BackupRef.Name,
 				NamespaceMapping: mapping,
-				// Skip PVs in v0.1.0 — production volume restore in a
+				// Skip PVs in v0.1.0 - production volume restore in a
 				// sandbox is high-risk and out of scope. The sandbox
 				// gets the K8s object graph only.
 				RestorePVs: ptrBool(false),
@@ -114,12 +114,12 @@ func runFullRestoreCycle(ctx context.Context, c client.Client, run *securityv1al
 		return nil, fmt.Errorf("get Velero Restore: %w", getErr)
 	}
 
-	// 2) In flight — requeue.
+	// 2) In flight - requeue.
 	if !isRestoreTerminal(restore.Status.Phase) {
 		return &FullRestoreOutcome{Done: false}, nil
 	}
 
-	// 3 + 4) Terminal phase — fold into findings.
+	// 3 + 4) Terminal phase - fold into findings.
 	out := &FullRestoreOutcome{Done: true}
 	switch restore.Status.Phase {
 	case velerov1.RestorePhaseCompleted:
@@ -159,7 +159,7 @@ func runFullRestoreCycle(ctx context.Context, c client.Client, run *securityv1al
 }
 
 // cleanupFullRestore tears the sandbox + the Restore CR down on a
-// terminal run. Failures are converted into low-severity findings —
+// terminal run. Failures are converted into low-severity findings -
 // the run itself already settled, so a stale sandbox is annoying
 // but not enforcement-blocking.
 func cleanupFullRestore(ctx context.Context, c client.Client, run *securityv1alpha1.BackupVerifyRun) []securityv1alpha1.BackupVerifyFinding {
@@ -189,7 +189,7 @@ func cleanupFullRestore(ctx context.Context, c client.Client, run *securityv1alp
 
 // buildNamespaceMapping redirects every namespace included in the
 // Backup into the single sandbox namespace. When the Backup
-// IncludedNamespaces is empty Velero defaults to "all" — for
+// IncludedNamespaces is empty Velero defaults to "all" - for
 // safety that path is not full-restore'd; the mapping covers only
 // the namespaces the Backup actually populated (read off
 // Backup.Status.Progress is not granular enough, so the
@@ -198,7 +198,7 @@ func buildNamespaceMapping(backup *velerov1.Backup, sandbox string) map[string]s
 	out := map[string]string{}
 	src := backup.Spec.IncludedNamespaces
 	if len(src) == 0 {
-		// Backup covers everything — use a wildcard mapping that
+		// Backup covers everything - use a wildcard mapping that
 		// Velero recognises ("*" → sandbox). Note: this only
 		// remaps when the source name isn't the operator's own
 		// namespace (Velero normally protects velero NS itself).
@@ -214,7 +214,7 @@ func buildNamespaceMapping(backup *velerov1.Backup, sandbox string) map[string]s
 // diffSandbox enumerates a curated set of Kinds in the sandbox
 // namespace and produces findings when the Restore claims more
 // items than the sandbox actually contains. The Kind list is
-// intentionally narrow — full schema fidelity diff (deep equal of
+// intentionally narrow - full schema fidelity diff (deep equal of
 // every field vs the backup tarball) is v0.2.0 work.
 func diffSandbox(ctx context.Context, c client.Client, sandbox string, restore *velerov1.Restore) (int, []securityv1alpha1.BackupVerifyFinding, error) {
 	type kindCounter struct {

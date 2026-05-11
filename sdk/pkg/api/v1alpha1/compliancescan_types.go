@@ -11,7 +11,7 @@ import (
 // +kubebuilder:validation:Enum=kube-bench;falco;cel-custom
 type ComplianceScanBackend string
 
-// ComplianceScanBackend constants — the v0.1.0 supported set.
+// ComplianceScanBackend constants - the v0.1.0 supported set.
 const (
 	// ComplianceScanBackendKubeBench runs the upstream kube-bench
 	// CIS Kubernetes Benchmark against the cluster.
@@ -22,7 +22,7 @@ const (
 	ComplianceScanBackendFalco ComplianceScanBackend = "falco"
 
 	// ComplianceScanBackendCELCustom evaluates the cluster against
-	// the operator-curated CEL ruleset (custom controls — typically
+	// the operator-curated CEL ruleset (custom controls - typically
 	// a SOC2/ISO27001 mapping).
 	ComplianceScanBackendCELCustom ComplianceScanBackend = "cel-custom"
 )

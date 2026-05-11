@@ -197,7 +197,7 @@ func loadGitHubCredentials(ctx context.Context, c client.Client, namespace, secr
 	if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: secretName}, sec); err != nil {
 		return out, fmt.Errorf("get secret %s/%s: %w", namespace, secretName, err)
 	}
-	// GitHub App shape — both AppID/ClientID + InstallationID + PEM
+	// GitHub App shape - both AppID/ClientID + InstallationID + PEM
 	// must be present; otherwise the loader falls through to PAT.
 	appID := strings.TrimSpace(string(sec.Data["app-id"]))
 	if appID == "" {

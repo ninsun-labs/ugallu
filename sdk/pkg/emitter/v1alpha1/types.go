@@ -40,7 +40,7 @@ type EmitOpts struct {
 	// Severity drives the TTL bucket downstream.
 	Severity securityv1alpha1.Severity
 
-	// Subject identity — populated even when EnrichVia is set so the
+	// Subject identity - populated even when EnrichVia is set so the
 	// Subject survives a resolver outage with partial=true.
 	SubjectKind      securityv1alpha1.SubjectKind
 	SubjectName      string

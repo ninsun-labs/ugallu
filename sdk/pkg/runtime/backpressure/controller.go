@@ -52,7 +52,7 @@ type Options struct {
 	Namespace     string
 	ConfigMapName string
 
-	// PollInterval — polling cadence. Defaults to DefaultPollInterval.
+	// PollInterval - polling cadence. Defaults to DefaultPollInterval.
 	PollInterval time.Duration
 
 	// EtcdCapacityBytes is the controller-side fallback used when the

@@ -18,7 +18,7 @@ import (
 // realTPMQuote opens the configured TPM character device, fetches a
 // PCR quote over slots 0-7 bound to the run nonce, and returns the
 // raw evidence + per-slot digests. The quote signature chains to
-// the TPM's Attestation Key (AK) — verifiers downstream check it
+// the TPM's Attestation Key (AK) - verifiers downstream check it
 // against the manufacturer cert chain.
 //
 // Returns ErrTPMUnavailable when the device file is missing so the

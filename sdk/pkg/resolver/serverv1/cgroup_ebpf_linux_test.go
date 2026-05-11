@@ -24,7 +24,7 @@ func TestIsBPFSupported_ReflectsBTFAvailability(t *testing.T) {
 
 // TestLoadCgroupTracker_FailsGracefullyUnprivileged verifies the
 // expected error path when the test process lacks CAP_BPF. We don't
-// exercise the privileged branch here — exercising real eBPF load
+// exercise the privileged branch here - exercising real eBPF load
 // from `go test` would side-effect the kernel and only runs when
 // somebody types `sudo go test`, which is not how CI works. Real
 // load+run+close validation belongs in the kind e2e suite.
@@ -35,9 +35,9 @@ func TestLoadCgroupTracker_FailsGracefullyUnprivileged(t *testing.T) {
 	cache := serverv1.NewCache(0)
 	tracker, err := serverv1.LoadCgroupTracker(cache, nil)
 	if err == nil {
-		// Running as root with CAP_BPF — close cleanly so the test
+		// Running as root with CAP_BPF - close cleanly so the test
 		// stays a no-op rather than leaking the loaded program.
 		_ = tracker.Close()
-		t.Skip("CAP_BPF available; load succeeded — kind/e2e covers the privileged path")
+		t.Skip("CAP_BPF available; load succeeded - kind/e2e covers the privileged path")
 	}
 }

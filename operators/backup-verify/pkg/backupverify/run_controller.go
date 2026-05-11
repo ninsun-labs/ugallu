@@ -48,7 +48,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	case "Succeeded", "Failed":
 		return ctrl.Result{}, nil
 	case "Running":
-		// Reconciler runs the verifier inline — Phase=Running means
+		// Reconciler runs the verifier inline - Phase=Running means
 		// a previous reconcile crashed mid-flight; restart from
 		// scratch. The verifier is idempotent against the same
 		// BackupRef.
@@ -199,7 +199,7 @@ func (r *RunReconciler) executeFullRestore(ctx context.Context, run *securityv1a
 		return r.fail(ctx, run, err.Error())
 	}
 	if !outcome.Done {
-		// Still in flight — keep the run at Phase=Running and
+		// Still in flight - keep the run at Phase=Running and
 		// requeue. The pipeline tick is cheap (one or two GETs).
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
@@ -227,7 +227,7 @@ func (r *RunReconciler) executeFullRestore(ctx context.Context, run *securityv1a
 	if err := r.Client.Create(ctx, result); err != nil && !apierrors.IsAlreadyExists(err) {
 		return r.fail(ctx, run, fmt.Sprintf("create full-restore result: %v", err))
 	}
-	// Status must be set via the dedicated subresource — Create only
+	// Status must be set via the dedicated subresource - Create only
 	// persists Spec. Re-Get to grab the post-Create resourceVersion
 	// before patching status.
 	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: result.Namespace, Name: result.Name}, result); err != nil {

@@ -8,7 +8,7 @@ the suspect Pod when the predicate fires.
 The operator is designed around a single invariant: every side
 effect is an [EventResponse](../../sdk/pkg/api/v1alpha1/eventresponse_types.go)
 CR that the attestor seals into an in-toto bundle. The pipeline
-itself is the audit chain — there is no separate event log.
+itself is the audit chain - there is no separate event log.
 
 ## Trigger predicate
 
@@ -16,14 +16,14 @@ itself is the audit chain — there is no separate event log.
 
 - `classes` (default `[Detection, Anomaly]`)
 - `minSeverities` (default `[high, critical]`)
-- `whitelistedTypes` — explicit opt-in (e.g. `PrivilegedPodChange`,
+- `whitelistedTypes` - explicit opt-in (e.g. `PrivilegedPodChange`,
   `ClusterAdminGranted`, `HostPathMount`, `ExecIntoPod`, …). An
   empty whitelist matches nothing.
-- `requireAttested` — when true the SE must have
+- `requireAttested` - when true the SE must have
   `Status.Phase=Attested` (set by the attestor after
   `AttestationBundle` Sealed). Defends against unauthenticated SE
   forges that would otherwise drive a freeze.
-- `namespaceAllowlist` — empty = match-all
+- `namespaceAllowlist` - empty = match-all
 - implicit: `Subject.Kind=Pod` (anything else is a `non_pod_subject` skip)
 
 Misses bump `ugallu_forensics_skipped_total{reason}` so dashboards
@@ -34,31 +34,31 @@ show why an SE didn't trigger.
 Three steps, run sequentially per incident, each emitting its own
 EventResponse for attestation:
 
-1. **PodFreezeStep** — labels the suspect Pod with
+1. **PodFreezeStep** - labels the suspect Pod with
    `ugallu.io/frozen=<incident-uid>` and applies a deny-all
    `CiliumNetworkPolicy` (Cilium clusters) or `NetworkPolicy`
    (vanilla CNI). Egress is widened to DNS (CoreDNS/RKE2-CoreDNS),
    the configured WORM endpoint, and the forensics workload
-   namespace — without these the snapshot ephemeral container
+   namespace - without these the snapshot ephemeral container
    cannot resolve or upload.
-2. **FilesystemSnapshotStep** — injects an ephemeral container
+2. **FilesystemSnapshotStep** - injects an ephemeral container
    (`ugallu-forensics-snapshot`) into the suspect Pod and tees the
    process's `/proc/<pid>/root` to S3 as a `tar+gzip+sha256`
-   stream. Capability scope: `CAP_DAC_READ_SEARCH` only — enough
+   stream. Capability scope: `CAP_DAC_READ_SEARCH` only - enough
    to read arbitrary inode trees without root and small enough that
    `pod-security.kubernetes.io/enforce=baseline` accepts the
    ephemeral container only when the suspect's namespace is
    labelled `privileged` (this is intentional; baseline-only
    namespaces fall back to a pod-level memory-only capture in a
    later sprint).
-3. **EvidenceUploadStep** — builds a content-addressed
+3. **EvidenceUploadStep** - builds a content-addressed
    [Manifest](pkg/forensics/manifest.go) (sha256 over the canonical
    JSON), uploads it under
    `s3://<bucket>/forensics/<incident>/manifest-<sha>.json` with
    COMPLIANCE Object Lock, and references it from the
    `IncidentCaptureCompleted` SE as the sole evidence URL. Re-uploads
    of identical content are no-ops; divergent rewrites are rejected
-   by Object Lock — that's the audit guarantee.
+   by Object Lock - that's the audit guarantee.
 
 The freeze backend is detected once at startup (Cilium CRD probe);
 the choice surfaces on `ForensicsConfig.status.freezeBackend`. The
@@ -83,7 +83,7 @@ Each step EventResponse carries:
 - **Auto-unfreeze** (optional): when `cleanup.autoUnfreezeAfter` is
   positive, the controller computes the deadline as
   `triggerSE.metadata.creationTimestamp + grace` and unfreezes
-  when the wall clock crosses it. Durable by construction — the
+  when the wall clock crosses it. Durable by construction - the
   deadline lives on the SE, not in process memory, so a controller
   restart honours the grace.
 - **Crash recovery**: at startup the operator lists ERs created by
@@ -124,8 +124,8 @@ Surfaced as alerts + a Grafana dashboard by
 
 The [ugallu-forensics-snapshot](cmd/ugallu-forensics-snapshot)
 binary ships in the same multi-binary image as the controller. It
-is invoked only as the ephemeral container's argv — never reconciled
-— so it has no client-go dependencies and the binary stays small.
+is invoked only as the ephemeral container's argv - never reconciled
+- so it has no client-go dependencies and the binary stays small.
 
 ## Deployment
 
@@ -135,7 +135,7 @@ the snapshot ephemeral container needs `CAP_DAC_READ_SEARCH` (and
 optionally `CAP_SYS_PTRACE` once memory snapshots are turned on).
 
 The umbrella's `worm.secret` Secret carries the WORM access-key /
-secret-key — the operator reads them through env vars
+secret-key - the operator reads them through env vars
 (`WORM_ACCESS_KEY` / `WORM_SECRET_KEY`) so we don't grant a cluster-wide
 Secret list/watch (controller-runtime's cache pre-loads everything
 the manager has permission to see; we explicitly disable the cache
@@ -144,7 +144,7 @@ client at startup).
 
 ## Lab smokes
 
-- [hack/forensics-smoke.sh](../../hack/forensics-smoke.sh) — ten
+- [hack/forensics-smoke.sh](../../hack/forensics-smoke.sh) - ten
   scenarios covering predicate skip, freeze, per-step ER chain
   with `parent-er` labels, manifest content-addressing, manual
   ack, auto-unfreeze, and admission-policy 8 deny path.

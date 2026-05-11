@@ -29,7 +29,7 @@ type GitHubProviderOptions struct {
 	// APIBase is the REST API root. Empty defaults to DefaultGitHubAPI.
 	APIBase string
 
-	// Token is a static Bearer credential — typically a fine-grained
+	// Token is a static Bearer credential - typically a fine-grained
 	// or classic PAT. Mutually exclusive with AppCreds: at least one
 	// of the two must be set.
 	Token string
@@ -119,18 +119,18 @@ func (p *GitHubProvider) Apply(ctx context.Context, req *ChangeRequest) (*PullRe
 
 	repoPath := fmt.Sprintf("/repos/%s/%s", req.Repo.Owner, req.Repo.Repo)
 
-	// Step 1 — resolve base ref.
+	// Step 1 - resolve base ref.
 	baseSHA, err := p.resolveRef(ctx, repoPath, base)
 	if err != nil {
 		return nil, fmt.Errorf("resolve base %q: %w", base, err)
 	}
 
-	// Step 2 — create the feature branch.
+	// Step 2 - create the feature branch.
 	if cErr := p.createRef(ctx, repoPath, req.BranchName, baseSHA); cErr != nil {
 		return nil, fmt.Errorf("create branch %q: %w", req.BranchName, cErr)
 	}
 
-	// Step 3 — apply each file via the contents API. The existing
+	// Step 3 - apply each file via the contents API. The existing
 	// SHA is fetched first so updates round-trip correctly; missing
 	// means a fresh create.
 	var lastCommitSHA string
@@ -143,14 +143,14 @@ func (p *GitHubProvider) Apply(ctx context.Context, req *ChangeRequest) (*PullRe
 		lastCommitSHA = sha
 	}
 
-	// Step 4 — open the PR.
+	// Step 4 - open the PR.
 	pr, err := p.openPullRequest(ctx, repoPath, req, base)
 	if err != nil {
 		return nil, fmt.Errorf("open PR: %w", err)
 	}
 	pr.CommitSHA = lastCommitSHA
 
-	// Step 5 — best-effort labels / reviewers. Label failures don't
+	// Step 5 - best-effort labels / reviewers. Label failures don't
 	// invalidate a successful PR.
 	if len(req.Labels) > 0 {
 		if err := p.addLabels(ctx, repoPath, pr.PRNumber, req.Labels); err != nil {

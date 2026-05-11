@@ -48,7 +48,7 @@ type ForensicsTrigger struct {
 
 	// RequireAttested gates capture on AttestationBundle.Phase=Sealed.
 	// Default true; setting false enables capture on raw (unsigned)
-	// events — discouraged but supported for chase-the-attacker
+	// events - discouraged but supported for chase-the-attacker
 	// scenarios where the attestor itself is being compromised.
 	// +kubebuilder:default=true
 	RequireAttested bool `json:"requireAttested"`

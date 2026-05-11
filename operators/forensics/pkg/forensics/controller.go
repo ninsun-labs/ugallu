@@ -71,7 +71,7 @@ func (r *SecurityEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if err := r.Pipeline.Start(ctx, incident); err != nil {
-		// "max concurrent" / "already in flight" are transient — back
+		// "max concurrent" / "already in flight" are transient - back
 		// off and retry.
 		pipelineQueueSize.Inc()
 		rlog.Info("pipeline busy, requeueing", "err", err)
@@ -129,7 +129,7 @@ func matchClass(class securityv1alpha1.Class, allowed []securityv1alpha1.Class) 
 
 // matchSeverity returns true when sev meets the minimum from the
 // allowed list. The allowed list itself is the discrete set of
-// severities, not a numeric threshold — set membership is enough.
+// severities, not a numeric threshold - set membership is enough.
 func matchSeverity(sev securityv1alpha1.Severity, allowed []securityv1alpha1.Severity) bool {
 	if len(allowed) == 0 {
 		return true
@@ -223,7 +223,7 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	manualAck := strings.EqualFold(se.Annotations[IncidentAcknowledgedAnnotation], "true")
 	// On IncidentCaptureFailed, an annotation overrides the
 	// auto-unfreeze policy. Without override (default = "auto"),
-	// the same grace window as a Completed SE applies — a stranded
+	// the same grace window as a Completed SE applies - a stranded
 	// pod is worse than a slightly-early unfreeze. With
 	// "manual" the operator waits for an admin ack (e.g.
 	// credentials/configuration failures need human triage before
@@ -234,7 +234,7 @@ func (r *UnfreezeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 	if !manualAck {
-		// No manual ack — check whether auto-unfreeze is configured
+		// No manual ack - check whether auto-unfreeze is configured
 		// and whether the grace window has elapsed.
 		grace, requeueAfter, err := r.autoUnfreezeStatus(ctx, se)
 		if err != nil {
@@ -357,7 +357,7 @@ const unfreezeAppliedAnnotation = "ugallu.io/incident-unfreeze-applied"
 
 // FailureUnfreezePolicyAnnotation is read on IncidentCaptureFailed
 // SEs to decide whether the unfreeze loop runs the same auto path
-// as Completed (`auto`, default — empty value) or pauses for an
-// explicit ack (`manual` — admin must triage before release, e.g.
+// as Completed (`auto`, default - empty value) or pauses for an
+// explicit ack (`manual` - admin must triage before release, e.g.
 // the snapshot binary aborted on `creds`/`config` step).
 const FailureUnfreezePolicyAnnotation = "ugallu.io/failure-unfreeze-policy"

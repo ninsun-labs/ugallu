@@ -168,7 +168,7 @@ func (f *Freezer) labelPod(ctx context.Context, pod *corev1.Pod, value string) e
 
 // buildLabelPatch returns a JSON merge patch that sets or removes
 // the frozen label. Using nil to remove keys via JSON merge patch is
-// the standard pattern — null on a key clears it.
+// the standard pattern - null on a key clears it.
 func buildLabelPatch(value string) ([]byte, error) {
 	var labelsPatch map[string]any
 	if value == "" {
@@ -204,7 +204,7 @@ func (f *Freezer) applyCorePolicy(ctx context.Context, pod *corev1.Pod) error {
 			},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{},
 			Egress: []networkingv1.NetworkPolicyEgressRule{
-				// DNS — kube-system coredns 53/UDP+TCP.
+				// DNS - kube-system coredns 53/UDP+TCP.
 				{
 					To: []networkingv1.NetworkPolicyPeer{
 						{
@@ -225,7 +225,7 @@ func (f *Freezer) applyCorePolicy(ctx context.Context, pod *corev1.Pod) error {
 						{Protocol: protocolPtr(corev1.ProtocolTCP), Port: portIntStr(53)},
 					},
 				},
-				// WORM endpoint — snapshot multipart upload target.
+				// WORM endpoint - snapshot multipart upload target.
 				{
 					To: []networkingv1.NetworkPolicyPeer{
 						{
@@ -384,7 +384,7 @@ func (f *Freezer) policyName(pod *corev1.Pod) string {
 	return fmt.Sprintf("ugallu-forensics-freeze-%s", pod.UID)
 }
 
-// protocolPtr returns &p — networkingv1.NetworkPolicyPort.Protocol
+// protocolPtr returns &p - networkingv1.NetworkPolicyPort.Protocol
 // expects a pointer because the field is optional in the v1 schema.
 func protocolPtr(p corev1.Protocol) *corev1.Protocol { return &p }
 

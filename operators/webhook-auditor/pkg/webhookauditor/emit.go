@@ -34,7 +34,7 @@ type EmitOptions struct {
 	Threshold       int
 
 	// FirstObserved marks the very first reconcile-after-startup. Only
-	// used by §W6 informational signal — no scoring impact.
+	// used by §W6 informational signal - no scoring impact.
 	FirstObserved bool
 }
 
@@ -129,7 +129,7 @@ func EmitFindings(
 	return nil
 }
 
-// EmitDeleted fires on MWC/VWC removal — informational telemetry that
+// EmitDeleted fires on MWC/VWC removal - informational telemetry that
 // shows the deletion in the SE stream. Severity:info, no breakdown.
 func EmitDeleted(ctx context.Context, opts EmitOptions, target *EmitTarget) error {
 	if opts.Emitter == nil {

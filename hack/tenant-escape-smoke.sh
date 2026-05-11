@@ -50,7 +50,7 @@ SA_A=team-a-bot
 # Inject synthetic apiserver audit events directly into the
 # audit-detection webhook (the lab apiserver is not configured with
 # audit-webhook so we simulate the events the same way
-# audit-detection-smoke does — webhook_post helper).
+# audit-detection-smoke does - webhook_post helper).
 NS_UGALLU=ugallu-system
 WEBHOOK_HOST=ugallu-audit-detection-webhook.${NS_UGALLU}.svc.cluster.local
 WEBHOOK_PORT=443

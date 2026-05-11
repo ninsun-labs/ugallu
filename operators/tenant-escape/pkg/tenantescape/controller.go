@@ -65,7 +65,7 @@ func (r *TenantBoundaryReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 // resolveMatched expands Spec.NamespaceSelector against the live
 // Namespace list and counts the running Pods across the matches.
-// Empty / nil selector ⇒ match-none (defensive default — the admin
+// Empty / nil selector ⇒ match-none (defensive default - the admin
 // must opt namespaces in explicitly).
 func (r *TenantBoundaryReconciler) resolveMatched(ctx context.Context, tb *securityv1alpha1.TenantBoundary) (matchedNamespaces []string, podCount int32, err error) {
 	if tb.Spec.NamespaceSelector == nil ||

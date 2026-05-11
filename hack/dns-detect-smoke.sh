@@ -103,13 +103,13 @@ info "Test 2: DNS query to non-53 port → DNSAnomalousPort"
 # bound DNS client. The detector logic is fully covered by envtest
 # (TestIntegration_AnomalousPort_EmitsSE). Plumbing of plugin →
 # dns-detect is validated end-to-end by Test 3 (DNSToBlocklistedFQDN
-# — same gRPC stream, real query path).
+# - same gRPC stream, real query path).
 skip "Test 2: structurally not lab-testable via DNS lookup (envtest coverage)"
 
 # --- Test 3: blocklist ----------------------------------------------
 info "Test 3: pod queries *.bit (default blocklist) → DNSToBlocklistedFQDN"
 # Use dig +search=no so the resolver issues an absolute "evil.bit."
-# query — getent walks ndots:5 search domains first and never falls
+# query - getent walks ndots:5 search domains first and never falls
 # back to absolute, so the qname seen by the plugin would be e.g.
 # `evil.bit.cluster.local.` which does not match the `*.bit` pattern.
 kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c 'dig +short +tries=1 +time=2 evil.bit. @10.43.0.10 || true' >/dev/null 2>&1 || true
@@ -126,9 +126,9 @@ fi
 # --- Test 4: Exfiltration --------------------------------------------
 info "Test 4: 3 high-entropy TXT queries from same pod → DNSExfiltration"
 if [ "$src" = "coredns_plugin" ]; then
-  # Same rationale as Test 3 — use absolute query bypassing search.
+  # Same rationale as Test 3 - use absolute query bypassing search.
   for i in 1 2 3; do
-    # DNS labels are capped at 63 chars by RFC 1035 — stay at 62 to
+    # DNS labels are capped at 63 chars by RFC 1035 - stay at 62 to
     # leave room for safety and meet the detector's MinLabelLen=60.
     rand=$(head -c 60 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 62)
     kubectl -n "$NS_TEST" exec "$SUSPECT_POD" -- sh -c "dig +short +tries=1 +time=2 -t TXT ${rand}.example.com. @10.43.0.10 || true" >/dev/null 2>&1 || true
@@ -157,7 +157,7 @@ else
 fi
 
 # --- Test 6: ToYoungDomain ------------------------------------------
-info "Test 6: requires RDAP mock — skip if not present"
+info "Test 6: requires RDAP mock - skip if not present"
 if kubectl -n ugallu-evidence get deploy rdap-mock >/dev/null 2>&1; then
   pass "RDAP mock present (real test deferred to coredns-ugallu plugin v0.1.0 wiring)"
 else

@@ -21,7 +21,7 @@ import (
 )
 
 // ConfigStatusReconciler refreshes DNSDetectConfig.Status with the
-// active source backend. Cadence 30s — config CR mutations are rare.
+// active source backend. Cadence 30s - config CR mutations are rare.
 type ConfigStatusReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme

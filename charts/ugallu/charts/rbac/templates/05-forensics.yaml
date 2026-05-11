@@ -17,7 +17,7 @@ namespace. Its mandate:
     IncidentCaptureCompleted, IncidentCaptureFailed,
     PodUnfrozen).
 
-Pods/ephemeralcontainers requires its own RBAC entry — the
+Pods/ephemeralcontainers requires its own RBAC entry - the
 subresource is gated separately from pods/update.
 
 The frozen-label patch is gated by admission policy 7 (only this
@@ -96,7 +96,7 @@ rules:
     verbs: ["update", "patch"]
   # client-go's leader-election event broadcaster posts a v1.Event
   # on lease acquisition. Without this rule the operator logs a
-  # "events is forbidden" warning at boot — cosmetic but noisy.
+  # "events is forbidden" warning at boot - cosmetic but noisy.
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "patch"]

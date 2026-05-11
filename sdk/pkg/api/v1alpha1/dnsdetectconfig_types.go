@@ -92,7 +92,7 @@ type DNSBridgeEndpoint struct {
 
 // DNSDetectorsConfig holds per-detector knobs. All five default
 // enabled to mirror the design. Disabling one lets the operator
-// run in a "lighter" profile — useful in air-gapped clusters that
+// run in a "lighter" profile - useful in air-gapped clusters that
 // can't reach RDAP.
 type DNSDetectorsConfig struct {
 	Exfiltration  ExfiltrationDetectorConfig  `json:"exfiltration"`
@@ -102,7 +102,7 @@ type DNSDetectorsConfig struct {
 	AnomalousPort AnomalousPortDetectorConfig `json:"anomalousPort"`
 }
 
-// ExfiltrationDetectorConfig — heuristics for entropy + length
+// ExfiltrationDetectorConfig - heuristics for entropy + length
 // anomaly on TXT/A queries.
 type ExfiltrationDetectorConfig struct {
 	// +kubebuilder:default=true
@@ -129,7 +129,7 @@ type ExfiltrationDetectorConfig struct {
 	ConsecutiveTriggers int32 `json:"consecutiveTriggers,omitempty"`
 }
 
-// TunnelingDetectorConfig — base64-in-subdomain heuristic.
+// TunnelingDetectorConfig - base64-in-subdomain heuristic.
 type TunnelingDetectorConfig struct {
 	// +kubebuilder:default=true
 	Enabled bool `json:"enabled"`
@@ -139,7 +139,7 @@ type TunnelingDetectorConfig struct {
 	RatelimitPerPod metav1.Duration `json:"ratelimitPerPod,omitempty"`
 }
 
-// BlocklistDetectorConfig — match against admin-curated FQDN list(s).
+// BlocklistDetectorConfig - match against admin-curated FQDN list(s).
 type BlocklistDetectorConfig struct {
 	// +kubebuilder:default=true
 	Enabled bool `json:"enabled"`
@@ -156,7 +156,7 @@ type DNSBlocklistRef struct {
 	Name      string `json:"name"`
 }
 
-// YoungDomainDetectorConfig — RDAP / WHOIS lookup gated by domain age.
+// YoungDomainDetectorConfig - RDAP / WHOIS lookup gated by domain age.
 type YoungDomainDetectorConfig struct {
 	// +kubebuilder:default=true
 	Enabled bool `json:"enabled"`
@@ -176,7 +176,7 @@ type YoungDomainDetectorConfig struct {
 	RateLimit string `json:"rateLimit,omitempty"`
 }
 
-// AnomalousPortDetectorConfig — flag DNS queries to a non-53 port.
+// AnomalousPortDetectorConfig - flag DNS queries to a non-53 port.
 type AnomalousPortDetectorConfig struct {
 	// +kubebuilder:default=true
 	Enabled bool `json:"enabled"`

@@ -157,7 +157,7 @@ func (s *CoreDNSPluginSource) runOnce(ctx context.Context, out chan<- *dnsevent.
 
 // toEnriched runs the wire→internal translation and (when configured)
 // the resolver lookup that fills Pod + SubjectUID. Errors are swallowed
-// — a resolver outage degrades detectors to the SrcIP fallback path,
+// - a resolver outage degrades detectors to the SrcIP fallback path,
 // it must not stop the DNS stream.
 func (s *CoreDNSPluginSource) toEnriched(ctx context.Context, ev *dnseventv1.DNSEvent) *dnsevent.DNSEvent {
 	internal := pbToInternal(ev)
@@ -171,7 +171,7 @@ func (s *CoreDNSPluginSource) toEnriched(ctx context.Context, ev *dnseventv1.DNS
 // enrich queries the resolver with cgroup-id (UDS-fast path) first,
 // then falls back to PodIP. The first successful hit wins. Both calls
 // are bounded by EnrichTimeout so a slow resolver never blocks the
-// stream — on a miss the detector chain still runs and the SrcIP
+// stream - on a miss the detector chain still runs and the SrcIP
 // fallback in subjectFromEvent keeps state-keying coherent.
 func (s *CoreDNSPluginSource) enrich(parent context.Context, ev *dnsevent.DNSEvent) {
 	if ev.SrcCgroup != 0 {

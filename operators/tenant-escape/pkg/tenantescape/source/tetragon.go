@@ -144,7 +144,7 @@ func (s *TetragonBridgeSource) runOnce(ctx context.Context, out chan<- *detector
 
 // bridgeToExecInput translates a bridge ProcessExec into the
 // CrossTenantExec detector's input shape. Drops events without an
-// ExecutorPodNamespace — the cross-tenant heuristic compares
+// ExecutorPodNamespace - the cross-tenant heuristic compares
 // (executor.ns, target.ns) and an unknown executor side carries no
 // signal.
 func bridgeToExecInput(ev *bridgev1.ProcessExec) *detector.ExecInput {

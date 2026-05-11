@@ -64,7 +64,7 @@ spec:
                 description: |-
                   AllowlistedActors enumerates SA usernames
                   (`system:serviceaccount:<ns>:<name>`) that may legitimately
-                  touch decoys without firing — typically backup operators
+                  touch decoys without firing - typically backup operators
                   or the honeypot operator itself for self-checks.
                 items:
                   type: string
@@ -82,7 +82,7 @@ spec:
                         type: string
                       description: |-
                         Data is the optional payload for Secret decoys (key→value).
-                        Stored verbatim — for plausibility populate with realistic-
+                        Stored verbatim - for plausibility populate with realistic-
                         looking but fake credentials. Ignored for non-Secret kinds.
                       type: object
                     kind:
@@ -117,7 +117,7 @@ spec:
                   EmitOnRead controls whether the detector fires on read-side
                   verbs (get/list/watch). Defaults to true; flip to false to
                   limit firing to mutating verbs (create/update/patch/delete)
-                  — useful when the decoy lives in a high-traffic ns and read
+                  - useful when the decoy lives in a high-traffic ns and read
                   noise overwhelms triage.
                 type: boolean
             type: object

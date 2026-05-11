@@ -46,7 +46,7 @@ type Manifest struct {
 }
 
 // TriggerRef is the minimal handle on the SE that opened the
-// incident — UID + Type so the manifest is self-describing.
+// incident - UID + Type so the manifest is self-describing.
 type TriggerRef struct {
 	UID  string `json:"uid"`
 	Type string `json:"type"`
@@ -94,7 +94,7 @@ func BuildManifest(incident *Incident, pod *corev1.Pod, ci securityv1alpha1.Clus
 			Size:      ev.Size,
 		})
 	}
-	// Stable order — chunks come from a list that already reflects
+	// Stable order - chunks come from a list that already reflects
 	// step order, but sort defensively so a re-run with the same
 	// inputs always produces the same canonical bytes.
 	sort.SliceStable(chunks, func(i, j int) bool {
@@ -125,7 +125,7 @@ func BuildManifest(incident *Incident, pod *corev1.Pod, ci securityv1alpha1.Clus
 // CanonicalBytes returns the canonical JSON encoding of m: keys
 // sorted alphabetically, no extraneous whitespace, no HTML escape.
 // Two manifests with identical content always produce identical
-// bytes — this is what makes the manifest content-addressable.
+// bytes - this is what makes the manifest content-addressable.
 func (m *Manifest) CanonicalBytes() ([]byte, error) {
 	if m == nil {
 		return nil, errors.New("manifest: nil")

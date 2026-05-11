@@ -13,7 +13,7 @@ import (
 
 // HoneypotMisplacedDetector flags Pod create requests whose spec
 // references a decoy resource via volumes, envFrom, or
-// serviceAccountName. A legitimate workload never mounts a decoy —
+// serviceAccountName. A legitimate workload never mounts a decoy -
 // firing here means someone authored a Pod template that thinks
 // the decoy is real (intent reconnaissance) or is actively trying
 // to exfiltrate decoy data into a process they control.

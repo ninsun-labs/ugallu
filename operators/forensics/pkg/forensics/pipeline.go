@@ -49,7 +49,7 @@ type PipelineOptions struct {
 	// EvidenceUploader writes the per-incident manifest to WORM
 	// as the closing step of the pipeline. nil disables the step
 	// (the completion SE then falls back to inlining evidence
-	// signals — Sprint-2 behaviour, kept as escape hatch for
+	// signals - Sprint-2 behaviour, kept as escape hatch for
 	// air-gapped deployments without S3).
 	EvidenceUploader *EvidenceUploader
 }
@@ -167,7 +167,7 @@ func (p *Pipeline) run(ctx context.Context, incident *Incident) {
 
 	exec := &StepExecution{Incident: incident, Pod: pod}
 
-	// Step 1 — PodFreeze. Sequential blocker for the next step
+	// Step 1 - PodFreeze. Sequential blocker for the next step
 	// (the snapshot must run on an isolated Pod).
 	if err := p.opts.StepRunner.Run(ctx, &PodFreezeStep{Freezer: p.opts.Freezer}, exec); err != nil {
 		pipelineStepsTotal.WithLabelValues("pod_freeze", "error").Inc()
@@ -177,7 +177,7 @@ func (p *Pipeline) run(ctx context.Context, incident *Incident) {
 	pipelineStepsTotal.WithLabelValues("pod_freeze", "ok").Inc()
 	p.emitForensicSE(ctx, securityv1alpha1.TypePodFrozen, securityv1alpha1.SeverityInfo, incident, pod, nil)
 
-	// Step 2 — FilesystemSnapshot. Sequential after freeze; the
+	// Step 2 - FilesystemSnapshot. Sequential after freeze; the
 	// snapshot binary runs against a Pod with active isolation.
 	cfg := p.activeSnapshotConfig(ctx)
 	if err := p.opts.StepRunner.Run(ctx, &FilesystemSnapshotStep{
@@ -198,7 +198,7 @@ func (p *Pipeline) run(ctx context.Context, incident *Incident) {
 		})
 	}
 
-	// Step 3 — EvidenceUpload manifest. The pipeline-level
+	// Step 3 - EvidenceUpload manifest. The pipeline-level
 	// evidence list now contains the single manifest ref instead
 	// of the prior per-chunk inlining; the completion SE
 	// references the manifest as its sole evidence pointer.
@@ -214,7 +214,7 @@ func (p *Pipeline) run(ctx context.Context, incident *Incident) {
 		pipelineStepsTotal.WithLabelValues("evidence_upload", "ok").Inc()
 		// The manifest ref is the LAST entry the step appended.
 		// Replace the per-chunk evidence list on the incident with
-		// just the manifest reference — that's what the
+		// just the manifest reference - that's what the
 		// completion SE points at.
 		manifestRef := exec.Evidence[len(exec.Evidence)-1]
 		incident.Evidence = []EvidenceEntry{{
@@ -236,7 +236,7 @@ func (p *Pipeline) run(ctx context.Context, incident *Incident) {
 }
 
 // fetchSuspectPod loads the live Pod referenced by the trigger SE.
-// NotFound is fatal — the pipeline cannot freeze a vanished pod;
+// NotFound is fatal - the pipeline cannot freeze a vanished pod;
 // the orchestrator emits IncidentCaptureFailed reason=target_deleted.
 func (p *Pipeline) fetchSuspectPod(ctx context.Context, incident *Incident) (*corev1.Pod, error) {
 	pod := &corev1.Pod{}
@@ -251,7 +251,7 @@ func (p *Pipeline) fetchSuspectPod(ctx context.Context, incident *Incident) (*co
 
 // activeSnapshotConfig fetches the singleton ForensicsConfig and
 // returns its SnapshotConfig with defaults filled in. A missing CR
-// falls back to the safe Wave-2 defaults — the pipeline never
+// falls back to the safe Wave-2 defaults - the pipeline never
 // crashes on a deleted config.
 func (p *Pipeline) activeSnapshotConfig(ctx context.Context) securityv1alpha1.SnapshotConfig {
 	cfg := &securityv1alpha1.ForensicsConfig{}
@@ -380,9 +380,9 @@ func (p *Pipeline) fail(ctx context.Context, incident *Incident, step string, ca
 
 // CredentialsMirror copies the master WORM Secret into a suspect
 // Pod's namespace so the ephemeral container can mount it via
-// secretKeyRef (which is namespace-local). The alternative —
+// secretKeyRef (which is namespace-local). The alternative -
 // inlining the credentials in the env vars of the ephemeral
-// container spec — leaks the secret value into pod descriptions and
+// container spec - leaks the secret value into pod descriptions and
 // audit logs.
 type CredentialsMirror struct {
 	Client     client.Client

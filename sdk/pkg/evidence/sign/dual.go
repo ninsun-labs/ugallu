@@ -12,7 +12,7 @@ import (
 )
 
 // DualSigner produces DSSE envelopes carrying signatures from two
-// independent back-ends — typically Fulcio (keyless) + OpenBao
+// independent back-ends - typically Fulcio (keyless) + OpenBao
 // (transit). Each leg signs the same PAE, and the resulting envelope
 // has two EnvelopeSignatures whose KeyIDs let verifiers tell them
 // apart.
@@ -78,7 +78,7 @@ func (d *DualSigner) Mode() securityv1alpha1.SigningMode {
 }
 
 // PublicKeyPEM forwards to the primary leg when it implements the
-// exporter — Rekor entries carry a single verifier key, so only the
+// exporter - Rekor entries carry a single verifier key, so only the
 // leg most likely to drive transparency-log verification is exposed
 // here (Fulcio in the typical deployment).
 func (d *DualSigner) PublicKeyPEM() ([]byte, error) {

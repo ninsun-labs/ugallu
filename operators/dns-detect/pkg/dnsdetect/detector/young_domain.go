@@ -21,7 +21,7 @@ type YoungDomainConfig struct {
 
 // AgeLookup is the indirection the detector uses to ask "how old is
 // this domain?". Implementations: RDAPLookup (production) +
-// in-memory mock (tests). Returning ageDays<0 means "unknown" — the
+// in-memory mock (tests). Returning ageDays<0 means "unknown" - the
 // detector treats unknowns as a no-fire (conservative; an outbound
 // failure to RDAP should not generate alerts).
 type AgeLookup interface {
@@ -29,7 +29,7 @@ type AgeLookup interface {
 }
 
 // YoungDomainDetector flags queries for domains registered within
-// the last N days. Lookups are async — if the cache hasn't seen the
+// the last N days. Lookups are async - if the cache hasn't seen the
 // domain yet, the query goes through unflagged; the lookup fires in
 // the background and a future query for the same domain will be
 // evaluated against the cached age.
@@ -103,7 +103,7 @@ func (d *YoungDomainDetector) Evaluate(ev *dnsevent.DNSEvent) Finding {
 }
 
 // registrableDomain extracts the TLD+1 portion of qname. Crude
-// heuristic — "evil.example.com" → "example.com", but won't handle
+// heuristic - "evil.example.com" → "example.com", but won't handle
 // PSL-aware cases like "evil.example.co.uk" (returns "co.uk"). PSL
 // integration is a follow-up if accuracy proves limiting.
 func registrableDomain(qname string) string {

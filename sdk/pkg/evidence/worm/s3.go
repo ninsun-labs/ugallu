@@ -60,7 +60,7 @@ type S3UploaderOptions struct {
 // The uploader hashes content while streaming it to S3, sets the
 // Object Lock retention from PutOpts.LockUntil, and returns the object
 // metadata in ObjectRef. Multipart uploads are not used (evidence
-// blobs are small — a few KB each); large blobs would benefit from
+// blobs are small - a few KB each); large blobs would benefit from
 // the Manager API in a follow-up.
 type S3Uploader struct {
 	client    *s3.Client

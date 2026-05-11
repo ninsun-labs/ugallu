@@ -10,7 +10,7 @@
 // without resorting to log scraping.
 //
 // Memory budget is bounded by the multipart part-size (5 MiB
-// default) regardless of the snapshot total size — the entire
+// default) regardless of the snapshot total size - the entire
 // pipeline is `io.Pipe`-based, no temp files on disk.
 package snapshot
 
@@ -111,7 +111,7 @@ type Result struct {
 // when the snapshot pipeline aborts. The operator parses it from
 // the ephemeral container's logs to populate
 // SecurityEvent.signals[failure.detail] on the
-// IncidentCaptureFailed SE — which is otherwise opaque (the
+// IncidentCaptureFailed SE - which is otherwise opaque (the
 // kubelet only surfaces Reason=Error). Step is one of: `config`,
 // `creds`, `uploader`, `tar`, `s3`, `run`.
 type Failure struct {
@@ -220,7 +220,7 @@ func (r *Runner) Run(ctx context.Context) (*Result, error) {
 	truncated := errors.Is(tarErr, errSizeCap) || errors.Is(upErr, errSizeCap)
 	switch {
 	case truncated:
-		// The size cap aborted the pipeline — the partial multipart
+		// The size cap aborted the pipeline - the partial multipart
 		// upload was cleanly aborted by the manager when the body
 		// reader returned the cap error; nothing else to clean up.
 	case upErr != nil:

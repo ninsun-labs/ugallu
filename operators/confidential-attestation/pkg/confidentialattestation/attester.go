@@ -115,7 +115,7 @@ func (a *tdxAttester) Attest(spec *securityv1alpha1.ConfidentialAttestationRunSp
 // stubOutcome produces a deterministic, nonce-bound evidence bundle
 // when the backend's real device is present but the underlying
 // SDK isn't wired in yet. The digest is sha256(backend|nonce|slot)
-// — same input always produces the same output (idempotent),
+// - same input always produces the same output (idempotent),
 // different nonces produce different digests (anti-replay holds).
 func stubOutcome(spec *securityv1alpha1.ConfidentialAttestationRunSpec, backend string, slots []string) *AttestOutcome {
 	measurements := make([]securityv1alpha1.ConfidentialAttestationMeasurement, 0, len(slots))
@@ -141,9 +141,9 @@ func stubOutcome(spec *securityv1alpha1.ConfidentialAttestationRunSpec, backend 
 	notes := ""
 	if spec.PolicyRef == nil {
 		// Without a policy the verifier has nothing to compare
-		// against — be honest and keep the run in report-only mode.
+		// against - be honest and keep the run in report-only mode.
 		verdict = securityv1alpha1.ConfidentialAttestationVerdictIndeterminate
-		notes = "no PolicyRef on the run — measurement snapshot recorded without enforcement"
+		notes = "no PolicyRef on the run - measurement snapshot recorded without enforcement"
 	}
 	return &AttestOutcome{
 		Quote:         quoteHash.Sum(nil),

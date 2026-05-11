@@ -86,7 +86,7 @@ spec:
           emptyDir: {}
         # Each backend mounts as hostPath (read-only) only when
         # enabled in values. Type=CharDevice fails the pod cleanly on
-        # nodes without the device — the operator's indeterminate
+        # nodes without the device - the operator's indeterminate
         # verdict path covers the un-attested-node story.
         {{- if .Values.devices.tpm.enabled }}
         - name: tpm-device

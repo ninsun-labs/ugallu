@@ -177,7 +177,7 @@ func TestIntegration_HappyPath_CompileMatchEmitStatus(t *testing.T) {
 		t.Errorf("SE.Type = %q", list.Items[0].Spec.Type)
 	}
 
-	// Reconcile again — counters should now appear in status.
+	// Reconcile again - counters should now appear in status.
 	reconcile(t, r, rule.Name)
 	if err := envClient.Get(envCtx(), client.ObjectKey{Name: rule.Name}, got); err != nil {
 		t.Fatalf("Get rule (re): %v", err)
@@ -515,7 +515,7 @@ func TestIntegration_UpdateRecompiles(t *testing.T) {
 
 	// Disable the rule and reconcile. SigmaRule.Spec.Enabled has the
 	// json:"enabled,omitempty" tag, so a MergeFrom patch from
-	// {Enabled:true} to {Enabled:false} produces an empty diff —
+	// {Enabled:true} to {Enabled:false} produces an empty diff -
 	// Update (full replace) is the only way to flip the bit through
 	// the typed client.
 	got := &securityv1alpha1.SigmaRule{}

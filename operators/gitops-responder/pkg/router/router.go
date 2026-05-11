@@ -100,7 +100,7 @@ type Snapshot struct {
 	r  *Router
 }
 
-// NewSnapshot returns an empty snapshot — Set must be called before
+// NewSnapshot returns an empty snapshot - Set must be called before
 // Current returns a usable router.
 func NewSnapshot() *Snapshot { return &Snapshot{} }
 

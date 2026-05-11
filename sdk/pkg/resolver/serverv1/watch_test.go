@@ -49,7 +49,7 @@ func (s *fakeWatchStream) snapshot() []*resolverv1.SubjectChange {
 	return out
 }
 
-// gRPC ServerStream methods that this fake does not exercise — they
+// gRPC ServerStream methods that this fake does not exercise - they
 // return zero values.
 func (s *fakeWatchStream) SetHeader(metadata.MD) error  { return nil }
 func (s *fakeWatchStream) SendHeader(metadata.MD) error { return nil }
@@ -86,7 +86,7 @@ func drainOverflow(s *serverv1.Subscription, timeout time.Duration) bool {
 }
 
 // TestCacheSubscribe_AddDeletePurge exercises the cache fanout
-// directly — the server-side gRPC layer is covered separately so this
+// directly - the server-side gRPC layer is covered separately so this
 // test can drive cache mutations without racing the gRPC subscription.
 func TestCacheSubscribe_AddDeletePurge(t *testing.T) {
 	srv := bootstrap(t)
@@ -97,7 +97,7 @@ func TestCacheSubscribe_AddDeletePurge(t *testing.T) {
 	srv.Cache.UpsertPodForTest(pod)
 	srv.Cache.MarkTombstone(types.UID(pod.UID), time.Now())
 
-	// ADDED + DELETED on the same channel — drain in order.
+	// ADDED + DELETED on the same channel - drain in order.
 	got := drainEvents(t, sub, 2, time.Second)
 	if got[0].Type != serverv1.ChangeAdded {
 		t.Errorf("first event = %v, want ADDED", got[0].Type)
@@ -133,7 +133,7 @@ func TestCacheSubscribe_NamespaceFilter(t *testing.T) {
 	if got[0].Snapshot.Pod.Namespace != "kube-system" {
 		t.Errorf("got namespace %q, want kube-system", got[0].Snapshot.Pod.Namespace)
 	}
-	// No more events should arrive — give the publisher a beat to fan
+	// No more events should arrive - give the publisher a beat to fan
 	// out and re-check.
 	time.Sleep(100 * time.Millisecond)
 	if len(drainBufferedEvents(sub)) != 0 {

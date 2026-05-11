@@ -33,7 +33,7 @@ import (
 //	    *.bit
 //	    evil.example.com
 //
-// All keys are flattened — every line in every key contributes
+// All keys are flattened - every line in every key contributes
 // entries. Lines starting with `#` or empty after Trim are skipped.
 // The BlocklistDetector key carries `<ns>/<name>` so emitted
 // SecurityEvents can attribute which list flagged the query.

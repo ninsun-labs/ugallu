@@ -22,7 +22,7 @@ falco:
   enabled: false
   host: ""
   port: 5060
-  # Secret carrying client.crt + client.key + ca.crt — mounted
+  # Secret carrying client.crt + client.key + ca.crt - mounted
   # read-only at /etc/falco-client-certs.
   certsSecret: ""
 

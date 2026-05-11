@@ -97,7 +97,7 @@ func TestTunnelingDetector_Base64Match(t *testing.T) {
 	}
 	// Rate-limit: second call within window should NOT re-fire.
 	if got2 := d.Evaluate(mkEvent(qname, "A", 53)); got2.Has() {
-		t.Errorf("ratelimit failed — second call within window fired")
+		t.Errorf("ratelimit failed - second call within window fired")
 	}
 }
 

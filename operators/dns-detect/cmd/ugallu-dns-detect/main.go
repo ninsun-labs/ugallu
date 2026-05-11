@@ -75,7 +75,7 @@ func runMain() error {
 	flag.StringVar(&resolverEndpoint, "resolver-endpoint", resolverv1.DefaultClusterEndpoint, "Resolver TCP fallback endpoint")
 	flag.BoolVar(&resolverInsecure, "resolver-insecure", false, "Skip TLS on the resolver TCP endpoint (lab/dev only)")
 	flag.DurationVar(&resolverDialBoot, "resolver-dial-boot-timeout", 5*time.Second, "Bound on the boot-time resolver dial (UDS + TCP fallback both inside this budget)")
-	flag.BoolVar(&resolverDisable, "resolver-disable", false, "Disable resolver enrichment — detectors fall back to SrcIP synthetic key")
+	flag.BoolVar(&resolverDisable, "resolver-disable", false, "Disable resolver enrichment - detectors fall back to SrcIP synthetic key")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
@@ -114,7 +114,7 @@ func runMain() error {
 		resolver, err = buildResolver(resolverUDS, resolverEndpoint, resolverInsecure, resolverDialBoot, log)
 		if err != nil {
 			// A boot-time resolver miss should not crashloop the
-			// operator — detectors degrade gracefully to the SrcIP
+			// operator - detectors degrade gracefully to the SrcIP
 			// synthetic key. Log loudly and continue.
 			log.Error(err, "resolver dial failed, continuing without enrichment")
 			resolver = nil
