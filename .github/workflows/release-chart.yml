@@ -57,6 +57,15 @@ jobs:
             exit 1
           fi
 
+      # cosign sign reads ~/.docker/config.json, so log in via docker/login-action
+      # in addition to helm registry login (which only writes Helm's own creds file).
+      - name: Log in to GHCR (docker creds for cosign)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Helm registry login (GHCR)
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | \
